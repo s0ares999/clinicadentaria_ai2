@@ -5,9 +5,11 @@ import 'react-toastify/dist/ReactToastify.css';
 import HomePage from './views/HomePage';
 import SobrePage from './views/SobrePage';
 import ContactosPage from './views/ContactosPage';
+import ClientesPublicPage from './views/ClientesPublicPage';
 import LoginPage from './views/LoginPage';
 import RegisterPage from './views/RegisterPage';
 import DashboardPage from './views/DashboardPage';
+import ClientDashboardPage from './views/ClientDashboardPage';
 import ClientesPage from './views/dashboard/ClientesPage';
 import FaturasPage from './views/dashboard/FaturasPage';
 import AgendamentosPage from './views/dashboard/AgendamentosPage';
@@ -25,14 +27,18 @@ function App() {
   }, []);
 
   // Rota protegida que verifica se o usuário está autenticado e é admin
-  const ProtectedRoute = ({ children, adminRequired = false }) => {
+  const ProtectedRoute = ({ children, adminRequired = false, clienteRequired = false }) => {
     const user = AuthService.getCurrentUser();
     
     if (!user) {
       return <Navigate to="/login" />;
     }
     
-    if (adminRequired && user.roles && !user.roles.includes('ROLE_ADMIN')) {
+    if (adminRequired && (!user.roles || !user.roles.includes('ROLE_ADMIN'))) {
+      return <Navigate to="/" />;
+    }
+    
+    if (clienteRequired && user.role !== 'cliente') {
       return <Navigate to="/" />;
     }
     
@@ -46,6 +52,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/sobre" element={<SobrePage />} />
         <Route path="/contactos" element={<ContactosPage />} />
+        <Route path="/clientes" element={<ClientesPublicPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         
@@ -64,6 +71,16 @@ function App() {
           <Route path="agendamentos" element={<AgendamentosPage />} />
           <Route path="estatisticas" element={<EstatisticasPage />} />
         </Route>
+        
+        {/* Rotas protegidas que exigem autenticação como cliente */}
+        <Route 
+          path="/cliente-dashboard/*" 
+          element={
+            <ProtectedRoute clienteRequired={true}>
+              <ClientDashboardPage />
+            </ProtectedRoute>
+          } 
+        />
         
         {/* Rota para páginas não encontradas */}
         <Route path="*" element={<Navigate to="/" />} />

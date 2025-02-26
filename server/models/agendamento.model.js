@@ -1,27 +1,22 @@
 module.exports = (sequelize, DataTypes) => {
   const Agendamento = sequelize.define("Agendamento", {
-    data: {
-      type: DataTypes.DATEONLY,
+    dataHora: {
+      type: DataTypes.DATE,
       allowNull: false
     },
-    horaInicio: {
-      type: DataTypes.TIME,
-      allowNull: false
-    },
-    horaFim: {
-      type: DataTypes.TIME,
-      allowNull: false
-    },
-    tipo: {
+    servico: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    status: {
-      type: DataTypes.ENUM('agendado', 'concluido', 'cancelado'),
-      defaultValue: 'agendado'
+    estado: {
+      type: DataTypes.ENUM('Pendente', 'Confirmado', 'Concluído', 'Cancelado'),
+      defaultValue: 'Pendente'
     },
     observacoes: {
       type: DataTypes.TEXT
+    },
+    dentista: {
+      type: DataTypes.STRING
     }
   });
 

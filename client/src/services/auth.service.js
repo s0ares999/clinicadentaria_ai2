@@ -22,12 +22,20 @@ class AuthService {
     localStorage.removeItem('user');
   }
 
-  register(username, email, password) {
-    return axios.post(API_URL + 'signup', {
+  register(username, email, password, role = 'cliente', clienteData = null) {
+    const requestData = {
       username,
       email,
-      password
-    });
+      password,
+      role
+    };
+
+    // Adicionar dados do cliente se fornecidos
+    if (role === 'cliente' && clienteData) {
+      requestData.clienteData = clienteData;
+    }
+
+    return axios.post(API_URL + 'signup', requestData);
   }
 
   getCurrentUser() {
@@ -43,7 +51,7 @@ class AuthService {
   // Verificar se o usuário é admin
   isAdmin() {
     const user = this.getCurrentUser();
-    return !!user && user.role === 'admin';
+    return !!user && user.roles && user.roles.includes('ROLE_ADMIN');
   }
 }
 

@@ -104,7 +104,7 @@ function HomePage() {
           <InfoContent>
             <InfoTitle>Cuidados Dentários de Excelência</InfoTitle>
             <InfoText>
-              Na Clínica Dentária, acreditamos que um sorriso saudável é fundamental para o bem-estar 
+              Na Clínica Dentária Viseense, acreditamos que um sorriso saudável é fundamental para o bem-estar 
               e autoestima. Nossa equipe de profissionais altamente qualificados está comprometida em 
               oferecer os melhores tratamentos dentários com tecnologia de ponta e atendimento humanizado.
             </InfoText>

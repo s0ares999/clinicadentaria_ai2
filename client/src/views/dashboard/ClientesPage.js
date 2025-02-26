@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useNavigate, useLocation } from 'react-router-dom';
 import authHeader from '../../services/auth-header';
+import AuthService from '../../services/auth.service';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const PageTitle = styled.h1`
   font-size: 1.75rem;
@@ -272,8 +276,6 @@ const Button = styled.button`
   }
 `;
 
-const API_URL = 'http://localhost:5000/api';
-
 const ClientesPage = () => {
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -290,25 +292,48 @@ const ClientesPage = () => {
     endereco: '',
     observacoes: ''
   });
-
+  
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isAdminPage = location.pathname.includes('/dashboard');
+  const currentUser = AuthService.getCurrentUser();
+  const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes('ROLE_ADMIN');
+  
   useEffect(() => {
-    fetchClientes();
-  }, [currentPage]);
+    if (isAdminPage && !isAdmin) {
+      navigate('/login');
+    } else {
+      fetchClientes();
+    }
+  }, [currentPage, isAdminPage, isAdmin, navigate]);
 
   const fetchClientes = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/clientes`, { 
-        headers: authHeader(),
+      
+      // Determinar qual endpoint usar com base no status de autenticação
+      const endpoint = isAdminPage ? `${API_URL}/clientes` : `${API_URL}/clientes/public`;
+      const headers = isAdminPage ? { headers: authHeader() } : {};
+      
+      const response = await axios.get(endpoint, { 
+        ...headers,
         params: { page: currentPage - 1, size: 10 }
       });
-      setClientes(response.data.items);
-      setTotalPages(Math.ceil(response.data.total / 10));
+      
+      if (response.data && response.data.items) {
+        setClientes(response.data.items);
+        setTotalPages(Math.ceil(response.data.total / 10));
+      } else {
+        setClientes([]);
+        setTotalPages(1);
+      }
+      
       setLoading(false);
     } catch (error) {
       toast.error('Erro ao carregar clientes');
       setLoading(false);
       console.error('Error fetching clientes:', error);
+      setClientes([]);
     }
   };
 
@@ -412,10 +437,12 @@ const ClientesPage = () => {
             />
           </SearchBar>
           
-          <AddButton onClick={() => openModal()}>
-            <i className="fas fa-plus"></i>
-            Adicionar Cliente
-          </AddButton>
+          {isAdminPage && (
+            <AddButton onClick={() => openModal()}>
+              <i className="fas fa-plus"></i>
+              Adicionar Cliente
+            </AddButton>
+          )}
         </SearchAndAddSection>
         
         {loading ? (
@@ -429,7 +456,9 @@ const ClientesPage = () => {
                   <th>Email</th>
                   <th>Telefone</th>
                   <th>Data de Nascimento</th>
-                  <th>Ações</th>
+                  {isAdminPage && (
+                    <th>Ações</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -445,23 +474,25 @@ const ClientesPage = () => {
                           : '---'
                         }
                       </td>
-                      <td>
-                        <ActionButton onClick={() => openModal(cliente)}>
-                          <i className="fas fa-edit"></i>
-                        </ActionButton>
-                        <ActionButton 
-                          color="#e74c3c" 
-                          hoverColor="#c0392b"
-                          onClick={() => handleDelete(cliente.id)}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </ActionButton>
-                      </td>
+                      {isAdminPage && (
+                        <td>
+                          <ActionButton onClick={() => openModal(cliente)}>
+                            <i className="fas fa-edit"></i>
+                          </ActionButton>
+                          <ActionButton 
+                            color="#e74c3c" 
+                            hoverColor="#c0392b"
+                            onClick={() => handleDelete(cliente.id)}
+                          >
+                            <i className="fas fa-trash"></i>
+                          </ActionButton>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: 'center' }}>
+                    <td colSpan={isAdminPage ? 5 : 4} style={{ textAlign: 'center' }}>
                       Nenhum cliente encontrado
                     </td>
                   </tr>
@@ -498,7 +529,7 @@ const ClientesPage = () => {
         )}
       </Card>
 
-      {isModalOpen && (
+      {isModalOpen && isAdminPage && (
         <ModalBackground>
           <ModalContainer>
             <ModalHeader>

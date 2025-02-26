@@ -25,7 +25,7 @@ verifyToken = (req, res, next) => {
 isAdmin = async (req, res, next) => {
   try {
     const user = await User.findByPk(req.userId);
-    if (user.role === "admin") {
+    if (user && user.role === "admin") {
       next();
       return;
     }
@@ -36,9 +36,24 @@ isAdmin = async (req, res, next) => {
   }
 };
 
+isCliente = async (req, res, next) => {
+  try {
+    const user = await User.findByPk(req.userId);
+    if (user && user.role === "cliente") {
+      next();
+      return;
+    }
+
+    res.status(403).json({ message: "Acesso permitido apenas para clientes!" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const authMiddleware = {
   verifyToken,
-  isAdmin
+  isAdmin,
+  isCliente
 };
 
 module.exports = authMiddleware;

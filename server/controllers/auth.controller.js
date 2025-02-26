@@ -1,5 +1,6 @@
 const db = require('../models');
 const User = db.User;
+const Cliente = db.Cliente;
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -22,8 +23,22 @@ exports.signup = async (req, res) => {
       username: req.body.username,
       email: req.body.email,
       password: bcrypt.hashSync(req.body.password, 8),
-      role: req.body.role || 'user'
+      role: req.body.role || 'cliente'
     });
+
+    // Se for um cliente, criar registro na tabela Cliente
+    if (req.body.role === 'cliente' && req.body.clienteData) {
+      await Cliente.create({
+        userId: user.id,
+        nome: req.body.clienteData.nome,
+        email: req.body.email, // Usar o mesmo email do usuário
+        telefone: req.body.clienteData.telefone,
+        dataNascimento: req.body.clienteData.dataNascimento,
+        morada: req.body.clienteData.morada,
+        nif: req.body.clienteData.nif,
+        historico: ''
+      });
+    }
 
     res.status(201).json({ message: "Usuário registrado com sucesso!" });
   } catch (error) {
@@ -60,11 +75,31 @@ exports.signin = async (req, res) => {
       expiresIn: 86400 // 24 horas
     });
 
+    // Determinar roles para compatibilidade com o frontend
+    const roles = [];
+    if (user.role === 'admin') {
+      roles.push('ROLE_ADMIN');
+    }
+    if (user.role === 'cliente') {
+      roles.push('ROLE_CLIENT');
+    }
+    roles.push('ROLE_USER');
+
+    // Buscar dados do cliente se for um cliente
+    let clienteData = null;
+    if (user.role === 'cliente') {
+      clienteData = await Cliente.findOne({
+        where: { email: user.email }
+      });
+    }
+
     res.status(200).json({
       id: user.id,
       username: user.username,
       email: user.email,
       role: user.role,
+      roles: roles,
+      clienteData: clienteData,
       accessToken: token
     });
   } catch (error) {

@@ -91,6 +91,9 @@ function Navbar() {
         {currentUser && currentUser.roles && currentUser.roles.includes('ROLE_ADMIN') && (
           <NavLink to="/dashboard">Dashboard</NavLink>
         )}
+        {currentUser && currentUser.role === 'cliente' && (
+          <NavLink to="/cliente-dashboard">Área do Cliente</NavLink>
+        )}
       </NavLinks>
       <AuthButtons>
         {currentUser ? (

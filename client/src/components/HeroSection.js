@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import AuthService from '../services/auth.service';
 
 const HeroContainer = styled.div`
   background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1606811841689-23dfddce3e95?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1600&q=80');
@@ -93,7 +94,14 @@ function HeroSection() {
         <ButtonContainer>
           <Button 
             className="primary"
-            onClick={() => navigate('/contactos')}
+            onClick={() => {
+              const user = AuthService.getCurrentUser();
+              if (user && (user.roles.includes('CLIENT') || user.roles.includes('ROLE_CLIENT'))) {
+                navigate('/cliente-dashboard/agendamentos');
+              } else {
+                navigate('/clientes');
+              }
+            }}
           >
             Marcar Consulta
           </Button>

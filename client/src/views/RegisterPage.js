@@ -122,13 +122,70 @@ const LoginLink = styled.p`
   }
 `;
 
+const RoleSelector = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+`;
+
+const RoleOption = styled.div`
+  flex: 1;
+  padding: 1rem;
+  border: 2px solid ${props => props.selected ? '#3498db' : '#e0e0e0'};
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background-color: ${props => props.selected ? '#f0f7fc' : '#fff'};
+
+  &:hover {
+    border-color: #3498db;
+  }
+
+  .role-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: ${props => props.selected ? '#3498db' : '#7f8c8d'};
+  }
+
+  .role-title {
+    font-weight: 600;
+    color: #2c3e50;
+  }
+
+  .role-desc {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    margin-top: 0.5rem;
+  }
+`;
+
+const FormRow = styled.div`
+  display: flex;
+  gap: 1rem;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+`;
+
 function RegisterPage() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('cliente');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [successful, setSuccessful] = useState(false);
+  
+  // Campos adicionais para cliente
+  const [nome, setNome] = useState('');
+  const [telefone, setTelefone] = useState('');
+  const [dataNascimento, setDataNascimento] = useState('');
+  const [morada, setMorada] = useState('');
+  const [nif, setNif] = useState('');
+  
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
@@ -138,7 +195,16 @@ function RegisterPage() {
     setSuccessful(false);
 
     try {
-      await AuthService.register(username, email, password);
+      // Dados adicionais para cliente
+      const clienteData = role === 'cliente' ? {
+        nome,
+        telefone,
+        dataNascimento,
+        morada,
+        nif
+      } : null;
+      
+      await AuthService.register(username, email, password, role, clienteData);
       setSuccessful(true);
       setMessage('Registo efetuado com sucesso! Pode fazer login agora.');
       setLoading(false);
@@ -176,6 +242,30 @@ function RegisterPage() {
           )}
           
           <Form onSubmit={handleRegister}>
+            <RoleSelector>
+              <RoleOption 
+                selected={role === 'cliente'} 
+                onClick={() => setRole('cliente')}
+              >
+                <div className="role-icon">
+                  <i className="fas fa-user"></i>
+                </div>
+                <div className="role-title">Cliente</div>
+                <div className="role-desc">Agende consultas e acompanhe tratamentos</div>
+              </RoleOption>
+              
+              <RoleOption 
+                selected={role === 'admin'} 
+                onClick={() => setRole('admin')}
+              >
+                <div className="role-icon">
+                  <i className="fas fa-user-shield"></i>
+                </div>
+                <div className="role-title">Administrador</div>
+                <div className="role-desc">Gerencie a clínica e pacientes</div>
+              </RoleOption>
+            </RoleSelector>
+            
             <FormGroup>
               <Label htmlFor="username">Nome de Utilizador</Label>
               <Input
@@ -212,6 +302,72 @@ function RegisterPage() {
                 minLength="6"
               />
             </FormGroup>
+            
+            {role === 'cliente' && (
+              <>
+                <FormGroup>
+                  <Label htmlFor="nome">Nome Completo</Label>
+                  <Input
+                    type="text"
+                    id="nome"
+                    name="nome"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    required
+                  />
+                </FormGroup>
+                
+                <FormRow>
+                  <FormGroup>
+                    <Label htmlFor="telefone">Telefone</Label>
+                    <Input
+                      type="tel"
+                      id="telefone"
+                      name="telefone"
+                      value={telefone}
+                      onChange={(e) => setTelefone(e.target.value)}
+                      required
+                    />
+                  </FormGroup>
+                  
+                  <FormGroup>
+                    <Label htmlFor="dataNascimento">Data de Nascimento</Label>
+                    <Input
+                      type="date"
+                      id="dataNascimento"
+                      name="dataNascimento"
+                      value={dataNascimento}
+                      onChange={(e) => setDataNascimento(e.target.value)}
+                      required
+                    />
+                  </FormGroup>
+                </FormRow>
+                
+                <FormGroup>
+                  <Label htmlFor="morada">Morada</Label>
+                  <Input
+                    type="text"
+                    id="morada"
+                    name="morada"
+                    value={morada}
+                    onChange={(e) => setMorada(e.target.value)}
+                    required
+                  />
+                </FormGroup>
+                
+                <FormGroup>
+                  <Label htmlFor="nif">NIF</Label>
+                  <Input
+                    type="text"
+                    id="nif"
+                    name="nif"
+                    value={nif}
+                    onChange={(e) => setNif(e.target.value)}
+                    required
+                  />
+                </FormGroup>
+              </>
+            )}
             
             <Button type="submit" disabled={loading}>
               {loading ? 'A processar...' : 'Registar'}

@@ -24,9 +24,17 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING
     },
     historico: {
-      type: DataTypes.TEXT
+      type: DataTypes.JSON,
+      defaultValue: []
     }
   });
+
+  Cliente.associate = (models) => {
+    Cliente.hasMany(models.Agendamento, {
+      foreignKey: 'clienteId',
+      as: 'agendamentos'
+    });
+  };
 
   return Cliente;
 };

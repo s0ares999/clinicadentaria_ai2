@@ -1,27 +1,36 @@
 const express = require('express');
 const router = express.Router();
 const agendamentoController = require('../controllers/agendamento.controller');
-const { verifyToken, isAdmin } = require('../middlewares/auth.middleware');
+const { verifyToken, isAdmin, isCliente } = require('../middlewares/auth.middleware');
 
-// Criar um novo agendamento
-router.post('/', verifyToken, agendamentoController.create);
+// Rota pública para solicitar agendamento
+router.post('/solicitar', agendamentoController.solicitarAgendamento);
 
-// Recuperar todos os agendamentos
-router.get('/', verifyToken, agendamentoController.findAll);
+// Criar um novo agendamento (requer autenticação)
+router.post('/', [verifyToken, isCliente], agendamentoController.create);
 
-// Recuperar agendamentos de um cliente específico
-router.get('/cliente/:clienteId', verifyToken, agendamentoController.findByCliente);
+// Recuperar todos os agendamentos (apenas admin)
+router.get('/', [verifyToken, isAdmin], agendamentoController.findAll);
 
-// Recuperar agendamentos por data
-router.get('/data/:data', verifyToken, agendamentoController.findByData);
+// Recuperar agendamentos do cliente autenticado
+router.get('/cliente', [verifyToken, isCliente], agendamentoController.findByClienteAutenticado);
+
+// Recuperar agendamentos de um cliente específico (apenas admin)
+router.get('/cliente/:clienteId', [verifyToken, isAdmin], agendamentoController.findByCliente);
+
+// Recuperar agendamentos por data (apenas admin)
+router.get('/data/:data', [verifyToken, isAdmin], agendamentoController.findByData);
 
 // Recuperar um único agendamento com id
 router.get('/:id', verifyToken, agendamentoController.findOne);
 
-// Atualizar um agendamento com id
-router.put('/:id', verifyToken, agendamentoController.update);
+// Atualizar um agendamento com id (apenas admin)
+router.put('/:id', [verifyToken, isAdmin], agendamentoController.update);
 
-// Excluir um agendamento com id
+// Cancelar um agendamento
+router.put('/:id/cancelar', [verifyToken, isCliente], agendamentoController.cancelar);
+
+// Excluir um agendamento com id (apenas admin)
 router.delete('/:id', [verifyToken, isAdmin], agendamentoController.delete);
 
 module.exports = router;

@@ -18,8 +18,12 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     role: {
-      type: DataTypes.ENUM('user', 'admin'),
-      defaultValue: 'user'
+      type: DataTypes.ENUM('cliente', 'admin'),
+      defaultValue: 'cliente'
+    },
+    roles: {
+      type: DataTypes.JSON,
+      defaultValue: []
     }
   });
 

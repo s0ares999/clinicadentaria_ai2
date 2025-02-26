@@ -207,7 +207,7 @@ function SobrePage() {
         <HeroSection>
           <HeroTitle>Quem Somos</HeroTitle>
           <HeroSubtitle>
-            Conheça a história da Clínica Dentária, nossa missão, visão e os valores 
+            Conheça a história da Clínica Dentária Viseense, nossa missão, visão e os valores 
             que guiam nosso compromisso com a saúde bucal dos nossos pacientes.
           </HeroSubtitle>
         </HeroSection>
@@ -222,7 +222,7 @@ function SobrePage() {
               />
               <h3>O Início</h3>
               <p>
-                A Clínica Dentária foi fundada em 2005 pelo Dr. Carlos Oliveira com a visão de criar um 
+                A Clínica Dentária Viseense foi fundada em 2005 pelo Dr. Pedro Soares com a visão de criar um 
                 espaço que combinasse tecnologia avançada e atendimento humanizado. O que começou como um 
                 pequeno consultório com apenas dois profissionais, cresceu e se tornou uma referência em 
                 saúde bucal na região.

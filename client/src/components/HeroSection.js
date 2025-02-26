@@ -87,7 +87,7 @@ function HeroSection() {
       <HeroContent>
         <HeroTitle>O Seu Sorriso Merece o Melhor Cuidado</HeroTitle>
         <HeroSubtitle>
-          Na Clínica Dentária, combinamos tecnologia avançada e profissionais
+          Na Clínica Dentária Viseense, combinamos tecnologia avançada e profissionais
           experientes para oferecer tratamentos de excelência para toda a família.
         </HeroSubtitle>
         <ButtonContainer>

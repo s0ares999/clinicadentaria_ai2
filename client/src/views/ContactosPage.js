@@ -244,7 +244,7 @@ function ContactosPage() {
               </div>
               <div className="text">
                 <h3>Localização</h3>
-                <p>Rua da Clínica, 123<br />1000-000 Lisboa, Portugal</p>
+                <p>Rua Direita, 12<br />3500-115 Viseu, Portugal</p>
               </div>
             </div>
             
@@ -254,7 +254,7 @@ function ContactosPage() {
               </div>
               <div className="text">
                 <h3>Telefone</h3>
-                <p>+351 210 123 456<br />+351 919 987 654</p>
+                <p>+351 212 345 678<br />+351 912 345 678</p>
               </div>
             </div>
             
@@ -381,7 +381,7 @@ function ContactosPage() {
         
         <MapSection>
           <iframe 
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d49792.39730438066!2d-9.2252449!3d38.7436267!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd19331a61e4f33b%3A0x400ebbde49036d0!2sLisboa!5e0!3m2!1spt-PT!2spt!4v1682345678901!5m2!1spt-PT!2spt" 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3026.607752631194!2d-7.911238523484137!3d40.66057614076146!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd23364e75891ec7%3A0x80b73a66b3c947a3!2sR.%20Direita%2C%20Viseu!5e0!3m2!1spt-PT!2spt!4v1740587414784!5m2!1spt-PT!2spt" 
             allowFullScreen="" 
             loading="lazy" 
             referrerPolicy="no-referrer-when-downgrade"

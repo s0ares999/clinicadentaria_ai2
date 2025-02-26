@@ -87,7 +87,7 @@ function Footer() {
     <FooterContainer>
       <FooterContent>
         <FooterSection>
-          <h3>Clínica Dentária</h3>
+          <h3>Clínica Dentária Viseense</h3>
           <p>
             Oferecemos um atendimento personalizado e de qualidade, utilizando 
             tecnologia de ponta para proporcionar o melhor tratamento dentário.
@@ -135,10 +135,10 @@ function Footer() {
         <FooterSection>
           <h3>Contactos</h3>
           <p>
-            <i className="fas fa-map-marker-alt"></i> Rua da Clínica, 123 - Lisboa
+            <i className="fas fa-map-marker-alt"></i> Rua Direita, 12 - Viseu
           </p>
           <p>
-            <i className="fas fa-phone"></i> +351 210 123 456
+            <i className="fas fa-phone"></i> +351 212 345 678
           </p>
           <p>
             <i className="fas fa-envelope"></i> info@clinicadentaria.pt
@@ -150,7 +150,7 @@ function Footer() {
       </FooterContent>
 
       <Copyright>
-        <p>&copy; {new Date().getFullYear()} Clínica Dentária. Todos os direitos reservados.</p>
+        <p>&copy; {new Date().getFullYear()} Clínica Dentária Viseense. Todos os direitos reservados.</p>
       </Copyright>
     </FooterContainer>
   );

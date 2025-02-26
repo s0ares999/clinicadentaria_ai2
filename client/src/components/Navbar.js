@@ -13,7 +13,7 @@ const NavbarContainer = styled.nav`
 `;
 
 const Logo = styled.div`
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: bold;
   color: #3498db;
 `;
@@ -83,12 +83,12 @@ function Navbar() {
 
   return (
     <NavbarContainer>
-      <Logo>Clínica Dentária</Logo>
+      <Logo>Clínica Dentária Viseense</Logo>
       <NavLinks>
         <NavLink to="/">Início</NavLink>
         <NavLink to="/sobre">Quem Somos</NavLink>
         <NavLink to="/contactos">Contactos</NavLink>
-        {currentUser && currentUser.role === 'admin' && (
+        {currentUser && currentUser.roles && currentUser.roles.includes('ROLE_ADMIN') && (
           <NavLink to="/dashboard">Dashboard</NavLink>
         )}
       </NavLinks>

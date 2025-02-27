@@ -97,7 +97,7 @@ function HeroSection() {
             onClick={() => {
               const user = AuthService.getCurrentUser();
               if (user && (user.roles.includes('CLIENT') || user.roles.includes('ROLE_CLIENT'))) {
-                navigate('/cliente-dashboard/agendamentos');
+                navigate('/cliente-dashboard/agendamentos/novo-agendamento');
               } else {
                 navigate('/clientes');
               }

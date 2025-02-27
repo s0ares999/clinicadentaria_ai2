@@ -235,6 +235,66 @@ exports.findOne = async (req, res) => {
   }
 };
 
+// Confirmar um agendamento pelo id
+exports.confirmar = async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    // Verificar se o agendamento existe
+    const agendamento = await Agendamento.findByPk(id);
+    
+    if (!agendamento) {
+      return res.status(404).json({
+        message: `Agendamento com id=${id} não encontrado.`
+      });
+    }
+    
+    // Atualizar o estado do agendamento para confirmado
+    await Agendamento.update(
+      { estado: 'Confirmado' },
+      { where: { id: id } }
+    );
+
+    res.status(200).json({
+      message: "Agendamento confirmado com sucesso."
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message || `Erro ao confirmar agendamento com id=${id}`
+    });
+  }
+};
+
+// Rejeitar um agendamento pelo id
+exports.rejeitar = async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    // Verificar se o agendamento existe
+    const agendamento = await Agendamento.findByPk(id);
+    
+    if (!agendamento) {
+      return res.status(404).json({
+        message: `Agendamento com id=${id} não encontrado.`
+      });
+    }
+    
+    // Atualizar o estado do agendamento para cancelado
+    await Agendamento.update(
+      { estado: 'Cancelado' },
+      { where: { id: id } }
+    );
+
+    res.status(200).json({
+      message: "Agendamento rejeitado com sucesso."
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message || `Erro ao rejeitar agendamento com id=${id}`
+    });
+  }
+};
+
 // Atualizar um agendamento pelo id
 exports.update = async (req, res) => {
   const id = req.params.id;

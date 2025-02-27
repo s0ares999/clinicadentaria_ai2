@@ -27,6 +27,10 @@ router.get('/:id', verifyToken, agendamentoController.findOne);
 // Atualizar um agendamento com id (apenas admin)
 router.put('/:id', [verifyToken, isAdmin], agendamentoController.update);
 
+router.put('/:id/confirmar', agendamentoController.confirmar);
+
+router.put('/:id/rejeitar', agendamentoController.rejeitar);
+
 // Cancelar um agendamento
 router.put('/:id/cancelar', [verifyToken, isCliente], agendamentoController.cancelar);
 

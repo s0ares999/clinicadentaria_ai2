@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
 import authHeader from '../../services/auth-header';
+import { FaCheck, FaTimes } from 'react-icons/fa';
 
 const PageTitle = styled.h1`
   font-size: 1.75rem;
@@ -472,11 +473,11 @@ const AgendamentosPage = () => {
                   </span>
                 </div>
                 <div className="actions">
-                  <ActionButton>
-                    <i className="fas fa-edit"></i>
+                  <ActionButton onClick={() => handleConfirm(appointment.id)}>
+                    <FaCheck color="#2ecc71" />
                   </ActionButton>
-                  <ActionButton color="#e74c3c" hoverColor="#c0392b">
-                    <i className="fas fa-times-circle"></i>
+                  <ActionButton color="#e74c3c" hoverColor="#c0392b" onClick={() => handleReject(appointment.id)}>
+                    <FaTimes />
                   </ActionButton>
                 </div>
               </AppointmentItem>
@@ -487,6 +488,25 @@ const AgendamentosPage = () => {
         </ListContainer>
       </>
     );
+  };
+
+  // Funções para lidar com a confirmação e rejeição
+  const handleConfirm = async (id) => {
+    try {
+      await axios.put(`${API_URL}/agendamentos/${id}/confirmar`, { estado: 'Confirmado' }, { headers: authHeader() });
+      fetchAgendamentos(); // Recarregar agendamentos após a confirmação
+    } catch (error) {
+      console.error('Erro ao confirmar agendamento:', error);
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      await axios.put(`${API_URL}/agendamentos/${id}/rejeitar`, { estado: 'Cancelado' }, { headers: authHeader() });
+      fetchAgendamentos(); // Recarregar agendamentos após a rejeição
+    } catch (error) {
+      console.error('Erro ao rejeitar agendamento:', error);
+    }
   };
 
   return (

@@ -29,7 +29,7 @@ const Sidebar = styled.div`
   background-color: #2c3e50;
   color: #ecf0f1;
   padding: 1.5rem 0;
-  height: calc(100vh - 120px);
+  height: calc(120vh - 10px);
   position: relative;
   top: 0;
 `;

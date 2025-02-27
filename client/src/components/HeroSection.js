@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import AuthService from '../services/auth.service';
 
 const HeroContainer = styled.div`
-  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1606811841689-23dfddce3e95?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1600&q=80');
+  background-image: linear-gradient(to top, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0)), url('https://images.unsplash.com/photo-1606811841689-23dfddce3e95?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1600&q=80');
   background-size: cover;
   background-position: center;
   height: 80vh;
@@ -13,11 +13,26 @@ const HeroContainer = styled.div`
   justify-content: center;
   text-align: center;
   color: #ffffff;
+  position: relative;
+  overflow: hidden;
+`;
+
+const InnerShadow = styled.div`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: rgba(0, 0, 0, 0.0001);
+  box-shadow: inset 0 -10px 20px rgba(0, 0, 0, 0.1);
 `;
 
 const HeroContent = styled.div`
   max-width: 800px;
   padding: 0 2rem;
+  position: relative;
+  opacity: 1;
+  transition: opacity 1s ease;
 `;
 
 const HeroTitle = styled.h1`
@@ -25,6 +40,7 @@ const HeroTitle = styled.h1`
   margin-bottom: 1.5rem;
   font-weight: 700;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  transition: transform 1s ease;
 
   @media (max-width: 768px) {
     font-size: 2.5rem;
@@ -35,6 +51,7 @@ const HeroSubtitle = styled.p`
   font-size: 1.25rem;
   margin-bottom: 2rem;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  transition: transform 1s ease;
 
   @media (max-width: 768px) {
     font-size: 1rem;
@@ -85,6 +102,7 @@ function HeroSection() {
 
   return (
     <HeroContainer>
+      <InnerShadow />
       <HeroContent>
         <HeroTitle>O Seu Sorriso Merece o Melhor Cuidado</HeroTitle>
         <HeroSubtitle>

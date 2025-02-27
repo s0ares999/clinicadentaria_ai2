@@ -1,9 +1,10 @@
 import React from 'react';
 import styled from 'styled-components';
+import { useInView } from 'react-intersection-observer';
 
 const TestimonialsContainer = styled.section`
   padding: 5rem 2rem;
-  background-color: #f8f9fa;
+  background-color: #ffffff;
 `;
 
 const SectionTitle = styled.h2`
@@ -22,20 +23,17 @@ const TestimonialsGrid = styled.div`
 `;
 
 const TestimonialCard = styled.div`
+  opacity: ${props => (props.isVisible ? 1 : 0)};
+  transform: translateY(${props => (props.isVisible ? 0 : 30)}px);
+  transition: opacity 1s ease, transform 1s ease;
   background-color: #ffffff;
   border-radius: 8px;
   padding: 2rem;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
-
-  &:hover {
-    transform: translateY(-10px);
-  }
 `;
 
-const QuoteIcon = styled.div`
-  font-size: 2rem;
-  color: #3498db;
+const TestimonialTitle = styled.h3`
+  font-size: 1.5rem;
   margin-bottom: 1rem;
 `;
 
@@ -112,31 +110,45 @@ function Testimonials() {
       <SectionTitle>O Que Nossos Pacientes Dizem</SectionTitle>
       <TestimonialsGrid>
         {testimonials.map(testimonial => (
-          <TestimonialCard key={testimonial.id}>
-            <QuoteIcon>
-              <i className="fas fa-quote-left"></i>
-            </QuoteIcon>
-            <TestimonialText>{testimonial.text}</TestimonialText>
-            <TestimonialAuthor>
-              <AuthorAvatar image={testimonial.avatar} />
-              <AuthorInfo>
-                <h4>{testimonial.author}</h4>
-                <p>{testimonial.role}</p>
-                <Rating>
-                  {[...Array(5)].map((_, i) => (
-                    <i 
-                      key={i} 
-                      className={`fas fa-star${i >= testimonial.rating ? '-o' : ''}`}
-                    ></i>
-                  ))}
-                </Rating>
-              </AuthorInfo>
-            </TestimonialAuthor>
-          </TestimonialCard>
+          <TestimonialWithAnimation key={testimonial.id}>
+            <TestimonialCard isVisible={true}>
+              <TestimonialTitle>{testimonial.author}</TestimonialTitle>
+              <TestimonialText>{testimonial.text}</TestimonialText>
+              <TestimonialAuthor>
+                <AuthorAvatar image={testimonial.avatar} />
+                <AuthorInfo>
+                  <h4>{testimonial.author}</h4>
+                  <p>{testimonial.role}</p>
+                  <Rating>
+                    {[...Array(5)].map((_, i) => (
+                      <i 
+                        key={i} 
+                        className={`fas fa-star${i >= testimonial.rating ? '-o' : ''}`}
+                      ></i>
+                    ))}
+                  </Rating>
+                </AuthorInfo>
+              </TestimonialAuthor>
+            </TestimonialCard>
+          </TestimonialWithAnimation>
         ))}
       </TestimonialsGrid>
     </TestimonialsContainer>
   );
 }
+
+// Componente para animação de entrada e saída nos testemunhos
+const TestimonialWithAnimation = ({ children }) => {
+  const { ref, inView } = useInView({
+    threshold: 0.3, // Quando 10% do elemento está visível
+    triggerOnce: false, // Para que a animação ocorra várias vezes
+  });
+
+  return (
+    <div ref={ref}>
+      {React.cloneElement(children, { isVisible: inView })}
+    </div>
+  );
+};
 
 export default Testimonials;

@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { useInView } from 'react-intersection-observer';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -54,6 +55,10 @@ const TwoColumns = styled.div`
 `;
 
 const Column = styled.div`
+  opacity: ${props => (props.isVisible ? 1 : 0)};
+  transform: translateY(${props => (props.isVisible ? 0 : 30)}px);
+  transition: opacity 1s ease, transform 1s ease;
+
   img {
     width: 100%;
     border-radius: 8px;
@@ -75,7 +80,7 @@ const Column = styled.div`
 
 const TeamSection = styled.section`
   padding: 5rem 2rem;
-  background-color: #f8f9fa;
+  background-color: #ffffff;
 `;
 
 const TeamTitle = styled.h2`
@@ -106,7 +111,7 @@ const TeamMember = styled.div`
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
+  transition: transform 1s ease;
 
   &:hover {
     transform: translateY(-10px);
@@ -215,7 +220,7 @@ function SobrePage() {
         <ContentSection>
           <SectionTitle>Nossa História</SectionTitle>
           <TwoColumns>
-            <Column>
+            <ColumnWithAnimation>
               <img 
                 src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1168&q=80" 
                 alt="Clínica Dentária fachada"
@@ -228,13 +233,13 @@ function SobrePage() {
                 saúde bucal na região.
               </p>
               <p>
-                Ao longo dos anos, investimos constantemente em formação contínua de nossa equipe 
+                Ao longo dos anos, investimos constantemente em formação contínua de nossa equipa 
                 e em equipamentos de última geração para oferecer sempre o melhor tratamento aos 
                 nossos pacientes.
               </p>
-            </Column>
+            </ColumnWithAnimation>
             
-            <Column>
+            <ColumnWithAnimation>
               <h3>Missão</h3>
               <p>
                 Proporcionar cuidados dentários de excelência, melhorando a saúde bucal e a qualidade 
@@ -245,7 +250,7 @@ function SobrePage() {
               <h3>Visão</h3>
               <p>
                 Ser reconhecida como referência em odontologia de qualidade, inovando constantemente 
-                nos tratamentos e serviços oferecidos, com uma equipe altamente qualificada e 
+                nos tratamentos e serviços oferecidos, com uma equipa altamente qualificada e 
                 comprometida com o bem-estar dos pacientes.
               </p>
               
@@ -258,19 +263,19 @@ function SobrePage() {
                 • Acessibilidade e respeito à diversidade<br />
                 • Sustentabilidade e responsabilidade social
               </p>
-            </Column>
+            </ColumnWithAnimation>
           </TwoColumns>
         </ContentSection>
         
         <TeamSection>
-          <TeamTitle>Nossa Equipe</TeamTitle>
+          <TeamTitle>Nossa Equipa</TeamTitle>
           <TeamSubtitle>
             Conheça os profissionais dedicados e altamente qualificados que 
             trabalham para cuidar do seu sorriso.
           </TeamSubtitle>
           <TeamGrid>
             {teamMembers.map(member => (
-              <TeamMember key={member.id}>
+              <TeamMemberWithAnimation key={member.id}>
                 <img src={member.image} alt={member.name} />
                 <div className="info">
                   <h3>{member.name}</h3>
@@ -287,7 +292,7 @@ function SobrePage() {
                     </a>
                   </div>
                 </div>
-              </TeamMember>
+              </TeamMemberWithAnimation>
             ))}
           </TeamGrid>
         </TeamSection>
@@ -297,5 +302,31 @@ function SobrePage() {
     </PageContainer>
   );
 }
+
+const ColumnWithAnimation = ({ children }) => {
+  const { ref, inView } = useInView({
+    threshold: 0.5,
+    triggerOnce: false,
+  });
+
+  return (
+    <Column ref={ref} isVisible={inView}>
+      {children}
+    </Column>
+  );
+};
+
+const TeamMemberWithAnimation = ({ children }) => {
+  const { ref, inView } = useInView({
+    threshold: 0.5,
+    triggerOnce: false,
+  });
+
+  return (
+    <TeamMember ref={ref} isVisible={inView}>
+      {children}
+    </TeamMember>
+  );
+};
 
 export default SobrePage;

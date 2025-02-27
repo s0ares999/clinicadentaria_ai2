@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import { useInView } from 'react-intersection-observer';
 
 const ServicesSection = styled.section`
   padding: 5rem 2rem;
@@ -31,11 +32,14 @@ const ServicesGrid = styled.div`
 `;
 
 const ServiceCard = styled.div`
+  opacity: ${props => (props.isVisible ? 1 : 0)};
+  transform: translateY(${props => (props.isVisible ? 0 : 30)}px);
+  transition: opacity 1s ease, transform 1s ease;
   background-color: #f8f9fa;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
+  transition: transform 1s ease;
 
   &:hover {
     transform: translateY(-10px);
@@ -124,22 +128,38 @@ function ServiceCards() {
       </SectionSubtitle>
       <ServicesGrid>
         {services.map(service => (
-          <ServiceCard key={service.title}>
-            <ServiceIcon>
-              <i className={service.icon}></i>
-            </ServiceIcon>
-            <ServiceContent>
-              <ServiceTitle>{service.title}</ServiceTitle>
-              <ServiceDescription>{service.description}</ServiceDescription>
-              <ServiceLink to={`/servicos/${service.title.replace(/\s+/g, '-').toLowerCase()}`}>
-                Saiba mais <i className="fas fa-arrow-right"></i>
-              </ServiceLink>
-            </ServiceContent>
-          </ServiceCard>
+          <ServiceCardWithAnimation key={service.title}>
+            <ServiceCard>
+              <ServiceIcon>
+                <i className={service.icon}></i>
+              </ServiceIcon>
+              <ServiceContent>
+                <ServiceTitle>{service.title}</ServiceTitle>
+                <ServiceDescription>{service.description}</ServiceDescription>
+                <ServiceLink to={`/servicos/${service.title.replace(/\s+/g, '-').toLowerCase()}`}>
+                  Saiba mais <i className="fas fa-arrow-right"></i>
+                </ServiceLink>
+              </ServiceContent>
+            </ServiceCard>
+          </ServiceCardWithAnimation>
         ))}
       </ServicesGrid>
     </ServicesSection>
   );
 }
+
+// Componente para animação de entrada e saída nos cartões de serviço
+const ServiceCardWithAnimation = ({ children }) => {
+  const { ref, inView } = useInView({
+    threshold: 0.1, // Quando 10% do elemento está visível
+    triggerOnce: false, // Para que a animação ocorra várias vezes
+  });
+
+  return (
+    <div ref={ref}>
+      {React.cloneElement(children, { isVisible: inView })}
+    </div>
+  );
+};
 
 export default ServiceCards;

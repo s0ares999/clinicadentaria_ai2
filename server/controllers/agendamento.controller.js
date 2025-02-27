@@ -59,23 +59,39 @@ exports.create = async (req, res) => {
     console.log('Criando agendamento:', agendamento);
 
     // Salvar o agendamento no banco de dados
-    const data = await Agendamento.create(agendamento);
-    
-    // Atualizar o histórico do cliente
-    const historicoAtual = cliente.historico || [];
-    const novoHistorico = [...historicoAtual, {
-      data: new Date().toISOString(),
-      tipo: 'Agendamento',
-      descricao: `Agendamento de ${req.body.servico} para ${new Date(req.body.dataHora).toLocaleString('pt-PT')}`
-    }];
-    
-    await Cliente.update(
-      { historico: novoHistorico },
-      { where: { id: cliente.id } }
-    );
-    
-    res.status(201).json(data);
+    try {
+      const data = await Agendamento.create(agendamento);
+      
+      // Atualizar o histórico do cliente
+      try {
+        const historicoAtual = cliente.historico || [];
+        const novoHistorico = [...historicoAtual, {
+          data: new Date().toISOString(),
+          tipo: 'Agendamento',
+          descricao: `Agendamento de ${req.body.servico} para ${new Date(req.body.dataHora).toLocaleString('pt-PT')}`
+        }];
+        
+        console.log('Histórico atual:', historicoAtual);
+        console.log('Novo histórico:', novoHistorico);
+        
+        await Cliente.update(
+          { historico: JSON.stringify(novoHistorico) },
+          { where: { id: cliente.id } }
+        );
+      } catch (historicoError) {
+        console.error('Erro ao atualizar histórico:', historicoError);
+        // Continuar mesmo se houver erro no histórico
+      }
+      
+      res.status(201).json(data);
+    } catch (createError) {
+      console.error('Erro ao criar agendamento:', createError);
+      res.status(500).json({
+        message: createError.message || "Ocorreu um erro ao criar o agendamento."
+      });
+    }
   } catch (err) {
+    console.error('Erro geral no agendamento:', err);
     res.status(500).json({
       message: err.message || "Ocorreu um erro ao criar o agendamento."
     });
@@ -291,17 +307,25 @@ exports.cancelar = async (req, res) => {
     );
     
     // Atualizar o histórico do cliente
-    const historicoAtual = cliente.historico || [];
-    const novoHistorico = [...historicoAtual, {
-      data: new Date().toISOString(),
-      tipo: 'Cancelamento',
-      descricao: `Cancelamento de agendamento de ${agendamento.servico} que estava marcado para ${new Date(agendamento.dataHora).toLocaleString('pt-PT')}`
-    }];
-    
-    await Cliente.update(
-      { historico: novoHistorico },
-      { where: { id: cliente.id } }
-    );
+    try {
+      const historicoAtual = cliente.historico || [];
+      const novoHistorico = [...historicoAtual, {
+        data: new Date().toISOString(),
+        tipo: 'Cancelamento',
+        descricao: `Cancelamento de agendamento de ${agendamento.servico} que estava marcado para ${new Date(agendamento.dataHora).toLocaleString('pt-PT')}`
+      }];
+      
+      console.log('Histórico atual:', historicoAtual);
+      console.log('Novo histórico:', novoHistorico);
+      
+      await Cliente.update(
+        { historico: JSON.stringify(novoHistorico) },
+        { where: { id: cliente.id } }
+      );
+    } catch (historicoError) {
+      console.error('Erro ao atualizar histórico:', historicoError);
+      // Continuar mesmo se houver erro no histórico
+    }
     
     res.status(200).json({
       message: "Agendamento cancelado com sucesso."
@@ -359,24 +383,24 @@ exports.solicitarAgendamento = async (req, res) => {
         nome: req.body.nome,
         email: req.body.email,
         telefone: req.body.telefone,
-        historico: [{
+        historico: JSON.stringify([{
           data: new Date(),
           acao: 'Solicitação de Agendamento',
           detalhes: `Serviço: ${req.body.servico}, Data preferida: ${req.body.dataPreferida}, Horário: ${req.body.horaPreferida}`
-        }]
+        }])
       });
     } else {
       // Atualizar histórico do cliente existente
       const historicoAtual = cliente.historico || [];
       await cliente.update({
-        historico: [
+        historico: JSON.stringify([
           ...historicoAtual,
           {
             data: new Date(),
             acao: 'Solicitação de Agendamento',
             detalhes: `Serviço: ${req.body.servico}, Data preferida: ${req.body.dataPreferida}, Horário: ${req.body.horaPreferida}`
           }
-        ]
+        ])
       });
     }
 

@@ -29,8 +29,13 @@ app.get('/', (req, res) => {
 
 // Inicialização do servidor
 const PORT = process.env.PORT || 5000;
-db.sequelize.sync().then(() => {
+
+// Sincronizar o banco de dados (sem forçar alterações para evitar problemas de conversão de tipo)
+db.sequelize.sync({ force: false, alter: false }).then(() => {
+  console.log('Banco de dados sincronizado');
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
   });
+}).catch(err => {
+  console.error('Erro ao sincronizar banco de dados:', err);
 });

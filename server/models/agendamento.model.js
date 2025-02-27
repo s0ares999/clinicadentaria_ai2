@@ -18,6 +18,8 @@ module.exports = (sequelize, DataTypes) => {
     dentista: {
       type: DataTypes.STRING
     }
+  }, {
+    tableName: 'Agendamentos'
   });
 
   Agendamento.associate = (models) => {

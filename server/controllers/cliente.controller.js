@@ -21,7 +21,7 @@ exports.create = async (req, res) => {
       dataNascimento: req.body.dataNascimento,
       morada: req.body.morada,
       nif: req.body.nif,
-      historico: req.body.historico
+      historico: req.body.historico ? JSON.stringify(req.body.historico) : JSON.stringify([])
     };
 
     // Salvar o cliente no banco de dados
@@ -244,7 +244,7 @@ exports.updateHistorico = async (req, res) => {
     
     // Atualizar o histórico do cliente
     await Cliente.update(
-      { historico: req.body.historico },
+      { historico: req.body.historico ? JSON.stringify(req.body.historico) : JSON.stringify([]) },
       { where: { id: cliente.id } }
     );
     

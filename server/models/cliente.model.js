@@ -24,8 +24,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING
     },
     historico: {
-      type: DataTypes.JSON,
-      defaultValue: []
+      type: DataTypes.JSONB, // Usando JSONB em vez de JSON para melhor compatibilidade
+      defaultValue: [],
+      get() {
+        const value = this.getDataValue('historico');
+        return value ? (typeof value === 'string' ? JSON.parse(value) : value) : [];
+      },
+      set(value) {
+        this.setDataValue('historico', value);
+      }
     }
   });
 

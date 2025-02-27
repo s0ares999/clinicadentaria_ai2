@@ -36,7 +36,7 @@ exports.signup = async (req, res) => {
         dataNascimento: req.body.clienteData.dataNascimento,
         morada: req.body.clienteData.morada,
         nif: req.body.clienteData.nif,
-        historico: ''
+        historico: JSON.stringify([])
       });
     }
 

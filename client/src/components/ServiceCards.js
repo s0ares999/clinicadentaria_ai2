@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 
 const ServicesSection = styled.section`
@@ -65,7 +66,7 @@ const ServiceDescription = styled.p`
   line-height: 1.6;
 `;
 
-const ServiceLink = styled.a`
+const ServiceLink = styled(Link)`
   display: inline-block;
   color: #3498db;
   font-weight: 500;
@@ -84,46 +85,34 @@ const ServiceLink = styled.a`
 function ServiceCards() {
   const services = [
     {
-      id: 1,
-      icon: "fas fa-tooth",
       title: "Odontologia Geral",
-      description: "Tratamentos completos para manter a sua saúde bucal em dia, incluindo limpeza, restaurações e extrações simples.",
-      link: "#"
+      icon: "fas fa-tooth",
+      description: "Tratamentos completos para manter a sua saúde bucal em dia.",
     },
     {
-      id: 2,
-      icon: "fas fa-teeth",
       title: "Ortodontia",
-      description: "Correção do alinhamento dos dentes e problemas de mordida com aparelhos ortodônticos modernos e discretos.",
-      link: "#"
+      icon: "fas fa-teeth",
+      description: "Correção do alinhamento dos dentes.",
     },
     {
-      id: 3,
-      icon: "fas fa-teeth-open",
       title: "Implantes Dentários",
-      description: "Substitua dentes perdidos com implantes de alta qualidade que parecem e funcionam como dentes naturais.",
-      link: "#"
+      icon: "fas fa-teeth-open",
+      description: "Substitua dentes perdidos com implantes.",
     },
     {
-      id: 4,
-      icon: "fas fa-pump-medical",
       title: "Endodontia",
-      description: "Tratamento de canal especializado para preservar dentes com infecções ou danos na polpa dentária.",
-      link: "#"
+      icon: "fas fa-pump-medical",
+      description: "Tratamento de canal especializado.",
     },
     {
-      id: 5,
-      icon: "fas fa-smile",
       title: "Estética Dental",
-      description: "Procedimentos para melhorar a aparência do seu sorriso, incluindo clareamento, facetas e restaurações estéticas.",
-      link: "#"
+      icon: "fas fa-smile",
+      description: "Procedimentos para melhorar a aparência do seu sorriso.",
     },
     {
-      id: 6,
-      icon: "fas fa-baby",
       title: "Odontopediatria",
-      description: "Cuidados dentários especializados para crianças, com abordagem lúdica e ambiente acolhedor.",
-      link: "#"
+      icon: "fas fa-baby",
+      description: "Cuidados dentários especializados para crianças.",
     }
   ];
 
@@ -135,14 +124,14 @@ function ServiceCards() {
       </SectionSubtitle>
       <ServicesGrid>
         {services.map(service => (
-          <ServiceCard key={service.id}>
+          <ServiceCard key={service.title}>
             <ServiceIcon>
               <i className={service.icon}></i>
             </ServiceIcon>
             <ServiceContent>
               <ServiceTitle>{service.title}</ServiceTitle>
               <ServiceDescription>{service.description}</ServiceDescription>
-              <ServiceLink href={service.link}>
+              <ServiceLink to={`/servicos/${service.title.replace(/\s+/g, '-').toLowerCase()}`}>
                 Saiba mais <i className="fas fa-arrow-right"></i>
               </ServiceLink>
             </ServiceContent>

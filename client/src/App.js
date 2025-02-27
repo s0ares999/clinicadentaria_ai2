@@ -15,6 +15,8 @@ import FaturasPage from './views/dashboard/FaturasPage';
 import AgendamentosPage from './views/dashboard/AgendamentosPage';
 import EstatisticasPage from './views/dashboard/EstatisticasPage';
 import AuthService from './services/auth.service';
+import ServiceCards from './components/ServiceCards';
+import ServiceDetailPage from './components/ServiceDetailPage';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(undefined);
@@ -55,6 +57,7 @@ function App() {
         <Route path="/clientes" element={<ClientesPublicPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/servicos/:title" element={<ServiceDetailPage/>} />
         
         {/* Rotas protegidas que exigem autenticação como admin */}
         <Route 

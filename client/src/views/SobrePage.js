@@ -20,11 +20,19 @@ const HeroSection = styled.section`
   color: #ffffff;
   padding: 5rem 2rem;
   text-align: center;
+
+  @media (max-width: 768px) {
+    padding: 3rem 1rem;
+  }
 `;
 
 const HeroTitle = styled.h1`
   font-size: 3rem;
   margin-bottom: 1.5rem;
+
+  @media (max-width: 768px) {
+    font-size: 2.5rem;
+  }
 `;
 
 const HeroSubtitle = styled.p`
@@ -32,12 +40,20 @@ const HeroSubtitle = styled.p`
   max-width: 800px;
   margin: 0 auto;
   line-height: 1.6;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
 `;
 
 const ContentSection = styled.section`
   padding: 5rem 2rem;
   max-width: 1200px;
   margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: 3rem 1rem;
+  }
 `;
 
 const SectionTitle = styled.h2`
@@ -45,6 +61,10 @@ const SectionTitle = styled.h2`
   margin-bottom: 2rem;
   color: #2c3e50;
   text-align: center;
+
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
 `;
 
 const TwoColumns = styled.div`
@@ -52,6 +72,10 @@ const TwoColumns = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 3rem;
   margin-bottom: 4rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr; /* Coluna única em telas menores */
+  }
 `;
 
 const Column = styled.div`
@@ -81,6 +105,10 @@ const Column = styled.div`
 const TeamSection = styled.section`
   padding: 5rem 2rem;
   background-color: #ffffff;
+
+  @media (max-width: 768px) {
+    padding: 3rem 1rem;
+  }
 `;
 
 const TeamTitle = styled.h2`
@@ -88,6 +116,10 @@ const TeamTitle = styled.h2`
   margin-bottom: 2rem;
   color: #2c3e50;
   text-align: center;
+
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
 `;
 
 const TeamSubtitle = styled.p`
@@ -96,6 +128,10 @@ const TeamSubtitle = styled.p`
   margin: 0 auto 3rem;
   color: #7f8c8d;
   font-size: 1.1rem;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
 `;
 
 const TeamGrid = styled.div`

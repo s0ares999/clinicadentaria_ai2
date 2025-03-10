@@ -15,8 +15,8 @@ import FaturasPage from './views/dashboard/FaturasPage';
 import AgendamentosPage from './views/dashboard/AgendamentosPage';
 import EstatisticasPage from './views/dashboard/EstatisticasPage';
 import AuthService from './services/auth.service';
-import ServiceCards from './components/ServiceCards';
 import ServiceDetailPage from './components/ServiceDetailPage';
+
 
 function App() {
   const [currentUser, setCurrentUser] = useState(undefined);
@@ -48,7 +48,7 @@ function App() {
   };
 
   return (
-    <div>
+    <div className="App">
       <ToastContainer />
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -88,6 +88,7 @@ function App() {
         {/* Rota para páginas não encontradas */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+
     </div>
   );
 }

@@ -203,7 +203,8 @@ function SobrePage() {
         linkedin: "#",
         twitter: "#",
         facebook: "#"
-      }
+      },
+    link: "#"
     },
     {
       id: 2,

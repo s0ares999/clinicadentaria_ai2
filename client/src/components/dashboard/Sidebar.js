@@ -113,7 +113,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </MenuItem>
         <MenuItem>
           <Link to="/dashboard/clientes" className={location.pathname.includes('/dashboard/clientes') ? 'active' : ''}>
-            <i className="fas fa-users"></i> Clientes
+            <i className="fas fa-users"></i> Utilizadores
           </Link>
         </MenuItem>
         <MenuItem>
@@ -124,11 +124,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         <MenuItem>
           <Link to="/dashboard/faturas" className={location.pathname.includes('/dashboard/faturas') ? 'active' : ''}>
             <i className="fas fa-file-invoice-dollar"></i> Faturas
-          </Link>
-        </MenuItem>
-        <MenuItem>
-          <Link to="/dashboard/estatisticas" className={location.pathname.includes('/dashboard/estatisticas') ? 'active' : ''}>
-            <i className="fas fa-chart-bar"></i> Estatísticas
           </Link>
         </MenuItem>
         <MenuItem>

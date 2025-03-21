@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import AuthService from '../services/auth.service';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { toast } from 'react-hot-toast';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -125,41 +126,61 @@ function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setMessage("");
-  
+
     try {
+      if (!email || !password) {
+        throw new Error('Por favor, preencha todos os campos');
+      }
+
       console.log("Iniciando processo de login com email:", email);
       
       const response = await AuthService.login(email, password);
-      console.log("Login bem-sucedido, redirecionando...");
-      
-      // Verificar o tipo de usuário para redirecionar corretamente
-      if (response.tipo === "admin") {
-        navigate("/admin/dashboard");
-      } else if (response.tipo === "medico") {
-        navigate("/medico/dashboard");
-      } else {
-        navigate("/cliente/dashboard");
+      console.log("Login bem-sucedido:", response);
+
+      // Determinar rota com base no tipo de usuário
+      let redirectPath;
+      switch (response.tipo?.toLowerCase()) {
+        case 'admin':
+          redirectPath = '/admin/dashboard';
+          break;
+        case 'medico':
+          redirectPath = '/medico/dashboard';
+          break;
+        default:
+          redirectPath = '/cliente/dashboard';
       }
+
+      navigate(redirectPath);
+      
     } catch (error) {
       console.error("Erro no login:", error);
       
-      let errorMessage = "Falha no login. Por favor, verifique suas credenciais.";
-      
+      let errorMessage;
       if (error.response) {
         const { status, data } = error.response;
         
-        if (status === 404) {
-          errorMessage = "Servidor não encontrou a rota de login. Contate o administrador.";
-        } else if (status === 401) {
-          errorMessage = "Email ou senha incorretos.";
-        } else if (data && data.message) {
-          errorMessage = data.message;
+        switch (status) {
+          case 401:
+            errorMessage = data.message || "Email ou senha incorretos";
+            break;
+          case 404:
+            errorMessage = "Serviço indisponível";
+            break;
+          case 500:
+            errorMessage = "Erro no servidor. Tente novamente mais tarde";
+            break;
+          default:
+            errorMessage = data.message || "Erro ao realizar login";
         }
       } else if (error.request) {
-        errorMessage = "Servidor indisponível. Tente novamente mais tarde.";
+        errorMessage = "Não foi possível conectar ao servidor";
+      } else {
+        errorMessage = error.message || "Erro ao realizar login";
       }
       
       setMessage(errorMessage);
+      toast.error(errorMessage);
+    } finally {
       setLoading(false);
     }
   };

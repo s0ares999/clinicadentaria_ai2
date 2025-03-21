@@ -1,5 +1,9 @@
 {
   "devDependencies": {
     "sequelize-cli": "^6.6.2"
+  },
+  "dependencies": {
+    "react-hot-toast": "^2.5.2",
+    "react-toastify": "^11.0.5"
   }
 }

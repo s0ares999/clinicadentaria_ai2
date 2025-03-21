@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import authHeader from '../../services/auth-header';
+import api from '../../services/api.config';
 import ConsultaService from '../../services/consulta.service';
 
 const API_URL = "http://localhost:8000/api";

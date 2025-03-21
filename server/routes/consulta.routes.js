@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const consultaController = require("../controllers/consulta.controller");
-const { verifyToken, isAdmin, isMedicoOrAdmin } = require('../middleware/authJwt');
+const authMiddleware = require('../middleware/auth.middleware');
 
 module.exports = router;
 
@@ -50,7 +50,7 @@ router.put("/:id", (req, res) => {
 });
 
 // Cancelar consulta
-router.put("/:id/cancel", [verifyToken], (req, res) => {
+router.put("/:id/cancel", [authMiddleware.verifyToken], (req, res) => {
   if (typeof consultaController.cancel === 'function') {
     consultaController.cancel(req, res);
   } else {

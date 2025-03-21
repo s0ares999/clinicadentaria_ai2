@@ -1,31 +1,28 @@
-import axios from 'axios';
-import authHeader from './auth-header';
-
-const API_URL = 'http://localhost:8000/api/utilizadores/';
+import api from './api.config';
 
 class UsuarioService {
   async getAllUsuarios() {
-    return axios.get(API_URL, { headers: authHeader() });
+    return api.get('utilizadores');
   }
 
   async getUsuarioById(id) {
-    return axios.get(API_URL + id, { headers: authHeader() });
+    return api.get(`utilizadores/${id}`);
   }
 
   async updateUsuario(id, userData) {
-    return axios.put(API_URL + id, userData, { headers: authHeader() });
+    return api.put(`utilizadores/${id}`, userData);
   }
 
   async deleteUsuario(id) {
-    return axios.delete(API_URL + id, { headers: authHeader() });
+    return api.delete(`utilizadores/${id}`);
   }
 
   async getAllClientes() {
-    return axios.get(API_URL + 'clientes', { headers: authHeader() });
+    return api.get('utilizadores/clientes');
   }
 
   async getAllMedicos() {
-    return axios.get(API_URL + 'medicos', { headers: authHeader() });
+    return api.get('utilizadores/medicos');
   }
 }
 

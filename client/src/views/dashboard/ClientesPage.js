@@ -3,8 +3,8 @@ import styled from 'styled-components';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate, useLocation } from 'react-router-dom';
-import authHeader from '../../services/auth-header';
 import AuthService from '../../services/auth.service';
+import api from '../../services/api.config';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -311,12 +311,9 @@ const ClientesPage = () => {
     try {
       setLoading(true);
       
-      // Determinar qual endpoint usar com base no status de autenticação
-      const endpoint = isAdminPage ? `${API_URL}/clientes` : `${API_URL}/clientes/public`;
-      const headers = isAdminPage ? { headers: authHeader() } : {};
+      const endpoint = isAdminPage ? 'clientes' : 'clientes/public';
       
-      const response = await axios.get(endpoint, { 
-        ...headers,
+      const response = await api.get(endpoint, { 
         params: { page: currentPage - 1, size: 10 }
       });
       
@@ -385,18 +382,10 @@ const ClientesPage = () => {
     
     try {
       if (editingCliente) {
-        await axios.put(
-          `${API_URL}/clientes/${editingCliente.id}`, 
-          formData,
-          { headers: authHeader() }
-        );
+        await api.put(`clientes/${editingCliente.id}`, formData);
         toast.success('Cliente atualizado com sucesso!');
       } else {
-        await axios.post(
-          `${API_URL}/clientes`, 
-          formData,
-          { headers: authHeader() }
-        );
+        await api.post('clientes', formData);
         toast.success('Cliente adicionado com sucesso!');
       }
       
@@ -411,7 +400,7 @@ const ClientesPage = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Tem certeza que deseja remover este cliente?')) {
       try {
-        await axios.delete(`${API_URL}/clientes/${id}`, { headers: authHeader() });
+        await api.delete(`clientes/${id}`);
         toast.success('Cliente removido com sucesso!');
         fetchClientes();
       } catch (error) {

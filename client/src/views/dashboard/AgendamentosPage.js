@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
+import api from '../../services/api.config';
 import { toast } from 'react-toastify';
-import authHeader from '../../services/auth-header';
 import ConsultaService from '../../services/consulta.service';
 
 const API_URL = "http://localhost:8000/api";
@@ -221,7 +220,7 @@ const AgendamentosPage = () => {
   const fetchConsultas = async () => {
     try {
       setLoading(true);
-      const response = await ConsultaService.getConsultas();
+      const response = await api.get('agendamentos');
       setConsultas(response.data);
       setLoading(false);
     } catch (error) {

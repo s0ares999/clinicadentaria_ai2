@@ -2,12 +2,12 @@ const express = require("express");
 const router = express.Router();
 const consultaController = require("../controllers/consulta.controller");
 const utilizadorController = require("../controllers/utilizador.controller");
-const authMiddleware = require('../middleware/authMiddleware');
+const authMiddleware = require('../middleware/auth.middleware');
 const db = require('../models');
-const { authJwt } = require('../middleware');
 const clienteController = require('../controllers/cliente.controller');
 const Cliente = db.Cliente;
 const Utilizador = db.Utilizador;
+const authController = require('../controllers/auth.controller');
 
 let useInMemoryData = false; // Definimos isso como true apenas se o banco estiver inacessível
 
@@ -15,7 +15,19 @@ let useInMemoryData = false; // Definimos isso como true apenas se o banco estiv
 const inMemoryUsers = new Map();
 
 // Middleware para verificar token
-router.use(authJwt.verifyToken);
+router.use(authMiddleware.verifyToken);
+
+// Verificar se é cliente ou admin em rotas específicas
+router.get('/perfil', (req, res, next) => {
+  if (req.user?.tipo === 'cliente' || req.user?.tipo === 'admin') {
+    next();
+  } else {
+    res.status(403).json({
+      success: false,
+      message: 'Acesso permitido apenas para clientes e administradores'
+    });
+  }
+});
 
 // Depuração do token em cada requisição
 router.use((req, res, next) => {
@@ -23,9 +35,6 @@ router.use((req, res, next) => {
   console.log("👤 ID do usuário:", req.userId);
   next();
 });
-
-// Middleware para verificar se é cliente
-router.use(authMiddleware.isClienteOrAdmin);
 
 // Obter agendamentos do cliente autenticado
 router.get("/agendamentos", (req, res) => {
@@ -146,7 +155,7 @@ router.get("/test", (req, res) => {
 });
 
 // Rota para obter perfil do cliente
-router.get('/perfil', authJwt.isCliente, clienteController.getClienteProfile);
+router.get('/perfil', authMiddleware.isCliente, clienteController.getClienteProfile);
 
 // Rota para atualizar perfil do cliente
 router.put('/perfil', async (req, res) => {
@@ -239,5 +248,8 @@ router.get('/consultas', async (req, res) => {
     res.status(500).json({ message: "Erro ao buscar consultas" });
   }
 });
+
+// Rota de perfil do cliente - redireciona para o método getProfile do authController
+router.get('/perfil', authMiddleware.isCliente, authController.getProfile);
 
 module.exports = router;

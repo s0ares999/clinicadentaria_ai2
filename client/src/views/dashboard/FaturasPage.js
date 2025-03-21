@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
-import authHeader from '../../services/auth-header';
+import api from '../../services/api.config';
 
 const PageTitle = styled.h1`
   font-size: 1.75rem;
@@ -185,8 +184,7 @@ const FaturasPage = () => {
   const fetchFaturas = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/faturas`, { 
-        headers: authHeader(),
+      const response = await api.get('faturas', { 
         params: { page: currentPage - 1, size: 10 }
       });
       setFaturas(response.data.items || []);

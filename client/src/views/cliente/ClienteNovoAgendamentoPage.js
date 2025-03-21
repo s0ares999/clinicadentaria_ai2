@@ -3,9 +3,9 @@ import styled from 'styled-components';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import AuthService from '../../services/auth.service';
-import authHeader from '../../services/auth-header';
 import { useNavigate } from 'react-router-dom';
 import ConsultaService from '../../services/consulta.service';
+import api from '../../services/api.config';
 
 const API_URL = "http://localhost:8000/api";
 
@@ -172,9 +172,7 @@ function ClienteNovoAgendamentoPage() {
 
   const carregarMedicos = async () => {
     try {
-      const response = await axios.get(`${API_URL}/utilizadores/medicos`, {
-        headers: authHeader()
-      });
+      const response = await api.get('utilizadores/medicos');
       setMedicos(response.data);
     } catch (error) {
       console.error('Erro ao carregar médicos:', error);
@@ -184,9 +182,8 @@ function ClienteNovoAgendamentoPage() {
 
   const carregarDisponibilidades = async (medicoId, data) => {
     try {
-      const response = await axios.get(
-        `${API_URL}/disponibilidades/medico/${medicoId}/data/${data}`,
-        { headers: authHeader() }
+      const response = await api.get(
+        `disponibilidades/medico/${medicoId}/data/${data}`
       );
       
       setDisponibilidades(response.data);

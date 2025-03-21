@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import authHeader from '../../services/auth-header';
+import api from '../../services/api.config';
 import ConsultaService from '../../services/consulta.service';
 
 const API_URL = "http://localhost:8000/api";
@@ -129,9 +129,7 @@ function ClienteHistoricoPage() {
   const fetchHistoricoCliente = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/clientes/profile`, { 
-        headers: authHeader()
-      });
+      const response = await api.get('clientes/profile');
       
       if (response.data && response.data.historico) {
         setHistorico(response.data.historico || []);

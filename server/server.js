@@ -116,20 +116,17 @@ const initializeDatabase = async () => {
   }
 };
 
-// Rotas da API
+// Importar rotas
 const authRoutes = require('./routes/auth.routes');
 const clienteRoutes = require('./routes/cliente.routes');
-// Outras rotas...
+const consultaRoutes = require('./routes/consulta.routes');
+const utilizadorRoutes = require('./routes/utilizador.routes');
 
-// Registrar rotas
+// Definir rotas
 app.use('/api/auth', authRoutes);
 app.use('/api/cliente', clienteRoutes);
-// Registrar outras rotas...
-
-console.log('✅ Rotas da API registradas:');
-console.log('- /api/auth');
-console.log('- /api/cliente');
-// Outras rotas...
+app.use('/api/consulta', consultaRoutes);
+app.use('/api/utilizador', utilizadorRoutes);
 
 // Rota raiz para verificação de API
 app.get('/api', (req, res) => {

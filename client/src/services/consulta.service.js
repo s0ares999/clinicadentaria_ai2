@@ -1,42 +1,32 @@
-import axios from 'axios';
-import authHeader from './auth-header';
-
-const API_URL = 'http://localhost:8000/api/consultas/';
+import api from './api.config';
 
 class ConsultaService {
   async getConsultas() {
-    return axios.get(API_URL, { headers: authHeader() });
+    return api.get('consultas');
   }
 
   async getConsultaById(id) {
-    return axios.get(API_URL + id, { headers: authHeader() });
+    return api.get(`consultas/${id}`);
   }
 
   async createConsulta(consultaData) {
-    return axios.post(API_URL, consultaData, { headers: authHeader() });
+    return api.post('consultas', consultaData);
   }
 
   async updateConsulta(id, consultaData) {
-    return axios.put(API_URL + id, consultaData, { headers: authHeader() });
+    return api.put(`consultas/${id}`, consultaData);
   }
 
   async cancelConsulta(id) {
-    return axios.put(API_URL + id + '/cancel', {}, { headers: authHeader() });
+    return api.put(`consultas/${id}/cancel`, {});
   }
 
-  async getConsultasByCliente() {
-    // Get current user
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-    
-    // Use the user's ID to get their consultations
-    return axios.get(`${API_URL}cliente/${user.id}`, { headers: authHeader() });
+  async getConsultasByCliente(clienteId) {
+    return api.get(`consultas/cliente/${clienteId}`);
   }
 
   async getConsultasByMedico(medicoId) {
-    return axios.get(API_URL + 'medico/' + medicoId, { headers: authHeader() });
+    return api.get(`consultas/medico/${medicoId}`);
   }
 }
 

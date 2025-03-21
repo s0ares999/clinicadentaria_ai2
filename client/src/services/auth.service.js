@@ -1,51 +1,62 @@
-import axios from 'axios';
+import api from './api.config';
 
-// Detectar automaticamente o ambiente e configurar a URL base
-const baseURL = process.env.REACT_APP_API_URL || 
-               (window.location.hostname === 'localhost' ? 
-                'http://localhost:8000/api/' : 
-                '/api/');
-
-const API_URL = `${baseURL}auth/`;
+// Adicione a constante API_URL
+const API_URL = process.env.REACT_APP_API_URL || 
+  (window.location.hostname === 'localhost' ? 'http://localhost:8000/api/' : '/api/');
 
 class AuthService {
-  login(email, password) {
-    console.log("Tentando login com:", email);
-    // Remover barras à direita para evitar URL com barras duplas
-    const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-    
-    return axios
-      .post(`${baseUrl}/signin`, {
-        email,
-        password
-      })
-      .then(response => {
-        console.log("Login bem-sucedido:", response.data);
-        if (response.data.accessToken) {
-          localStorage.setItem("user", JSON.stringify(response.data));
-        }
-        return response.data;
-      })
-      .catch(error => {
-        console.error("Erro no login:", error);
-        console.error("URL usada:", `${baseUrl}/signin`);
-        
-        if (error.response) {
-          console.error("Resposta do servidor:", error.response.data);
-          console.error("Status:", error.response.status);
-        }
-        
-        throw error;
+  async login(email, password) {
+    try {
+      console.log("Tentando login com:", { email });
+      
+      const response = await api.post('auth/signin', { 
+        email, 
+        password 
       });
+
+      console.log("Resposta do servidor:", response.data);
+
+      // Verificar se a resposta contém os dados necessários
+      if (!response.data || !response.data.accessToken) {
+        console.error("Resposta inválida do servidor:", response.data);
+        throw new Error('Resposta inválida do servidor');
+      }
+
+      // Garantir que temos todas as informações necessárias
+      const userData = {
+        ...response.data,
+        tipo: response.data.tipo || 'cliente', // fallback para 'cliente' se não especificado
+        accessToken: response.data.accessToken,
+        id: response.data.id
+      };
+
+      // Armazenar no localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      return userData;
+    } catch (error) {
+      console.error('Erro detalhado no login:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+
+      // Repassar a mensagem de erro do servidor se disponível
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
+    }
   }
 
   logout() {
-    localStorage.removeItem("user");
+    localStorage.removeItem('user');
+    window.location.href = '/login';
   }
 
   async register(email, senha, nome, telefone, role, dadosEspecificos = {}) {
     try {
-      console.log(`Tentando registro em ${API_URL}signup`);
+      console.log(`Tentando registro em ${API_URL}auth/signup`);
       console.log("Dados a enviar:", {
         nome, email, senha, telefone, tipo: role, ...dadosEspecificos
       });
@@ -67,7 +78,7 @@ class AuthService {
       
       console.log("Dados completos a enviar:", userData);
       
-      return await axios.post(API_URL + 'signup', userData, config);
+      return await api.post('auth/signup', userData, config);
     } catch (error) {
       console.error("Service: erro no registro", error);
       
@@ -86,28 +97,19 @@ class AuthService {
 
   getCurrentUser() {
     try {
-      const userStr = localStorage.getItem("user");
+      const userStr = localStorage.getItem('user');
       if (!userStr) return null;
       
       const user = JSON.parse(userStr);
-      console.log('Auth.service - Retrieved user from localStorage:', user);
-      
-      // Se o token está disponível, extrair as informações dele para garantir
-      if (user && user.accessToken) {
-        try {
-          const tokenPayload = JSON.parse(atob(user.accessToken.split('.')[1]));
-          console.log('Token payload:', tokenPayload);
-          
-          // Atualizar o objeto user com as informações do token
-          if (tokenPayload) {
-            user.role = tokenPayload.role || user.role;
-            user.tipo = tokenPayload.tipo || user.tipo;
-          }
-        } catch (e) {
-          console.error('Erro ao decodificar token:', e);
-        }
+      if (!user.accessToken) return null;
+
+      // Verificar se o token está expirado
+      const tokenInfo = this.decodeToken(user.accessToken);
+      if (tokenInfo.exp && tokenInfo.exp * 1000 < Date.now()) {
+        this.logout();
+        return null;
       }
-      
+
       return user;
     } catch (error) {
       console.error('Erro ao recuperar usuário:', error);
@@ -136,6 +138,44 @@ class AuthService {
   getToken() {
     const user = this.getCurrentUser();
     return user?.accessToken;
+  }
+
+  async refreshToken() {
+    const user = this.getCurrentUser();
+    if (!user?.refreshToken) return null;
+
+    try {
+      const response = await api.post('auth/refresh-token', {
+        refreshToken: user.refreshToken
+      });
+
+      if (response.data.accessToken) {
+        const updatedUser = {
+          ...user,
+          accessToken: response.data.accessToken
+        };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        return updatedUser;
+      }
+      return null;
+    } catch (error) {
+      console.error('Erro ao renovar token:', error);
+      return null;
+    }
+  }
+
+  decodeToken(token) {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('Erro ao decodificar token:', error);
+      return {};
+    }
   }
 }
 

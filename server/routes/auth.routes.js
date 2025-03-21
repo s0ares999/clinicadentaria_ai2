@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
+const authController = require("../controllers/auth.controller.js");
+const authMiddleware = require('../middleware/auth.middleware');
 
 // Importar controller de autenticação
 try {
-  const authController = require("../controllers/auth.controller.js");
-
   // Verificar se o método signin existe antes de usar
   if (typeof authController.signin === 'function') {
     console.log("✅ Método signin encontrado e registrado");
@@ -31,6 +31,14 @@ try {
     router.get("/verify", authController.verifyToken);
   } else {
     console.log("ℹ️ Método verifyToken não encontrado, rota não registrada");
+  }
+
+  // Verificar se o método getProfile existe antes de usar
+  if (typeof authController.getProfile === 'function') {
+    console.log("✅ Método getProfile encontrado e registrado");
+    router.get('/profile', [authMiddleware.verifyToken], authController.getProfile);
+  } else {
+    console.log("ℹ️ Método getProfile não encontrado, rota não registrada");
   }
 
 } catch (error) {

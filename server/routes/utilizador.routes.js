@@ -1,24 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const utilizadorController = require('../controllers/utilizador.controller');
-const authJwt = require('../middleware/authJwt');
+const authMiddleware = require('../middleware/auth.middleware');
 
 // Rota para obter todos os utilizadores
-router.get('/', [authJwt.verifyToken, authJwt.isAdmin], utilizadorController.findAll);
+router.get('/', [authMiddleware.verifyToken, authMiddleware.isAdmin], utilizadorController.findAll);
 
 // Rota para obter um utilizador específico
-router.get('/:id', [authJwt.verifyToken], utilizadorController.findOne);
+router.get('/:id', [authMiddleware.verifyToken], utilizadorController.findOne);
 
 // Rota para criar um novo utilizador
-router.post('/', [authJwt.verifyToken, authJwt.isAdmin], utilizadorController.create);
+router.post('/', [authMiddleware.verifyToken, authMiddleware.isAdmin], utilizadorController.create);
 
 // Rota para atualizar um utilizador
-router.put('/:id', [authJwt.verifyToken], utilizadorController.update);
+router.put('/:id', [authMiddleware.verifyToken], utilizadorController.update);
 
 // Rota para remover um utilizador
-router.delete('/:id', [authJwt.verifyToken, authJwt.isAdmin], utilizadorController.delete);
+router.delete('/:id', [authMiddleware.verifyToken, authMiddleware.isAdmin], utilizadorController.delete);
 
 // Rota para obter todos os clientes
-router.get('/clientes', [authJwt.verifyToken, authJwt.isAdmin], utilizadorController.findAllClientes);
+router.get('/clientes', [authMiddleware.verifyToken, authMiddleware.isAdmin], utilizadorController.findAllClientes);
 
 module.exports = router;

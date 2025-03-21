@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import AuthService from '../../services/auth.service';
 import ClienteService from '../../services/cliente.service';
-import authHeader from '../../services/auth-header';
+import api from '../../services/api.config';
 import axios from 'axios';
 
 const ProfileContainer = styled.div`
@@ -293,11 +293,9 @@ function ClientePerfilPage({ clienteData }) {
       
       // Atualizar histórico no servidor - consider moving this to a service method too
       try {
-        await axios.post(
-          `${API_URL}/clientes/historico`,
-          { historico: JSON.stringify(updatedHistorico) },
-          { headers: authHeader() }
-        );
+        await api.post('clientes/historico', { 
+          historico: JSON.stringify(updatedHistorico) 
+        });
       } catch (historyError) {
         console.warn('Erro ao atualizar histórico:', historyError);
         // Don't show error to user since the profile was updated successfully

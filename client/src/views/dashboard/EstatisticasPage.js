@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
-import authHeader from '../../services/auth-header';
+import api from '../../services/api.config';
 
 const PageTitle = styled.h1`
   font-size: 1.75rem;
@@ -238,8 +237,6 @@ const AppointmentStatusCard = styled.div`
   }
 `;
 
-const API_URL = 'http://localhost:8000/api';
-
 const EstatisticasPage = () => {
   const [stats, setStats] = useState({
     totalClientes: 0,
@@ -257,9 +254,7 @@ const EstatisticasPage = () => {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/estatisticas`, { 
-        headers: authHeader()
-      });
+      const response = await api.get('estatisticas');
       
       // Quando tivermos backend, usaremos os dados reais
       // Por enquanto, vamos simular alguns dados

@@ -4,6 +4,8 @@ import styled from 'styled-components';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AuthService from '../services/auth.service';
+import ClienteService from '../services/cliente.service';
+import { toast } from 'react-toastify';
 
 // Componentes para o Dashboard do Cliente
 import ClientePerfilPage from './cliente/ClientePerfilPage';
@@ -128,8 +130,72 @@ const BreadcrumbNav = styled.div`
   }
 `;
 
+const Loading = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5rem;
+  color: #7f8c8d;
+`;
+
+const ProfileSection = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+`;
+
+const ProfileAvatar = styled.div`
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #3498db;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 1rem;
+  font-size: 1.5rem;
+`;
+
+const ProfileDetails = styled.div`
+  h2 {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+  }
+`;
+
+const InfoItem = styled.div`
+  margin-bottom: 0.5rem;
+
+  strong {
+    font-weight: 600;
+  }
+`;
+
+const formatDate = (dateString) => {
+  if (!dateString) return "Não disponível";
+  
+  try {
+    const date = new Date(dateString);
+    // Formatar como dd/mm/aaaa (formato português)
+    return date.toLocaleDateString('pt-PT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  } catch (error) {
+    console.error("Erro ao formatar data:", error);
+    return dateString; // Retorna a string original se falhar
+  }
+};
+
 function ClientDashboardPage() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [clienteData, setClienteData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -141,8 +207,60 @@ function ClientDashboardPage() {
       return;
     }
     
+    console.log("ClientDashboardPage - Current user:", user);
+    console.log("User type/role:", user.role || user.tipo || (user.tipoUtilizador ? user.tipoUtilizador.nome : 'unknown'));
+    
     setCurrentUser(user);
+    fetchClienteData(user);
   }, [navigate]);
+
+  const fetchClienteData = async (user) => {
+    try {
+      setLoading(true);
+      console.log("⏳ Carregando dados do perfil do cliente...");
+      
+      const response = await ClienteService.getClienteProfile();
+      
+      if (response?.data) {
+        console.log("✅ Dados recebidos da API:", response.data);
+        
+        // Buscar dados do cliente da resposta
+        const clientData = response.data.cliente || response.data;
+        
+        console.log("🔍 Campos disponíveis:", Object.keys(clientData).join(", "));
+        
+        // Garantir que temos todos os campos necessários
+        setClienteData({
+          id: clientData.id || user.id,
+          nome: clientData.nome || user.nome || user.username || "Cliente",
+          email: clientData.email || user.email || "",
+          telefone: clientData.telefone || user.telefone || "",
+          dataNascimento: clientData.dataNascimento || "",
+          morada: clientData.morada || "",
+          nif: clientData.nif || ""
+        });
+      } else {
+        console.warn("⚠️ Resposta vazia da API, usando dados básicos");
+        setClienteData({
+          nome: user.nome || user.username || "Cliente",
+          email: user.email || "",
+          telefone: user.telefone || ""
+        });
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados:', error);
+      toast.error("Não foi possível obter seus dados. Tente novamente mais tarde.");
+      
+      // Dados mínimos como fallback
+      setClienteData({
+        nome: user.nome || user.username || "Cliente",
+        email: user.email || "",
+        telefone: user.telefone || ""
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getInitials = (name) => {
     if (!name) return '';
@@ -158,7 +276,7 @@ function ClientDashboardPage() {
     return 'perfil';
   };
 
-  if (!currentUser) {
+  if (loading) {
     return <div>Carregando...</div>;
   }
 
@@ -170,9 +288,9 @@ function ClientDashboardPage() {
         <Sidebar>
           <SidebarHeader>
             <UserInfo>
-              <UserAvatar>{getInitials(currentUser.username)}</UserAvatar>
+              <UserAvatar>{getInitials(currentUser?.username)}</UserAvatar>
               <div>
-                <UserName>{currentUser.username}</UserName>
+                <UserName>{currentUser?.username}</UserName>
                 <UserRole>Cliente</UserRole>
               </div>
             </UserInfo>
@@ -231,12 +349,48 @@ function ClientDashboardPage() {
             </BreadcrumbNav>
           </DashboardHeader>
           
-          <Routes>
-            <Route index element={<ClientePerfilPage />} />
-            <Route path="agendamentos" element={<ClienteAgendamentosPage />} />
-            <Route path="agendamentos/novo-agendamento" element={<ClienteNovoAgendamentoPage />} />
-            <Route path="historico" element={<ClienteHistoricoPage />} />
-          </Routes>
+          {loading ? (
+            <Loading>Carregando dados...</Loading>
+          ) : (
+            <>
+              <ProfileSection>
+                <ProfileAvatar>
+                  {getInitials(clienteData?.nome || "")}
+                </ProfileAvatar>
+                <ProfileDetails>
+                  <h2>Bem-vindo, {clienteData?.nome || "Cliente"}</h2>
+                  <InfoItem>
+                    <strong>Email:</strong> {clienteData?.email || "Não disponível"}
+                  </InfoItem>
+                  <InfoItem>
+                    <strong>Telefone:</strong> {clienteData?.telefone || "Não disponível"}
+                  </InfoItem>
+                  {clienteData?.dataNascimento && (
+                    <InfoItem>
+                      <strong>Data de Nascimento:</strong> {formatDate(clienteData.dataNascimento)}
+                    </InfoItem>
+                  )}
+                  {clienteData?.morada && (
+                    <InfoItem>
+                      <strong>Morada:</strong> {clienteData.morada}
+                    </InfoItem>
+                  )}
+                  {clienteData?.nif && (
+                    <InfoItem>
+                      <strong>NIF:</strong> {clienteData.nif}
+                    </InfoItem>
+                  )}
+                </ProfileDetails>
+              </ProfileSection>
+              
+              <Routes>
+                <Route index element={<ClientePerfilPage clienteData={clienteData} />} />
+                <Route path="agendamentos" element={<ClienteAgendamentosPage />} />
+                <Route path="agendamentos/novo-agendamento" element={<ClienteNovoAgendamentoPage />} />
+                <Route path="historico" element={<ClienteHistoricoPage />} />
+              </Routes>
+            </>
+          )}
         </MainContent>
       </DashboardContainer>
       

@@ -123,30 +123,43 @@ function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setMessage('');
     setLoading(true);
-
+    setMessage("");
+  
     try {
-      const response = await AuthService.login(email, password);
+      console.log("Iniciando processo de login com email:", email);
       
-      // Redirecionar para o dashboard se for admin, caso contrário para home
-      if (response.role === 'admin') {
-        navigate('/dashboard');
+      const response = await AuthService.login(email, password);
+      console.log("Login bem-sucedido, redirecionando...");
+      
+      // Verificar o tipo de usuário para redirecionar corretamente
+      if (response.tipo === "admin") {
+        navigate("/admin/dashboard");
+      } else if (response.tipo === "medico") {
+        navigate("/medico/dashboard");
       } else {
-        navigate('/');
+        navigate("/cliente/dashboard");
+      }
+    } catch (error) {
+      console.error("Erro no login:", error);
+      
+      let errorMessage = "Falha no login. Por favor, verifique suas credenciais.";
+      
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 404) {
+          errorMessage = "Servidor não encontrou a rota de login. Contate o administrador.";
+        } else if (status === 401) {
+          errorMessage = "Email ou senha incorretos.";
+        } else if (data && data.message) {
+          errorMessage = data.message;
+        }
+      } else if (error.request) {
+        errorMessage = "Servidor indisponível. Tente novamente mais tarde.";
       }
       
-      // Recarregar para atualizar o estado de autenticação
-      window.location.reload();
-    } catch (error) {
-      const resMessage =
-        (error.response &&
-          error.response.data &&
-          error.response.data.message) ||
-        error.message ||
-        error.toString();
-
-      setMessage(resMessage);
+      setMessage(errorMessage);
       setLoading(false);
     }
   };

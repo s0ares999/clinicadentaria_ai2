@@ -169,7 +169,7 @@ const PageButton = styled.button`
   }
 `;
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:8000/api';
 
 const FaturasPage = () => {
   const [faturas, setFaturas] = useState([]);

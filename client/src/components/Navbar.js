@@ -123,6 +123,29 @@ function Navbar() {
   useEffect(() => {
     const user = AuthService.getCurrentUser();
     if (user) {
+      console.log("Current user in Navbar:", user); // Debug log
+      
+      // Decodificar o token JWT para garantir que temos o role
+      const parseJwt = (token) => {
+        try {
+          return JSON.parse(atob(token.split('.')[1]));
+        } catch (e) {
+          return null;
+        }
+      };
+      
+      // Se o token está disponível, pegar o role dele
+      if (user.accessToken) {
+        const decodedToken = parseJwt(user.accessToken);
+        console.log("Token decodificado:", decodedToken);
+        
+        // Atualizar o user com o role do token se ele existir
+        if (decodedToken && decodedToken.role) {
+          user.role = decodedToken.role;
+        }
+      }
+      
+      console.log("User após processamento:", user);
       setCurrentUser(user);
     }
   }, []);
@@ -138,6 +161,23 @@ function Navbar() {
     setIsMenuOpen(!isMenuOpen); // Alterna o estado do menu
   };
 
+  // Função para determinar se o usuário é cliente
+  const isClientUser = (user) => {
+    console.log("Checking if user is client:", user);
+    // Se não tiver usuário, return false
+    if (!user) return false;
+    
+    // Forçar true para testes - REMOVER DEPOIS
+    //return true;
+    
+    return user && (
+      user.role === 'cliente' || 
+      user.tipo === 'cliente' || 
+      (user.tipoUtilizador && user.tipoUtilizador.nome === 'cliente') ||
+      (user.isCliente === true)
+    );
+  };
+
   return (
     <NavbarContainer>
       <Hamburger onClick={toggleMenu}>
@@ -150,18 +190,37 @@ function Navbar() {
         <NavLink to="/">Início</NavLink>
         <NavLink to="/sobre">Quem Somos</NavLink>
         <NavLink to="/contactos">Contactos</NavLink>
-        {currentUser && currentUser.roles && currentUser.roles.includes('ROLE_ADMIN') && (
+        {currentUser && (currentUser.role === 'admin' || currentUser.tipo === 'admin') && (
           <NavLink to="/dashboard">Dashboard</NavLink>
         )}
-        {currentUser && currentUser.role === 'cliente' && (
-          <NavLink to="/cliente-dashboard">Área do Cliente</NavLink>
+        {isClientUser(currentUser) && (
+          <NavLink to={{
+            pathname: "/cliente-dashboard",
+            // Forçar tipo cliente para garantir acesso
+            state: { forceClienteAccess: true }
+          }}>Área do Cliente</NavLink>
         )}
       </NavLinks>
+      <MobileNavLinks style={{ display: isMenuOpen ? 'flex' : 'none' }}>
+        <NavLink to="/">Início</NavLink>
+        <NavLink to="/sobre">Quem Somos</NavLink>
+        <NavLink to="/contactos">Contactos</NavLink>
+        {currentUser && (currentUser.role === 'admin' || currentUser.tipo === 'admin') && (
+          <NavLink to="/dashboard">Dashboard</NavLink>
+        )}
+        {isClientUser(currentUser) && (
+          <NavLink to={{
+            pathname: "/cliente-dashboard",
+            // Forçar tipo cliente para garantir acesso
+            state: { forceClienteAccess: true }
+          }}>Área do Cliente</NavLink>
+        )}
+      </MobileNavLinks>
       <AuthButtons>
         {currentUser ? (
           <>
             <span style={{ marginRight: '10px', alignSelf: 'center' }}>
-              Olá, {currentUser.username}
+              Olá, {currentUser.username || currentUser.nome}
             </span>
             <Button className="logout" onClick={handleLogout}>
               Sair
@@ -178,17 +237,6 @@ function Navbar() {
           </>
         )}
       </AuthButtons>
-      <MobileNavLinks style={{ display: isMenuOpen ? 'flex' : 'none' }}>
-        <NavLink to="/">Início</NavLink>
-        <NavLink to="/sobre">Quem Somos</NavLink>
-        <NavLink to="/contactos">Contactos</NavLink>
-        {currentUser && currentUser.roles && currentUser.roles.includes('ROLE_ADMIN') && (
-          <NavLink to="/dashboard">Dashboard</NavLink>
-        )}
-        {currentUser && currentUser.role === 'cliente' && (
-          <NavLink to="/cliente-dashboard">Área do Cliente</NavLink>
-        )}
-      </MobileNavLinks>
     </NavbarContainer>
   );
 }

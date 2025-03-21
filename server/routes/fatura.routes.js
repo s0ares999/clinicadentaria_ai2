@@ -1,24 +1,35 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const faturaController = require('../controllers/fatura.controller');
-const { verifyToken, isAdmin } = require('../middlewares/auth.middleware');
+const faturaController = require("../controllers/fatura.controller");
+
+// Listar todas faturas
+router.get("/", (req, res) => {
+  faturaController.findAll(req, res);
+});
 
 // Criar uma nova fatura
-router.post('/', [verifyToken, isAdmin], faturaController.create);
+router.post("/", (req, res) => {
+  faturaController.create(req, res);
+});
 
-// Recuperar todas as faturas
-router.get('/', verifyToken, faturaController.findAll);
+// Buscar fatura por ID
+router.get("/:id", (req, res) => {
+  faturaController.findOne(req, res);
+});
 
-// Recuperar faturas de um cliente específico
-router.get('/cliente/:clienteId', verifyToken, faturaController.findByCliente);
+// Atualizar fatura
+router.put("/:id", (req, res) => {
+  faturaController.update(req, res);
+});
 
-// Recuperar uma única fatura com id
-router.get('/:id', verifyToken, faturaController.findOne);
+// Marcar fatura como paga
+router.put("/:id/pagar", (req, res) => {
+  faturaController.markAsPaid(req, res);
+});
 
-// Atualizar uma fatura com id
-router.put('/:id', [verifyToken, isAdmin], faturaController.update);
-
-// Excluir uma fatura com id
-router.delete('/:id', [verifyToken, isAdmin], faturaController.delete);
+// Cancelar fatura
+router.put("/:id/cancelar", (req, res) => {
+  faturaController.cancel(req, res);
+});
 
 module.exports = router;

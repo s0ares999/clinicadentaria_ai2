@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
-import { toast } from 'react-toastify';
-import AuthService from '../../services/auth.service';
-import authHeader from '../../services/auth-header';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import authHeader from '../../services/auth-header';
+import ConsultaService from '../../services/consulta.service';
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const API_URL = "http://localhost:8000/api";
 
 const Container = styled.div`
   display: flex;
@@ -21,7 +21,7 @@ const AppointmentsContainer = styled.div`
   padding: 2rem;
 `;
 
-const SectionTitle = styled.h3`
+const SectionTitle = styled.div`
   font-size: 1.25rem;
   color: #2c3e50;
   margin-bottom: 1.5rem;
@@ -30,6 +30,26 @@ const SectionTitle = styled.h3`
   display: flex;
   justify-content: space-between;
   align-items: center;
+`;
+
+const ActionButton = styled(Link)`
+  background-color: ${props => props.primary ? '#3498db' : '#e74c3c'};
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  &:hover {
+    background-color: ${props => props.primary ? '#2980b9' : '#c0392b'};
+  }
+  
+  i {
+    font-size: 0.8rem;
+  }
 `;
 
 const AppointmentList = styled.div`
@@ -42,197 +62,157 @@ const AppointmentItem = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem;
-  border-radius: 8px;
-  background-color: #f8f9fa;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ecf0f1;
+  transition: all 0.3s;
   
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
+  &:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
   }
   
   .appointment-info {
     display: flex;
-    align-items: center;
     gap: 1.5rem;
-    
-    @media (max-width: 576px) {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    
-    .date-time {
-      min-width: 100px;
-      text-align: center;
-      
-      .date {
-        font-weight: 600;
-        color: #3498db;
-      }
-      
-      .time {
-        margin-top: 0.25rem;
-        font-size: 0.875rem;
-        color: #7f8c8d;
-      }
-    }
-    
-    .details {
-      .service {
-        font-weight: 500;
-        margin-bottom: 0.25rem;
-      }
-      
-      .notes {
-        font-size: 0.875rem;
-        color: #7f8c8d;
-      }
-    }
+    align-items: center;
+  }
+  
+  .date-time {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 100px;
+  }
+  
+  .date {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #2c3e50;
+  }
+  
+  .time {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+  }
+  
+  .details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  
+  .service {
+    font-weight: 500;
+    color: #2c3e50;
+  }
+  
+  .notes {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+  }
+  
+  .doctor {
+    font-size: 0.9rem;
+    color: #3498db;
   }
   
   .status-actions {
     display: flex;
     align-items: center;
     gap: 1rem;
-    
-    .status {
-      padding: 0.25rem 0.75rem;
-      border-radius: 50px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      
-      &.confirmado {
-        background-color: #e8f5e9;
-        color: #2e7d32;
-      }
-      
-      &.pendente {
-        background-color: #fff8e1;
-        color: #f57f17;
-      }
-      
-      &.cancelado {
-        background-color: #ffebee;
-        color: #c62828;
-      }
-    }
-  }
-`;
-
-const EmptyState = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1rem;
-  text-align: center;
-  
-  i {
-    font-size: 3rem;
-    color: #bdc3c7;
-    margin-bottom: 1rem;
   }
   
-  h3 {
-    font-size: 1.25rem;
-    margin-bottom: 0.5rem;
-    color: #2c3e50;
+  .status {
+    padding: 0.3rem 0.8rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 500;
   }
   
-  p {
-    color: #7f8c8d;
-    margin-bottom: 1.5rem;
+  .status.confirmado {
+    background-color: #e8f5e9;
+    color: #388e3c;
+  }
+  
+  .status.pendente {
+    background-color: #fff8e1;
+    color: #ffa000;
+  }
+  
+  .status.cancelado {
+    background-color: #ffebee;
+    color: #d32f2f;
+  }
+  
+  .status.concluido {
+    background-color: #e3f2fd;
+    color: #1976d2;
   }
 `;
 
 const Button = styled.button`
-  padding: 0.75rem 1.5rem;
-  background-color: ${props => props.secondary ? '#ecf0f1' : props.danger ? '#e74c3c' : '#3498db'};
-  color: ${props => props.secondary ? '#2c3e50' : 'white'};
+  background-color: ${props => props.danger ? '#e74c3c' : '#3498db'};
+  color: white;
   border: none;
+  padding: 0.5rem 1rem;
   border-radius: 4px;
-  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
+  font-size: 0.9rem;
   
   &:hover {
-    background-color: ${props => props.secondary ? '#dfe6e9' : props.danger ? '#c0392b' : '#2980b9'};
-  }
-  
-  &:disabled {
-    background-color: #bdc3c7;
-    cursor: not-allowed;
-  }
-  
-  & + & {
-    margin-left: 1rem;
+    background-color: ${props => props.danger ? '#c0392b' : '#2980b9'};
   }
 `;
 
-const ActionButton = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.75rem 1.5rem;
-  background-color: ${props => props.primary ? '#3498db' : '#fff'};
-  color: ${props => props.primary ? '#fff' : '#3498db'};
-  border: 2px solid ${props => props.primary ? '#3498db' : '#3498db'};
-  border-radius: 4px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.3s;
-
-  &:hover {
-    background-color: ${props => props.primary ? '#2980b9' : '#f8f9fa'};
-    color: ${props => props.primary ? '#fff' : '#2980b9'};
-    border-color: ${props => props.primary ? '#2980b9' : '#2980b9'};
-  }
-
-  i {
-    margin-right: 10px;
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: #7f8c8d;
+  
+  p {
+    margin-bottom: 1rem;
   }
 `;
 
 function ClienteAgendamentosPage() {
-  const [agendamentos, setAgendamentos] = useState([]);
+  const [consultas, setConsultas] = useState([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    fetchAgendamentos();
+    fetchConsultas();
   }, []);
 
-  const fetchAgendamentos = async () => {
+  const fetchConsultas = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/agendamentos/cliente`, { 
-        headers: authHeader()
+      // Get consultations for the current client
+      const response = await ConsultaService.getConsultasByCliente();
+      console.log('Consultas recebidas:', response.data);
+      
+      // Sort consultations by date (most recent first)
+      const sortedConsultas = response.data.sort((a, b) => {
+        return new Date(b.data_hora) - new Date(a.data_hora);
       });
-      console.log('Agendamentos recebidos:', response.data);
-      setAgendamentos(response.data || []);
+      
+      setConsultas(sortedConsultas || []);
       setLoading(false);
     } catch (error) {
-      console.error('Erro ao carregar agendamentos:', error);
-      setAgendamentos([]);
+      console.error('Erro ao carregar consultas:', error);
+      setConsultas([]);
       setLoading(false);
+      toast.error('Erro ao carregar suas consultas');
     }
   };
 
   const handleCancelAppointment = async (id) => {
-    if (window.confirm('Tem certeza que deseja cancelar este agendamento?')) {
+    if (window.confirm('Tem certeza que deseja cancelar esta consulta?')) {
       try {
-        await axios.put(
-          `${API_URL}/agendamentos/${id}/cancelar`, 
-          {}, 
-          { headers: authHeader() }
-        );
-        toast.success('Agendamento cancelado com sucesso');
-        fetchAgendamentos();
+        await ConsultaService.cancelConsulta(id);
+        toast.success('Consulta cancelada com sucesso');
+        fetchConsultas();
       } catch (error) {
-        console.error('Erro ao cancelar agendamento:', error);
-        toast.error('Erro ao cancelar agendamento');
+        console.error('Erro ao cancelar consulta:', error);
+        toast.error('Erro ao cancelar consulta');
       }
     }
   };
@@ -242,13 +222,15 @@ function ClienteAgendamentosPage() {
     
     console.log('Status recebido:', status);
     
-    switch (status.toLowerCase()) {
-      case 'confirmado':
+    switch (status.nome?.toLowerCase()) {
+      case 'confirmada':
         return 'confirmado';
-      case 'pendente':
+      case 'agendada':
         return 'pendente';
-      case 'cancelado':
+      case 'cancelada':
         return 'cancelado';
+      case 'finalizada':
+        return 'concluido';
       default:
         return '';
     }
@@ -268,7 +250,7 @@ function ClienteAgendamentosPage() {
     <Container>
       <AppointmentsContainer>
         <SectionTitle>
-          Meus Agendamentos
+          Minhas Consultas
           <ActionButton to="/cliente-dashboard/agendamentos/novo-agendamento" primary>
             <i className="fas fa-plus"></i> Nova Consulta
           </ActionButton>
@@ -277,29 +259,31 @@ function ClienteAgendamentosPage() {
         <AppointmentList>
           {loading ? (
             <EmptyState>
-              <p>Carregando agendamentos...</p>
+              <p>Carregando consultas...</p>
             </EmptyState>
-          ) : agendamentos.length > 0 ? (
-            agendamentos.map(agendamento => (
-              <AppointmentItem key={agendamento.id}>
+          ) : consultas.length > 0 ? (
+            consultas.map(consulta => (
+              <AppointmentItem key={consulta.id}>
                 <div className="appointment-info">
                   <div className="date-time">
-                    <div className="date">{formatDate(agendamento.dataHora)}</div>
-                    <div className="time">{formatTime(agendamento.dataHora)}</div>
+                    <div className="date">{formatDate(consulta.data_hora)}</div>
+                    <div className="time">{formatTime(consulta.data_hora)}</div>
                   </div>
                   <div className="details">
-                    <div className="service">{agendamento.servico || 'Consulta Geral'}</div>
-                    <div className="notes">{agendamento.observacoes || 'Sem observações'}</div>
+                    <div className="service">
+                      Consulta com Dr(a). {consulta.medico?.nome || 'Médico'}
+                    </div>
+                    <div className="notes">{consulta.observacoes || 'Sem observações'}</div>
                   </div>
                 </div>
                 <div className="status-actions">
-                  <span className={`status ${getStatusClass(agendamento.estado)}`}>
-                    {agendamento.estado || 'Pendente'}
+                  <span className={`status ${getStatusClass(consulta.status)}`}>
+                    {consulta.status?.nome || 'Pendente'}
                   </span>
-                  {(!agendamento.estado || agendamento.estado.toLowerCase() === 'pendente') && (
+                  {(consulta.status?.nome === 'Agendada') && (
                     <Button 
                       danger
-                      onClick={() => handleCancelAppointment(agendamento.id)}
+                      onClick={() => handleCancelAppointment(consulta.id)}
                     >
                       Cancelar
                     </Button>
@@ -309,9 +293,7 @@ function ClienteAgendamentosPage() {
             ))
           ) : (
             <EmptyState>
-              <i className="far fa-calendar-alt"></i>
-              <h3>Nenhuma consulta agendada</h3>
-              <p>Você ainda não tem consultas agendadas.</p>
+              <p>Você não tem nenhuma consulta agendada.</p>
               <ActionButton to="/cliente-dashboard/agendamentos/novo-agendamento" primary>
                 Agendar Consulta
               </ActionButton>

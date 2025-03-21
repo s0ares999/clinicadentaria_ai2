@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import AuthService from '../../services/auth.service';
+import ClienteService from '../../services/cliente.service';
 import authHeader from '../../services/auth-header';
+import axios from 'axios';
 
 const ProfileContainer = styled.div`
   background-color: #fff;
@@ -129,9 +130,9 @@ const EmptyState = styled.div`
   color: #7f8c8d;
 `;
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:8000/api';
 
-function ClientePerfilPage() {
+function ClientePerfilPage({ clienteData }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [cliente, setCliente] = useState(null);
@@ -144,67 +145,115 @@ function ClientePerfilPage() {
   const [dataNascimento, setDataNascimento] = useState('');
   const [morada, setMorada] = useState('');
   const [nif, setNif] = useState('');
-  const [historicoText, setHistoricoText] = useState('');
   
   const currentUser = AuthService.getCurrentUser();
   
   useEffect(() => {
-    fetchClienteData();
-  }, []);
+    // Primeiro tentamos usar os dados passados como prop
+    if (clienteData) {
+      console.log("Using clienteData from props:", clienteData);
+      setCliente(clienteData);
+      setFormData(clienteData);
+      
+      // Processar histórico se existir
+      if (clienteData.historico) {
+        try {
+          const historicoArray = Array.isArray(clienteData.historico) 
+            ? clienteData.historico 
+            : (typeof clienteData.historico === 'string' 
+               ? JSON.parse(clienteData.historico) 
+               : []);
+          setHistorico(historicoArray);
+        } catch (e) {
+          console.error("Erro ao processar histórico:", e);
+          setHistorico([]);
+        }
+      }
+    } else {
+      // Se não houver dados via prop, buscamos da API
+      fetchClienteData();
+    }
+  }, [clienteData]);
   
   const fetchClienteData = async () => {
     try {
       setLoading(true);
+      console.log("Fetching client data from API...");
       
-      // Se já temos os dados do cliente no objeto de usuário atual
-      if (currentUser && currentUser.clienteData) {
-        setCliente(currentUser.clienteData);
-        setFormData(currentUser.clienteData);
+      const response = await ClienteService.getClienteProfile();
+      
+      if (response && response.data) {
+        console.log("Client data received:", response.data);
         
-        // Processar histórico se existir
-        if (currentUser.clienteData.historico) {
+        // Tentar localizar os dados do cliente na estrutura da resposta
+        const clientData = response.data.cliente || response.data;
+        console.log("Extracted client data:", clientData);
+        
+        setCliente(clientData);
+        setFormData(clientData);
+        
+        // Processar histórico
+        if (clientData.historico) {
           try {
-            const historicoArray = JSON.parse(currentUser.clienteData.historico);
-            setHistorico(Array.isArray(historicoArray) ? historicoArray : []);
+            const historicoArray = Array.isArray(clientData.historico) 
+              ? clientData.historico 
+              : (typeof clientData.historico === 'string' 
+                 ? JSON.parse(clientData.historico) 
+                 : []);
+            setHistorico(historicoArray);
           } catch (e) {
+            console.error("Erro ao processar histórico:", e);
             setHistorico([]);
           }
         }
       } else {
-        // Buscar dados do cliente da API
-        const response = await axios.get(`${API_URL}/clientes/perfil`, { 
-          headers: authHeader() 
+        console.warn("No client data received, using current user data");
+        setFormData({
+          nome: currentUser?.nome || currentUser?.username || '',
+          email: currentUser?.email || '',
+          telefone: currentUser?.telefone || '',
+          dataNascimento: '',
+          morada: '',
+          nif: ''
         });
-        
-        if (response.data) {
-          setCliente(response.data);
-          setFormData(response.data);
-          
-          // Processar histórico se existir
-          if (response.data.historico) {
-            try {
-              const historicoArray = JSON.parse(response.data.historico);
-              setHistorico(Array.isArray(historicoArray) ? historicoArray : []);
-            } catch (e) {
-              setHistorico([]);
-            }
-          }
-        }
       }
-      
-      setLoading(false);
     } catch (error) {
       console.error('Erro ao carregar dados do cliente:', error);
-      setLoading(false);
       toast.error('Erro ao carregar seus dados');
+      
+      // Fallback para os dados do usuário
+      setFormData({
+        nome: currentUser?.nome || currentUser?.username || '',
+        email: currentUser?.email || '',
+        telefone: currentUser?.telefone || '',
+        dataNascimento: '',
+        morada: '',
+        nif: ''
+      });
+    } finally {
+      setLoading(false);
     }
   };
   
   const setFormData = (data) => {
+    console.log("Setting form data with:", data);
     setNome(data.nome || '');
     setEmail(data.email || '');
     setTelefone(data.telefone || '');
-    setDataNascimento(data.dataNascimento ? data.dataNascimento.split('T')[0] : '');
+    
+    // Formatar a data de nascimento para o formato esperado pelo input type="date"
+    let formattedDate = '';
+    if (data.dataNascimento) {
+      try {
+        // Tenta extrair apenas a parte da data se for uma string ISO
+        formattedDate = data.dataNascimento.split('T')[0];
+      } catch (e) {
+        console.error("Erro ao formatar data:", e);
+        formattedDate = '';
+      }
+    }
+    setDataNascimento(formattedDate);
+    
     setMorada(data.morada || '');
     setNif(data.nif || '');
   };
@@ -223,11 +272,8 @@ function ClientePerfilPage() {
         nif
       };
       
-      await axios.put(
-        `${API_URL}/clientes/perfil`,
-        clienteData,
-        { headers: authHeader() }
-      );
+      // Use ClienteService instead of direct axios call
+      await ClienteService.updateClienteProfile(clienteData);
       
       toast.success('Perfil atualizado com sucesso!');
       setSaving(false);
@@ -245,12 +291,17 @@ function ClientePerfilPage() {
       const updatedHistorico = [newHistoryEntry, ...historico];
       setHistorico(updatedHistorico);
       
-      // Atualizar histórico no servidor
-      await axios.post(
-        `${API_URL}/clientes/historico`,
-        { historico: JSON.stringify(updatedHistorico) },
-        { headers: authHeader() }
-      );
+      // Atualizar histórico no servidor - consider moving this to a service method too
+      try {
+        await axios.post(
+          `${API_URL}/clientes/historico`,
+          { historico: JSON.stringify(updatedHistorico) },
+          { headers: authHeader() }
+        );
+      } catch (historyError) {
+        console.warn('Erro ao atualizar histórico:', historyError);
+        // Don't show error to user since the profile was updated successfully
+      }
       
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);

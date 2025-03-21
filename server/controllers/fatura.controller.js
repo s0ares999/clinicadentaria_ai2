@@ -1,157 +1,259 @@
 const db = require('../models');
 const Fatura = db.Fatura;
-const Cliente = db.Cliente;
+const Pagamento = db.Pagamento;
+const FaturaPagamento = db.FaturaPagamento;
+const FaturaStatus = db.FaturaStatus;
+const Consulta = db.Consulta;
+const Utilizador = db.Utilizador;
 
-// Criar uma nova fatura
-exports.create = async (req, res) => {
-  try {
-    // Validar requisição
-    if (!req.body.numero || !req.body.valor || !req.body.clienteId) {
-      return res.status(400).json({
-        message: "Número da fatura, valor e ID do cliente são obrigatórios!"
+const controller = {
+  // Criar nova fatura
+  create: async (req, res) => {
+    try {
+      // Validar requisição
+      if (!req.body.valor_total || !req.body.pagamentos) {
+        return res.status(400).json({
+          message: "Valor total e pagamentos são obrigatórios!"
+        });
+      }
+
+      // Verificar se os pagamentos existem
+      const pagamentosIds = req.body.pagamentos;
+      const pagamentos = await Pagamento.findAll({
+        where: { id: pagamentosIds }
+      });
+
+      if (pagamentos.length !== pagamentosIds.length) {
+        return res.status(404).json({
+          message: "Um ou mais pagamentos não foram encontrados!"
+        });
+      }
+
+      // Buscar o status padrão (ex: "Emitida")
+      const statusEmitida = await FaturaStatus.findOne({
+        where: { nome: 'Emitida' }
+      });
+
+      if (!statusEmitida) {
+        return res.status(500).json({
+          message: "Status de fatura não encontrado!"
+        });
+      }
+
+      // Criar fatura
+      const fatura = await Fatura.create({
+        valor_total: req.body.valor_total,
+        status_id: statusEmitida.id
+      });
+
+      // Associar pagamentos à fatura
+      for (const pagamentoId of pagamentosIds) {
+        await FaturaPagamento.create({
+          fatura_id: fatura.id,
+          pagamento_id: pagamentoId
+        });
+      }
+
+      // Buscar fatura com pagamentos associados
+      const faturaCompleta = await Fatura.findByPk(fatura.id, {
+        include: [
+          {
+            model: FaturaStatus,
+            as: 'status'
+          },
+          {
+            model: Pagamento,
+            as: 'pagamentos'
+          }
+        ]
+      });
+
+      res.status(201).json({
+        message: "Fatura criada com sucesso!",
+        fatura: faturaCompleta
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao criar a fatura."
       });
     }
+  },
 
-    // Criar uma fatura
-    const fatura = {
-      numero: req.body.numero,
-      data: req.body.data || new Date(),
-      valor: req.body.valor,
-      estado: req.body.estado || 'pendente',
-      descricao: req.body.descricao,
-      clienteId: req.body.clienteId
-    };
+  // Buscar todas as faturas
+  findAll: async (req, res) => {
+    try {
+      const faturas = await Fatura.findAll({
+        include: [
+          {
+            model: FaturaStatus,
+            as: 'status'
+          },
+          {
+            model: Pagamento,
+            as: 'pagamentos',
+            include: [
+              {
+                model: Consulta,
+                as: 'consulta',
+                include: [
+                  {
+                    model: Utilizador,
+                    as: 'cliente',
+                    attributes: ['id', 'nome', 'email']
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      });
 
-    // Verificar se o cliente existe
-    const cliente = await Cliente.findByPk(req.body.clienteId);
-    if (!cliente) {
-      return res.status(404).json({
-        message: `Cliente com id=${req.body.clienteId} não encontrado.`
+      res.status(200).json(faturas);
+    } catch (error) {
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao buscar as faturas."
       });
     }
+  },
 
-    // Salvar a fatura no banco de dados
-    const data = await Fatura.create(fatura);
-    res.status(201).json(data);
-  } catch (err) {
-    res.status(500).json({
-      message: err.message || "Ocorreu um erro ao criar a fatura."
-    });
-  }
-};
+  // Buscar fatura por ID
+  findOne: async (req, res) => {
+    try {
+      const id = req.params.id;
+      const fatura = await Fatura.findByPk(id, {
+        include: [
+          {
+            model: FaturaStatus,
+            as: 'status'
+          },
+          {
+            model: Pagamento,
+            as: 'pagamentos',
+            include: [
+              {
+                model: Consulta,
+                as: 'consulta',
+                include: [
+                  {
+                    model: Utilizador,
+                    as: 'cliente',
+                    attributes: ['id', 'nome', 'email']
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      });
 
-// Buscar todas as faturas
-exports.findAll = async (req, res) => {
-  try {
-    const data = await Fatura.findAll({
-      include: [{
-        model: Cliente,
-        as: 'cliente',
-        attributes: ['id', 'nome', 'email']
-      }]
-    });
-    res.status(200).json(data);
-  } catch (err) {
-    res.status(500).json({
-      message: err.message || "Ocorreu um erro ao buscar as faturas."
-    });
-  }
-};
+      if (!fatura) {
+        return res.status(404).json({
+          message: `Fatura com ID ${id} não encontrada!`
+        });
+      }
 
-// Buscar as faturas de um cliente específico
-exports.findByCliente = async (req, res) => {
-  const clienteId = req.params.clienteId;
-
-  try {
-    const data = await Fatura.findAll({
-      where: { clienteId: clienteId },
-      include: [{
-        model: Cliente,
-        as: 'cliente',
-        attributes: ['id', 'nome', 'email']
-      }]
-    });
-    res.status(200).json(data);
-  } catch (err) {
-    res.status(500).json({
-      message: err.message || `Erro ao buscar faturas do cliente com id=${clienteId}.`
-    });
-  }
-};
-
-// Buscar uma única fatura pelo id
-exports.findOne = async (req, res) => {
-  const id = req.params.id;
-
-  try {
-    const data = await Fatura.findByPk(id, {
-      include: [{
-        model: Cliente,
-        as: 'cliente',
-        attributes: ['id', 'nome', 'email']
-      }]
-    });
-    
-    if (data) {
-      res.status(200).json(data);
-    } else {
-      res.status(404).json({
-        message: `Fatura com id=${id} não encontrada.`
+      res.status(200).json(fatura);
+    } catch (error) {
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao buscar a fatura."
       });
     }
-  } catch (err) {
-    res.status(500).json({
-      message: `Erro ao buscar fatura com id=${id}`
-    });
-  }
-};
+  },
 
-// Atualizar uma fatura pelo id
-exports.update = async (req, res) => {
-  const id = req.params.id;
+  // Atualizar fatura
+  update: async (req, res) => {
+    try {
+      const id = req.params.id;
+      const fatura = await Fatura.findByPk(id);
+      
+      if (!fatura) {
+        return res.status(404).json({
+          message: `Fatura com ID ${id} não encontrada!`
+        });
+      }
 
-  try {
-    const num = await Fatura.update(req.body, {
-      where: { id: id }
-    });
+      await fatura.update(req.body);
 
-    if (num == 1) {
       res.status(200).json({
-        message: "Fatura atualizada com sucesso."
+        message: "Fatura atualizada com sucesso!",
+        fatura: fatura
       });
-    } else {
-      res.status(404).json({
-        message: `Não foi possível atualizar a fatura com id=${id}. Fatura não encontrada ou corpo da requisição vazio!`
+    } catch (error) {
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao atualizar a fatura."
       });
     }
-  } catch (err) {
-    res.status(500).json({
-      message: `Erro ao atualizar fatura com id=${id}`
-    });
-  }
-};
+  },
 
-// Deletar uma fatura pelo id
-exports.delete = async (req, res) => {
-  const id = req.params.id;
+  // Marcar fatura como paga
+  markAsPaid: async (req, res) => {
+    try {
+      const id = req.params.id;
+      const fatura = await Fatura.findByPk(id);
+      
+      if (!fatura) {
+        return res.status(404).json({
+          message: `Fatura com ID ${id} não encontrada!`
+        });
+      }
 
-  try {
-    const num = await Fatura.destroy({
-      where: { id: id }
-    });
+      const statusPaga = await FaturaStatus.findOne({
+        where: { nome: 'Paga' }
+      });
 
-    if (num == 1) {
+      if (!statusPaga) {
+        return res.status(500).json({
+          message: "Status 'Paga' não encontrado!"
+        });
+      }
+
+      await fatura.update({ status_id: statusPaga.id });
+
       res.status(200).json({
-        message: "Fatura excluída com sucesso!"
+        message: "Fatura marcada como paga com sucesso!",
+        fatura: fatura
       });
-    } else {
-      res.status(404).json({
-        message: `Não foi possível excluir a fatura com id=${id}. Fatura não encontrada!`
+    } catch (error) {
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao atualizar a fatura."
       });
     }
-  } catch (err) {
-    res.status(500).json({
-      message: `Não foi possível excluir a fatura com id=${id}`
-    });
+  },
+
+  // Cancelar fatura
+  cancel: async (req, res) => {
+    try {
+      const id = req.params.id;
+      const fatura = await Fatura.findByPk(id);
+      
+      if (!fatura) {
+        return res.status(404).json({
+          message: `Fatura com ID ${id} não encontrada!`
+        });
+      }
+
+      const statusCancelada = await FaturaStatus.findOne({
+        where: { nome: 'Cancelada' }
+      });
+
+      if (!statusCancelada) {
+        return res.status(500).json({
+          message: "Status 'Cancelada' não encontrado!"
+        });
+      }
+
+      await fatura.update({ status_id: statusCancelada.id });
+
+      res.status(200).json({
+        message: "Fatura cancelada com sucesso!",
+        fatura: fatura
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao cancelar a fatura."
+      });
+    }
   }
 };
+
+module.exports = controller;

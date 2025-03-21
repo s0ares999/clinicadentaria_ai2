@@ -1,32 +1,34 @@
 module.exports = (sequelize, DataTypes) => {
   const Fatura = sequelize.define("Fatura", {
-    numero: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
     },
-    data: {
-      type: DataTypes.DATEONLY,
-      allowNull: false,
-      defaultValue: DataTypes.NOW
-    },
-    valor: {
+    valor_total: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
-    estado: {
-      type: DataTypes.ENUM('pendente', 'paga', 'cancelada'),
-      defaultValue: 'pendente'
-    },
-    descricao: {
-      type: DataTypes.TEXT
+    status_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
     }
+  }, {
+    tableName: 'Faturas',
+    timestamps: true
   });
 
   Fatura.associate = (models) => {
-    Fatura.belongsTo(models.Cliente, {
-      foreignKey: 'clienteId',
-      as: 'cliente'
+    Fatura.belongsTo(models.FaturaStatus, {
+      foreignKey: 'status_id',
+      as: 'status'
+    });
+    
+    Fatura.belongsToMany(models.Pagamento, {
+      through: models.FaturaPagamento,
+      foreignKey: 'fatura_id',
+      otherKey: 'pagamento_id',
+      as: 'pagamentos'
     });
   };
 

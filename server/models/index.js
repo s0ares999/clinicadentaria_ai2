@@ -1,33 +1,42 @@
+'use strict';
+
 const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
 const basename = path.basename(__filename);
-const env = process.env.NODE_ENV || 'development';
-const config = {
-  host: process.env.DB_HOST,
-  username: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
-  dialect: 'postgres',
-  pool: {
-    max: 5,
-    min: 0,
-    acquire: 30000,
-    idle: 10000
-  }
-};
-
+const config = require('../config/db.config.js');
 const db = {};
 
-const sequelize = new Sequelize(
-  config.database,
-  config.username,
-  config.password,
-  config
+console.log("====== INICIALIZANDO CONEXÃO SEQUELIZE ======");
+
+// Criar instância do Sequelize com as configurações
+let sequelize;
+// Remover verificação de use_env_variable que não existe
+sequelize = new Sequelize(
+  config.DB,
+  config.USER,
+  config.PASSWORD,
+  {
+    host: config.HOST,
+    port: config.PORT,
+    dialect: config.dialect,
+    logging: config.logging,
+    pool: config.pool,
+    dialectOptions: config.dialectOptions
+  }
 );
 
-fs.readdirSync(__dirname)
+// Testar a conexão e mostrar mensagem
+sequelize.authenticate()
+  .then(() => console.log("Conexão ao banco de dados validada com sucesso"))
+  .catch(err => console.error("Erro ao conectar ao banco de dados:", err));
+
+db.sequelize = sequelize;
+db.Sequelize = Sequelize;
+
+// Carregar todos os modelos do diretório
+fs
+  .readdirSync(__dirname)
   .filter(file => {
     return (
       file.indexOf('.') !== 0 &&
@@ -36,20 +45,25 @@ fs.readdirSync(__dirname)
     );
   })
   .forEach(file => {
-    const model = require(path.join(__dirname, file))(
-      sequelize,
-      Sequelize.DataTypes
-    );
-    db[model.name] = model;
+    console.log(`Carregando modelo: ${file}`);
+    try {
+      const model = require(path.join(__dirname, file))(sequelize, Sequelize);
+      db[model.name.charAt(0).toUpperCase() + model.name.slice(1)] = model;
+    } catch (error) {
+      console.error(`Erro ao carregar modelo ${file}:`, error);
+    }
   });
 
+// Configurar associações
 Object.keys(db).forEach(modelName => {
-  if (db[modelName].associate) {
-    db[modelName].associate(db);
+  if (db[modelName].associate && typeof db[modelName].associate === 'function') {
+    try {
+      console.log(`Configurando associações para: ${modelName}`);
+      db[modelName].associate(db);
+    } catch (error) {
+      console.error(`Erro ao configurar associações para ${modelName}:`, error);
+    }
   }
 });
-
-db.sequelize = sequelize;
-db.Sequelize = Sequelize;
 
 module.exports = db;

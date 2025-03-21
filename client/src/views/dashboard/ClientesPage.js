@@ -6,7 +6,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import authHeader from '../../services/auth-header';
 import AuthService from '../../services/auth.service';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 const PageTitle = styled.h1`
   font-size: 1.75rem;

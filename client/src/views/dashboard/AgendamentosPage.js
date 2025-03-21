@@ -1,548 +1,476 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 import authHeader from '../../services/auth-header';
-import { FaCheck, FaTimes } from 'react-icons/fa';
+import ConsultaService from '../../services/consulta.service';
 
-const PageTitle = styled.h1`
-  font-size: 1.75rem;
+const API_URL = "http://localhost:8000/api";
+
+const Container = styled.div`
+  padding: 2rem;
+`;
+
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+`;
+
+const Title = styled.h2`
+  font-size: 1.5rem;
   color: #2c3e50;
-  margin-bottom: 20px;
 `;
 
-const Card = styled.div`
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  margin-bottom: 20px;
-`;
-
-const ControlBar = styled.div`
+const TabsContainer = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
+  gap: 1rem;
 `;
 
-const ViewToggle = styled.div`
-  display: flex;
-  background-color: #f5f5f5;
-  border-radius: 4px;
-  overflow: hidden;
-`;
-
-const ViewButton = styled.button`
-  background-color: ${props => props.active ? '#3498db' : 'transparent'};
-  color: ${props => props.active ? 'white' : '#2c3e50'};
+const Tab = styled.button`
+  background-color: ${props => props.active ? '#3498db' : '#f5f5f5'};
+  color: ${props => props.active ? 'white' : '#333'};
   border: none;
-  padding: 8px 15px;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-
-  i {
-    margin-right: 8px;
-  }
-
+  
   &:hover {
-    background-color: ${props => props.active ? '#3498db' : '#e1e5e8'};
+    background-color: ${props => props.active ? '#3498db' : '#e0e0e0'};
   }
 `;
 
-const AddButton = styled.button`
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 10px 15px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  transition: background-color 0.3s;
-
-  &:hover {
-    background-color: #2980b9;
-  }
-
-  i {
-    margin-right: 8px;
-  }
-`;
-
-const CalendarContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 10px;
-`;
-
-const DayHeader = styled.div`
-  text-align: center;
-  font-weight: 600;
-  color: #7f8c8d;
-  padding: 10px;
-`;
-
-const DayCell = styled.div`
-  border: 1px solid #e1e5e8;
-  min-height: 100px;
-  padding: 10px;
-  background-color: ${props => props.isToday ? '#f8f9fa' : 'white'};
-  border-radius: 4px;
-
-  .day-number {
-    font-weight: ${props => props.isToday ? '600' : 'normal'};
-    color: ${props => props.isToday ? '#3498db' : '#2c3e50'};
-    margin-bottom: 10px;
-  }
-
-  &.other-month {
-    opacity: 0.5;
-  }
-`;
-
-const Appointment = styled.div`
-  background-color: #3498db;
-  color: white;
-  padding: 5px;
-  border-radius: 4px;
-  margin-bottom: 5px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: background-color 0.3s;
-
-  &:hover {
-    background-color: #2980b9;
-  }
-
-  &.confirmed {
-    background-color: #2ecc71;
-  }
-
-  &.pending {
-    background-color: #f39c12;
-  }
-
-  &.canceled {
-    background-color: #e74c3c;
-  }
-`;
-
-const ListContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const AppointmentItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px;
-  border-radius: 4px;
+const CalendarView = styled.div`
   background-color: white;
-  border: 1px solid #e1e5e8;
-  transition: all 0.3s;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+`;
 
-  &:hover {
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+const ListView = styled.div`
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+`;
+
+const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  
+  th, td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #ecf0f1;
   }
-
-  .appointment-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-
-    .time {
-      font-weight: 600;
-      min-width: 80px;
-    }
-
-    .details {
-      .name {
-        font-weight: 500;
-        margin-bottom: 5px;
-      }
-
-      .service {
-        font-size: 0.85rem;
-        color: #7f8c8d;
-      }
-    }
-  }
-
-  .status {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
+  
+  th {
+    background-color: #f8f9fa;
     font-weight: 600;
-    text-transform: uppercase;
-    
-    &.confirmed {
-      background-color: #2ecc71;
-      color: white;
-    }
-    
-    &.pending {
-      background-color: #f39c12;
-      color: white;
-    }
-    
-    &.canceled {
-      background-color: #e74c3c;
-      color: white;
-    }
+    color: #2c3e50;
   }
-
-  .actions {
-    display: flex;
-    gap: 5px;
+  
+  tr:last-child td {
+    border-bottom: none;
+  }
+  
+  tr:hover td {
+    background-color: #f8f9fa;
   }
 `;
 
-const ActionButton = styled.button`
-  background: none;
+const Status = styled.span`
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  
+  &.agendada {
+    background-color: #fff8e1;
+    color: #ffa000;
+  }
+  
+  &.confirmada {
+    background-color: #e8f5e9;
+    color: #388e3c;
+  }
+  
+  &.finalizada {
+    background-color: #e3f2fd;
+    color: #1976d2;
+  }
+  
+  &.cancelada {
+    background-color: #ffebee;
+    color: #d32f2f;
+  }
+`;
+
+const Button = styled.button`
+  background-color: ${props => props.color || '#3498db'};
+  color: white;
   border: none;
-  color: ${props => props.color || '#3498db'};
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 1rem;
-  transition: color 0.3s;
-
+  margin-right: 0.5rem;
+  font-size: 0.8rem;
+  
   &:hover {
-    color: ${props => props.hoverColor || '#2980b9'};
+    opacity: 0.9;
+  }
+  
+  &:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
   }
 `;
 
-const DateNavigation = styled.div`
+const CalendarHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 1rem;
+`;
 
-  h2 {
-    margin: 0;
-    font-size: 1.25rem;
-  }
+const CalendarMonth = styled.h3`
+  font-size: 1.25rem;
+  color: #2c3e50;
+`;
 
-  .nav-buttons {
-    display: flex;
-    gap: 10px;
-  }
+const CalendarNav = styled.div`
+  display: flex;
+  gap: 0.5rem;
 `;
 
 const NavButton = styled.button`
   background-color: #f5f5f5;
   border: none;
-  border-radius: 4px;
-  padding: 8px 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   cursor: pointer;
-  transition: background-color 0.3s;
-
+  
   &:hover {
-    background-color: #e1e5e8;
-  }
-
-  &.today {
-    background-color: #3498db;
-    color: white;
-
-    &:hover {
-      background-color: #2980b9;
-    }
+    background-color: #e0e0e0;
   }
 `;
 
-const API_URL = 'http://localhost:5000/api';
+const DaysGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+`;
+
+const WeekDay = styled.div`
+  text-align: center;
+  font-weight: 500;
+  color: #7f8c8d;
+  padding: 0.5rem;
+`;
+
+const Day = styled.div`
+  background-color: ${props => props.isToday ? '#e3f2fd' : props.isOutsideMonth ? '#f8f9fa' : 'white'};
+  border: 1px solid ${props => props.hasEvents ? '#3498db' : '#ecf0f1'};
+  border-radius: 4px;
+  padding: 0.5rem;
+  min-height: 80px;
+  position: relative;
+  
+  .day-number {
+    font-weight: ${props => props.isToday ? '600' : '400'};
+    color: ${props => props.isOutsideMonth ? '#bdc3c7' : '#2c3e50'};
+  }
+  
+  &:hover {
+    border-color: #3498db;
+  }
+`;
+
+const EventDot = styled.div`
+  width: 8px;
+  height: 8px;
+  background-color: #3498db;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 4px;
+`;
 
 const AgendamentosPage = () => {
   const [view, setView] = useState('calendar'); // 'calendar' or 'list'
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [agendamentos, setAgendamentos] = useState([]);
+  const [consultas, setConsultas] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  
+  const statusClassMap = {
+    'Agendada': 'agendada',
+    'Confirmada': 'confirmada',
+    'Finalizada': 'finalizada',
+    'Cancelada': 'cancelada'
+  };
+  
   useEffect(() => {
-    fetchAgendamentos();
-  }, [currentDate]);
-
-  const fetchAgendamentos = async () => {
+    fetchConsultas();
+  }, []);
+  
+  const fetchConsultas = async () => {
     try {
       setLoading(true);
-      // Formatar a data para YYYY-MM-DD
-      const year = currentDate.getFullYear();
-      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-      
-      const response = await axios.get(`${API_URL}/agendamentos`, { 
-        headers: authHeader(),
-        params: { 
-          year,
-          month
-        }
-      });
-      
-      setAgendamentos(response.data || []);
+      const response = await ConsultaService.getConsultas();
+      setConsultas(response.data);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching agendamentos:', error);
+      console.error('Erro ao carregar consultas:', error);
       setLoading(false);
-      // Adicionar notificação de erro quando tivermos react-toastify
+      toast.error('Erro ao carregar consultas');
     }
   };
-
-  const getDaysInMonth = (year, month) => {
-    return new Date(year, month + 1, 0).getDate();
+  
+  const previousMonth = () => {
+    setCurrentDate(date => {
+      const newDate = new Date(date);
+      newDate.setMonth(date.getMonth() - 1);
+      return newDate;
+    });
   };
-
-  const getFirstDayOfMonth = (year, month) => {
-    return new Date(year, month, 1).getDay();
+  
+  const nextMonth = () => {
+    setCurrentDate(date => {
+      const newDate = new Date(date);
+      newDate.setMonth(date.getMonth() + 1);
+      return newDate;
+    });
   };
-
-  const renderCalendar = () => {
+  
+  const getMonthName = () => {
+    return currentDate.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' });
+  };
+  
+  const getDaysInMonth = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const daysInMonth = getDaysInMonth(year, month);
-    const firstDayOfMonth = getFirstDayOfMonth(year, month);
     
-    const today = new Date();
-    const isToday = (day) => {
-      return day === today.getDate() && 
-             month === today.getMonth() && 
-             year === today.getFullYear();
-    };
+    // Primeiro dia do mês
+    const firstDay = new Date(year, month, 1);
+    // Último dia do mês
+    const lastDay = new Date(year, month + 1, 0);
     
-    // Dias do mês anterior para preencher o início do calendário
-    const daysInPrevMonth = getDaysInMonth(year, month - 1);
-    const prevMonthDays = Array.from({ length: firstDayOfMonth }, (_, i) => ({
-      day: daysInPrevMonth - firstDayOfMonth + i + 1,
-      isCurrentMonth: false,
-      isPrevMonth: true
-    }));
+    // Dias do mês anterior para completar a primeira semana
+    const daysFromPrevMonth = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
     
-    // Dias do mês atual
-    const currentMonthDays = Array.from({ length: daysInMonth }, (_, i) => ({
-      day: i + 1,
-      isCurrentMonth: true,
-      isToday: isToday(i + 1)
-    }));
+    // Array para armazenar todos os dias a serem mostrados
+    const allDays = [];
     
-    // Dias do próximo mês para preencher o final do calendário
-    const totalDaysDisplayed = Math.ceil((firstDayOfMonth + daysInMonth) / 7) * 7;
-    const nextMonthDays = Array.from(
-      { length: totalDaysDisplayed - (prevMonthDays.length + currentMonthDays.length) }, 
-      (_, i) => ({
-        day: i + 1,
+    // Adicionar dias do mês anterior
+    for (let i = daysFromPrevMonth - 1; i >= 0; i--) {
+      const day = new Date(year, month, -i);
+      allDays.push({
+        date: day,
         isCurrentMonth: false,
-        isNextMonth: true
-      })
-    );
-    
-    const allDays = [...prevMonthDays, ...currentMonthDays, ...nextMonthDays];
-    
-    // Filtrar agendamentos para o dia específico
-    const getAppointmentsForDay = (day, isCurrentMonth) => {
-      if (!isCurrentMonth) return [];
-      
-      return agendamentos.filter(appointment => {
-        const appointmentDate = new Date(appointment.dataHora);
-        return appointmentDate.getDate() === day && 
-               appointmentDate.getMonth() === month && 
-               appointmentDate.getFullYear() === year;
+        isToday: isSameDay(day, new Date())
       });
-    };
+    }
     
-    const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    // Adicionar dias do mês atual
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      const day = new Date(year, month, i);
+      allDays.push({
+        date: day,
+        isCurrentMonth: true,
+        isToday: isSameDay(day, new Date())
+      });
+    }
     
-    return (
-      <>
-        <DateNavigation>
-          <h2>{currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</h2>
-          <div className="nav-buttons">
-            <NavButton onClick={() => {
-              const newDate = new Date(currentDate);
-              newDate.setMonth(newDate.getMonth() - 1);
-              setCurrentDate(newDate);
-            }}>
-              <i className="fas fa-chevron-left"></i> Mês Anterior
-            </NavButton>
-            <NavButton className="today" onClick={() => setCurrentDate(new Date())}>
-              Hoje
-            </NavButton>
-            <NavButton onClick={() => {
-              const newDate = new Date(currentDate);
-              newDate.setMonth(newDate.getMonth() + 1);
-              setCurrentDate(newDate);
-            }}>
-              Próximo Mês <i className="fas fa-chevron-right"></i>
-            </NavButton>
-          </div>
-        </DateNavigation>
-        
-        <CalendarContainer>
-          {weekdays.map(day => (
-            <DayHeader key={day}>{day}</DayHeader>
-          ))}
+    // Adicionar dias do próximo mês para completar a última semana
+    const daysNeeded = 42 - allDays.length; // 6 semanas * 7 dias = 42
+    for (let i = 1; i <= daysNeeded; i++) {
+      const day = new Date(year, month + 1, i);
+      allDays.push({
+        date: day,
+        isCurrentMonth: false,
+        isToday: isSameDay(day, new Date())
+      });
+    }
+    
+    return allDays;
+  };
+  
+  const isSameDay = (date1, date2) => {
+    return date1.getDate() === date2.getDate() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getFullYear() === date2.getFullYear();
+  };
+  
+  const handleConfirmarConsulta = async (id) => {
+    try {
+      await ConsultaService.updateConsulta(id, { status_id: 2 }); // Assumindo que 2 é o ID do status "Confirmada"
+      fetchConsultas(); // Recarregar consultas após a confirmação
+    } catch (error) {
+      console.error('Erro ao confirmar consulta:', error);
+    }
+  };
+  
+  const handleFinalizarConsulta = async (id) => {
+    try {
+      await ConsultaService.updateConsulta(id, { status_id: 3 }); // Assumindo que 3 é o ID do status "Finalizada"
+      fetchConsultas();
+    } catch (error) {
+      console.error('Erro ao finalizar consulta:', error);
+    }
+  };
+  
+  const handleCancelarConsulta = async (id) => {
+    if (window.confirm('Tem certeza que deseja cancelar esta consulta?')) {
+      try {
+        await ConsultaService.cancelConsulta(id);
+        fetchConsultas();
+      } catch (error) {
+        console.error('Erro ao cancelar consulta:', error);
+      }
+    }
+  };
+  
+  return (
+    <Container>
+      <Header>
+        <Title>Gestão de Consultas</Title>
+        <TabsContainer>
+          <Tab 
+            active={view === 'calendar'}
+            onClick={() => setView('calendar')}
+          >
+            Calendário
+          </Tab>
+          <Tab 
+            active={view === 'list'}
+            onClick={() => setView('list')}
+          >
+            Lista
+          </Tab>
+        </TabsContainer>
+      </Header>
+      
+      {view === 'calendar' ? (
+        <CalendarView>
+          <CalendarHeader>
+            <CalendarMonth>{getMonthName()}</CalendarMonth>
+            <CalendarNav>
+              <NavButton onClick={previousMonth}>&lt;</NavButton>
+              <NavButton onClick={nextMonth}>&gt;</NavButton>
+            </CalendarNav>
+          </CalendarHeader>
           
-          {allDays.map((day, index) => {
-            const appointments = getAppointmentsForDay(day.day, day.isCurrentMonth);
+          <DaysGrid>
+            {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map(day => (
+              <WeekDay key={day}>{day}</WeekDay>
+            ))}
             
-            return (
-              <DayCell 
+            {getDaysInMonth().map((day, index) => (
+              <Day 
                 key={index} 
                 isToday={day.isToday}
-                className={!day.isCurrentMonth ? 'other-month' : ''}
+                isOutsideMonth={!day.isCurrentMonth}
+                hasEvents={consultas.some(consulta => 
+                  isSameDay(new Date(consulta.data_hora), day.date)
+                )}
               >
-                <div className="day-number">{day.day}</div>
-                {appointments.map(appointment => (
-                  <Appointment 
-                    key={appointment.id}
-                    className={appointment.estado.toLowerCase()}
-                  >
-                    {new Date(appointment.dataHora).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {appointment.cliente?.nome || 'Cliente'}
-                  </Appointment>
-                ))}
-              </DayCell>
-            );
-          })}
-        </CalendarContainer>
-      </>
-    );
-  };
-
-  const renderList = () => {
-    // Filtrar agendamentos para a data selecionada
-    const filteredAppointments = agendamentos.filter(appointment => {
-      const appointmentDate = new Date(appointment.dataHora);
-      return appointmentDate.getDate() === currentDate.getDate() && 
-             appointmentDate.getMonth() === currentDate.getMonth() && 
-             appointmentDate.getFullYear() === currentDate.getFullYear();
-    });
-    
-    // Ordenar por hora
-    filteredAppointments.sort((a, b) => {
-      return new Date(a.dataHora) - new Date(b.dataHora);
-    });
-    
-    return (
-      <>
-        <DateNavigation>
-          <h2>{currentDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h2>
-          <div className="nav-buttons">
-            <NavButton onClick={() => {
-              const newDate = new Date(currentDate);
-              newDate.setDate(newDate.getDate() - 1);
-              setCurrentDate(newDate);
-            }}>
-              <i className="fas fa-chevron-left"></i> Dia Anterior
-            </NavButton>
-            <NavButton className="today" onClick={() => setCurrentDate(new Date())}>
-              Hoje
-            </NavButton>
-            <NavButton onClick={() => {
-              const newDate = new Date(currentDate);
-              newDate.setDate(newDate.getDate() + 1);
-              setCurrentDate(newDate);
-            }}>
-              Próximo Dia <i className="fas fa-chevron-right"></i>
-            </NavButton>
-          </div>
-        </DateNavigation>
-        
-        <ListContainer>
-          {filteredAppointments.length > 0 ? (
-            filteredAppointments.map(appointment => (
-              <AppointmentItem key={appointment.id}>
-                <div className="appointment-info">
-                  <div className="time">
-                    {new Date(appointment.dataHora).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                  </div>
-                  <div className="details">
-                    <div className="name">{appointment.cliente?.nome || 'Cliente não disponível'}</div>
-                    <div className="service">{appointment.servico || 'Consulta Geral'}</div>
-                  </div>
+                <div className="day-number">
+                  {day.date.getDate()}
+                  {consultas.some(consulta => 
+                    isSameDay(new Date(consulta.data_hora), day.date)
+                  ) && <EventDot />}
                 </div>
-                <div className="status-and-actions">
-                  <span className={`status ${appointment.estado.toLowerCase()}`}>
-                    {appointment.estado}
-                  </span>
-                </div>
-                <div className="actions">
-                  <ActionButton onClick={() => handleConfirm(appointment.id)}>
-                    <FaCheck color="#2ecc71" />
-                  </ActionButton>
-                  <ActionButton color="#e74c3c" hoverColor="#c0392b" onClick={() => handleReject(appointment.id)}>
-                    <FaTimes />
-                  </ActionButton>
-                </div>
-              </AppointmentItem>
-            ))
+              </Day>
+            ))}
+          </DaysGrid>
+        </CalendarView>
+      ) : (
+        <ListView>
+          {loading ? (
+            <p>Carregando consultas...</p>
           ) : (
-            <p>Nenhum agendamento para este dia.</p>
+            <Table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Hora</th>
+                  <th>Paciente</th>
+                  <th>Médico</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {consultas.length > 0 ? (
+                  consultas.map(consulta => (
+                    <tr key={consulta.id}>
+                      <td>
+                        {new Date(consulta.data_hora).toLocaleDateString('pt-PT')}
+                      </td>
+                      <td>
+                        {new Date(consulta.data_hora).toLocaleTimeString('pt-PT', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </td>
+                      <td>{consulta.cliente?.nome || 'Cliente'}</td>
+                      <td>{consulta.medico?.nome || 'Médico'}</td>
+                      <td>
+                        <Status className={statusClassMap[consulta.status?.nome] || 'agendada'}>
+                          {consulta.status?.nome || 'Agendada'}
+                        </Status>
+                      </td>
+                      <td>
+                        {consulta.status?.nome === 'Agendada' && (
+                          <>
+                            <Button onClick={() => handleConfirmarConsulta(consulta.id)}>
+                              Confirmar
+                            </Button>
+                            <Button 
+                              color="#e74c3c"
+                              onClick={() => handleCancelarConsulta(consulta.id)}
+                            >
+                              Cancelar
+                            </Button>
+                          </>
+                        )}
+                        {consulta.status?.nome === 'Confirmada' && (
+                          <>
+                            <Button 
+                              color="#2ecc71"
+                              onClick={() => handleFinalizarConsulta(consulta.id)}
+                            >
+                              Finalizar
+                            </Button>
+                            <Button 
+                              color="#e74c3c"
+                              onClick={() => handleCancelarConsulta(consulta.id)}
+                            >
+                              Cancelar
+                            </Button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" style={{ textAlign: 'center' }}>
+                      Nenhuma consulta encontrada
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
           )}
-        </ListContainer>
-      </>
-    );
-  };
-
-  // Funções para lidar com a confirmação e rejeição
-  const handleConfirm = async (id) => {
-    try {
-      await axios.put(`${API_URL}/agendamentos/${id}/confirmar`, { estado: 'Confirmado' }, { headers: authHeader() });
-      fetchAgendamentos(); // Recarregar agendamentos após a confirmação
-    } catch (error) {
-      console.error('Erro ao confirmar agendamento:', error);
-    }
-  };
-
-  const handleReject = async (id) => {
-    try {
-      await axios.put(`${API_URL}/agendamentos/${id}/rejeitar`, { estado: 'Cancelado' }, { headers: authHeader() });
-      fetchAgendamentos(); // Recarregar agendamentos após a rejeição
-    } catch (error) {
-      console.error('Erro ao rejeitar agendamento:', error);
-    }
-  };
-
-  return (
-    <>
-      <PageTitle>Gestão de Agendamentos</PageTitle>
-      
-      <Card>
-        <ControlBar>
-          <ViewToggle>
-            <ViewButton 
-              active={view === 'calendar'} 
-              onClick={() => setView('calendar')}
-            >
-              <i className="fas fa-calendar-alt"></i> Calendário
-            </ViewButton>
-            <ViewButton 
-              active={view === 'list'} 
-              onClick={() => setView('list')}
-            >
-              <i className="fas fa-list"></i> Lista
-            </ViewButton>
-          </ViewToggle>
-          
-          <AddButton>
-            <i className="fas fa-plus"></i>
-            Novo Agendamento
-          </AddButton>
-        </ControlBar>
-        
-        {loading ? (
-          <p>Carregando...</p>
-        ) : (
-          view === 'calendar' ? renderCalendar() : renderList()
-        )}
-      </Card>
-    </>
+        </ListView>
+      )}
+    </Container>
   );
 };
 

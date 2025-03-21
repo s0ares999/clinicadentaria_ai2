@@ -238,7 +238,7 @@ const AppointmentStatusCard = styled.div`
   }
 `;
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:8000/api';
 
 const EstatisticasPage = () => {
   const [stats, setStats] = useState({

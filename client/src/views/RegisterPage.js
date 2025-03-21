@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import AuthService from '../services/auth.service';
+import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -26,7 +27,7 @@ const RegisterCard = styled.div`
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   padding: 2.5rem;
   width: 100%;
-  max-width: 400px;
+  max-width: 600px;
 `;
 
 const CardTitle = styled.h2`
@@ -47,6 +48,19 @@ const FormGroup = styled.div`
   flex-direction: column;
 `;
 
+const FormRow = styled.div`
+  display: flex;
+  gap: 1rem;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+  
+  > div {
+    flex: 1;
+  }
+`;
+
 const Label = styled.label`
   margin-bottom: 0.5rem;
   color: #2c3e50;
@@ -54,6 +68,19 @@ const Label = styled.label`
 `;
 
 const Input = styled.input`
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+
+  &:focus {
+    border-color: #3498db;
+    outline: none;
+  }
+`;
+
+const Select = styled.select`
   padding: 0.75rem;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
@@ -126,47 +153,26 @@ const RoleSelector = styled.div`
   display: flex;
   gap: 1rem;
   margin-bottom: 1.5rem;
-`;
-
-const RoleOption = styled.div`
-  flex: 1;
-  padding: 1rem;
-  border: 2px solid ${props => props.selected ? '#3498db' : '#e0e0e0'};
-  border-radius: 4px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  background-color: ${props => props.selected ? '#f0f7fc' : '#fff'};
-
-  &:hover {
-    border-color: #3498db;
-  }
-
-  .role-icon {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
-    color: ${props => props.selected ? '#3498db' : '#7f8c8d'};
-  }
-
-  .role-title {
-    font-weight: 600;
-    color: #2c3e50;
-  }
-
-  .role-desc {
-    font-size: 0.8rem;
-    color: #7f8c8d;
-    margin-top: 0.5rem;
-  }
-`;
-
-const FormRow = styled.div`
-  display: flex;
-  gap: 1rem;
   
   @media (max-width: 768px) {
     flex-direction: column;
-    gap: 1.5rem;
+  }
+`;
+
+const RoleButton = styled.button`
+  flex: 1;
+  padding: 1rem;
+  background-color: ${props => props.active ? '#3498db' : '#f8f9fa'};
+  color: ${props => props.active ? 'white' : '#2c3e50'};
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    background-color: ${props => props.active ? '#2980b9' : '#e0e0e0'};
   }
 `;
 
@@ -174,170 +180,241 @@ function RegisterPage() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('cliente');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [successful, setSuccessful] = useState(false);
-  
-  // Campos adicionais para cliente
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
+  const [role, setRole] = useState('cliente');
+  
+  // Campos específicos para cliente
   const [dataNascimento, setDataNascimento] = useState('');
-  const [morada, setMorada] = useState('');
   const [nif, setNif] = useState('');
+  const [morada, setMorada] = useState('');
+  
+  // Campos específicos para médico
+  const [especialidadeId, setEspecialidadeId] = useState('');
+  const [crm, setCrm] = useState('');
+  const [especialidades, setEspecialidades] = useState([]);
+  
+  // Campos específicos para admin
+  const [nivelAcesso, setNivelAcesso] = useState('geral');
+  
+  const [message, setMessage] = useState('');
+  const [successful, setSuccessful] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   
   const navigate = useNavigate();
-
-  const handleRegister = async (e) => {
+  
+  useEffect(() => {
+    // Carregar especialidades se o usuário selecionar o papel de médico
+    if (role === 'medico') {
+      const fetchEspecialidades = async () => {
+        try {
+          const response = await axios.get('http://localhost:8000/api/especialidades');
+          setEspecialidades(response.data);
+        } catch (error) {
+          console.error('Erro ao carregar especialidades:', error);
+          setEspecialidades([
+            { id: 1, nome: 'Ortodontia' },
+            { id: 2, nome: 'Endodontia' },
+            { id: 3, nome: 'Periodontia' },
+            { id: 4, nome: 'Implantodontia' },
+            { id: 5, nome: 'Odontopediatria' }
+          ]);
+        }
+      };
+      
+      fetchEspecialidades();
+    }
+  }, [role]);
+  
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage('');
     setLoading(true);
-    setSuccessful(false);
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('As senhas não coincidem');
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Dados adicionais para cliente
-      const clienteData = role === 'cliente' ? {
-        nome,
-        telefone,
-        dataNascimento,
-        morada,
-        nif
-      } : null;
+      // Montagem dos dados específicos por tipo de usuário
+      let dadosEspecificos = {};
       
-      await AuthService.register(username, email, password, role, clienteData);
-      setSuccessful(true);
-      setMessage('Registo efetuado com sucesso! Pode fazer login agora.');
-      setLoading(false);
-      
-      // Redirecionar para a página de login após um breve atraso
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
-    } catch (error) {
-      const resMessage =
-        (error.response &&
-          error.response.data &&
-          error.response.data.message) ||
-        error.message ||
-        error.toString();
+      if (role === 'cliente') {
+        dadosEspecificos = {
+          data_nascimento: dataNascimento,
+          nif: nif,
+          morada: morada
+        };
+      } else if (role === 'medico') {
+        dadosEspecificos = {
+          especialidade_id: especialidadeId,
+          crm: crm
+        };
+      } else if (role === 'admin') {
+        dadosEspecificos = {
+          nivel_acesso: nivelAcesso
+        };
+      }
 
-      setMessage(resMessage);
-      setSuccessful(false);
+      // Envio dos dados para o serviço de autenticação
+      const response = await AuthService.register(
+        email, 
+        password, 
+        username, 
+        telefone, 
+        role, 
+        dadosEspecificos
+      );
+
+      if (response.data) {
+        setSuccessful(true);
+        // Redirecionar ou exibir mensagem de sucesso
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || 'Erro ao registrar-se';
+      setError(message);
+      console.error("Erro no registro:", error);
+    } finally {
       setLoading(false);
     }
   };
-
+  
   return (
     <PageContainer>
       <Navbar />
       
       <MainContent>
         <RegisterCard>
-          <CardTitle>Registar</CardTitle>
+          <CardTitle>Criar Conta</CardTitle>
           
-          {message && (
-            <AlertMessage className={successful ? 'success' : 'error'}>
-              {message}
+          {error && (
+            <AlertMessage className="error">
+              {error}
             </AlertMessage>
           )}
           
-          <Form onSubmit={handleRegister}>
+          <Form onSubmit={handleSubmit}>
             <RoleSelector>
-              <RoleOption 
-                selected={role === 'cliente'} 
+              <RoleButton
+                type="button"
+                active={role === 'cliente'}
                 onClick={() => setRole('cliente')}
               >
-                <div className="role-icon">
-                  <i className="fas fa-user"></i>
-                </div>
-                <div className="role-title">Cliente</div>
-                <div className="role-desc">Agende consultas e acompanhe tratamentos</div>
-              </RoleOption>
-              
-              <RoleOption 
-                selected={role === 'admin'} 
+                Cliente
+              </RoleButton>
+              <RoleButton
+                type="button"
+                active={role === 'medico'}
+                onClick={() => setRole('medico')}
+              >
+                Médico
+              </RoleButton>
+              <RoleButton
+                type="button"
+                active={role === 'admin'}
                 onClick={() => setRole('admin')}
               >
-                <div className="role-icon">
-                  <i className="fas fa-user-shield"></i>
-                </div>
-                <div className="role-title">Administrador</div>
-                <div className="role-desc">Gerencie a clínica e pacientes</div>
-              </RoleOption>
+                Administrador
+              </RoleButton>
             </RoleSelector>
             
-            <FormGroup>
-              <Label htmlFor="username">Nome de Utilizador</Label>
-              <Input
-                type="text"
-                id="username"
-                name="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-            </FormGroup>
+            <FormRow>
+              <FormGroup>
+                <Label htmlFor="username">Nome de Utilizador</Label>
+                <Input
+                  type="text"
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </FormGroup>
+              
+              <FormGroup>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </FormGroup>
+            </FormRow>
             
             <FormGroup>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                type="email"
-                id="email"
-                name="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </FormGroup>
-            
-            <FormGroup>
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Senha</Label>
               <Input
                 type="password"
                 id="password"
-                name="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength="6"
               />
             </FormGroup>
             
+            <FormGroup>
+              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+              <Input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="nome">Nome Completo</Label>
+              <Input
+                type="text"
+                id="nome"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                required
+              />
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="telefone">Telefone</Label>
+              <Input
+                type="tel"
+                id="telefone"
+                value={telefone}
+                onChange={(e) => setTelefone(e.target.value)}
+                required
+              />
+            </FormGroup>
+            
+            {/* Campos específicos para cliente */}
             {role === 'cliente' && (
               <>
-                <FormGroup>
-                  <Label htmlFor="nome">Nome Completo</Label>
-                  <Input
-                    type="text"
-                    id="nome"
-                    name="nome"
-                    value={nome}
-                    onChange={(e) => setNome(e.target.value)}
-                    required
-                  />
-                </FormGroup>
-                
                 <FormRow>
-                  <FormGroup>
-                    <Label htmlFor="telefone">Telefone</Label>
-                    <Input
-                      type="tel"
-                      id="telefone"
-                      name="telefone"
-                      value={telefone}
-                      onChange={(e) => setTelefone(e.target.value)}
-                      required
-                    />
-                  </FormGroup>
-                  
                   <FormGroup>
                     <Label htmlFor="dataNascimento">Data de Nascimento</Label>
                     <Input
                       type="date"
                       id="dataNascimento"
-                      name="dataNascimento"
                       value={dataNascimento}
                       onChange={(e) => setDataNascimento(e.target.value)}
+                      required
+                    />
+                  </FormGroup>
+                  
+                  <FormGroup>
+                    <Label htmlFor="nif">NIF</Label>
+                    <Input
+                      type="text"
+                      id="nif"
+                      value={nif}
+                      onChange={(e) => setNif(e.target.value)}
                       required
                     />
                   </FormGroup>
@@ -348,35 +425,72 @@ function RegisterPage() {
                   <Input
                     type="text"
                     id="morada"
-                    name="morada"
                     value={morada}
                     onChange={(e) => setMorada(e.target.value)}
-                    required
-                  />
-                </FormGroup>
-                
-                <FormGroup>
-                  <Label htmlFor="nif">NIF</Label>
-                  <Input
-                    type="text"
-                    id="nif"
-                    name="nif"
-                    value={nif}
-                    onChange={(e) => setNif(e.target.value)}
                     required
                   />
                 </FormGroup>
               </>
             )}
             
+            {/* Campos específicos para médico */}
+            {role === 'medico' && (
+              <>
+                <FormGroup>
+                  <Label htmlFor="especialidade">Especialidade</Label>
+                  <Select
+                    id="especialidade"
+                    value={especialidadeId}
+                    onChange={(e) => setEspecialidadeId(e.target.value)}
+                    required
+                  >
+                    <option value="">Selecione uma especialidade</option>
+                    {especialidades.map(esp => (
+                      <option key={esp.id} value={esp.id}>
+                        {esp.nome}
+                      </option>
+                    ))}
+                  </Select>
+                </FormGroup>
+                
+                <FormGroup>
+                  <Label htmlFor="crm">CRM (Cédula Profissional)</Label>
+                  <Input
+                    type="text"
+                    id="crm"
+                    value={crm}
+                    onChange={(e) => setCrm(e.target.value)}
+                    required
+                  />
+                </FormGroup>
+              </>
+            )}
+            
+            {/* Campos específicos para admin */}
+            {role === 'admin' && (
+              <FormGroup>
+                <Label htmlFor="nivelAcesso">Nível de Acesso</Label>
+                <Select
+                  id="nivelAcesso"
+                  value={nivelAcesso}
+                  onChange={(e) => setNivelAcesso(e.target.value)}
+                  required
+                >
+                  <option value="geral">Geral</option>
+                  <option value="total">Total</option>
+                  <option value="restrito">Restrito</option>
+                </Select>
+              </FormGroup>
+            )}
+            
             <Button type="submit" disabled={loading}>
               {loading ? 'A processar...' : 'Registar'}
             </Button>
+            
+            <LoginLink>
+              Já tem uma conta? <Link to="/login">Faça login</Link>
+            </LoginLink>
           </Form>
-          
-          <LoginLink>
-            Já tem uma conta? <Link to="/login">Faça login aqui</Link>
-          </LoginLink>
         </RegisterCard>
       </MainContent>
       

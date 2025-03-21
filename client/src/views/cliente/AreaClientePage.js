@@ -228,7 +228,7 @@ const EmptyState = styled.div`
   }
 `;
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:8000/api';
 
 const AreaClientePage = () => {
   const [agendamentos, setAgendamentos] = useState([]);
@@ -242,7 +242,8 @@ const AreaClientePage = () => {
   const fetchAgendamentos = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/agendamentos/cliente`, { 
+      // Change this URL to match your backend route
+      const response = await axios.get(`${API_URL}/cliente`, { 
         headers: authHeader()
       });
       setAgendamentos(response.data || []);
@@ -286,18 +287,18 @@ const AreaClientePage = () => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
+    return date.toLocaleDateString('pt-pt');
   };
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString('pt-pt', { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
     <PageContainer>
       <WelcomeSection>
-        <h1>Bem-vindo, {currentUser?.username || 'Cliente'}!</h1>
+        <h1>Bem-vindo, {currentUser?.nome || 'cliente'}!</h1>
         <p>Gerencie suas consultas, veja seu histórico e agende novos atendimentos.</p>
         <div className="actions">
           <ActionButton to="/cliente/agendar" primary>

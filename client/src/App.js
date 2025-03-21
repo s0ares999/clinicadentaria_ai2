@@ -28,22 +28,52 @@ function App() {
     }
   }, []);
 
-  // Rota protegida que verifica se o usuário está autenticado e é admin
+  // Função de depuração para verificar exatamente por que o acesso está sendo negado
+  const checkClientAccess = (user) => {
+    if (!user) {
+      console.log("Acesso negado: Usuário não encontrado");
+      return false;
+    }
+    
+    console.log("Dados do usuário para verificação:", user);
+    
+    // Verifica se o usuário tem as propriedades esperadas
+    const isRole = user.role === 'cliente';
+    const isTipo = user.tipo === 'cliente';
+    const isTipoUtilizador = user.tipoUtilizador && user.tipoUtilizador.nome === 'cliente';
+    const hasCliente = user.cliente !== null && user.cliente !== undefined;
+    
+    console.log("Verificações:", { isRole, isTipo, isTipoUtilizador, hasCliente });
+    
+    return isRole || isTipo || isTipoUtilizador || hasCliente;
+  };
+
+  // Rota protegida melhorada
   const ProtectedRoute = ({ children, adminRequired = false, clienteRequired = false }) => {
     const user = AuthService.getCurrentUser();
+    console.log("ProtectedRoute - User completo:", user);
     
     if (!user) {
+      console.log("Redirecionando: Usuário não autenticado");
       return <Navigate to="/login" />;
     }
     
-    if (adminRequired && (!user.roles || !user.roles.includes('ROLE_ADMIN'))) {
+    if (adminRequired && user.role !== 'admin' && user.tipo !== 'admin') {
+      console.log("Redirecionando: Acesso de admin requerido");
       return <Navigate to="/" />;
     }
     
-    if (clienteRequired && user.role !== 'cliente') {
-      return <Navigate to="/" />;
+    if (clienteRequired) {
+      const isClient = checkClientAccess(user);
+      console.log("Resultado da verificação de cliente:", isClient);
+      
+      if (!isClient) {
+        console.log("Redirecionando: Acesso de cliente requerido");
+        return <Navigate to="/" />;
+      }
     }
     
+    console.log("Acesso concedido!");
     return children;
   };
 

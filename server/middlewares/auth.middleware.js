@@ -1,30 +1,61 @@
 const jwt = require('jsonwebtoken');
 const db = require('../models');
-const User = db.User;
+const Utilizador = db.Utilizador;
 
-verifyToken = (req, res, next) => {
-  let token = req.headers['x-access-token'] || req.headers['authorization'];
-  
-  if (token && token.startsWith('Bearer ')) {
-    token = token.slice(7, token.length);
-  }
-
-  if (!token) {
-    return res.status(403).json({ message: "Nenhum token fornecido!" });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: "Não autorizado!" });
+// Verificar token de autenticação
+const verifyToken = async (req, res, next) => {
+  try {
+    let token = req.headers['x-access-token'] || req.headers['authorization'];
+    
+    // Verificar se token existe
+    if (!token) {
+      return res.status(403).json({
+        message: "Token não fornecido!"
+      });
     }
+    
+    // Remover prefix Bearer se presente
+    if (token.startsWith('Bearer ')) {
+      token = token.slice(7, token.length);
+    }
+    
+    // Verificar token
+    const decoded = jwt.verify(
+      token, 
+      process.env.JWT_SECRET || "clinica-dentaria-secret-key"
+    );
+    
+    // Verificar se usuário existe
+    const utilizador = await Utilizador.findByPk(decoded.id);
+    
+    if (!utilizador) {
+      return res.status(401).json({
+        message: "Usuário não encontrado!"
+      });
+    }
+    
+    // Adicionar ID do usuário à requisição
     req.userId = decoded.id;
+    
     next();
-  });
+  } catch (error) {
+    console.error("Erro na verificação do token:", error);
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        message: "Token expirado!"
+      });
+    }
+    
+    return res.status(401).json({
+      message: "Não autorizado!"
+    });
+  }
 };
 
 isAdmin = async (req, res, next) => {
   try {
-    const user = await User.findByPk(req.userId);
+    const user = await Utilizador.findByPk(req.userId);
     if (user && user.role === "admin") {
       next();
       return;
@@ -38,7 +69,7 @@ isAdmin = async (req, res, next) => {
 
 isCliente = async (req, res, next) => {
   try {
-    const user = await User.findByPk(req.userId);
+    const user = await Utilizador.findByPk(req.userId);
     if (user && user.role === "cliente") {
       next();
       return;

@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../services/api.config';
 import ConsultaService from '../../services/consulta.service';
+import AuthService from '../../services/auth.service';
 
 const API_URL = "http://localhost:8000/api";
 
@@ -174,33 +175,62 @@ const EmptyState = styled.div`
   }
 `;
 
-function ClienteAgendamentosPage() {
+function ClienteAgendamentosPage({ defaultTab = 'agendadas' }) {
   const [consultas, setConsultas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [consultasHistorico, setConsultasHistorico] = useState([]);
   
   useEffect(() => {
-    fetchConsultas();
-  }, []);
+    if (activeTab === 'agendadas') {
+      fetchConsultas();
+    } else {
+      fetchHistorico();
+    }
+  }, [activeTab]);
 
   const fetchConsultas = async () => {
     try {
       setLoading(true);
-      // Get consultations for the current client
+      
+      // Verificar autenticação
+      const user = AuthService.getCurrentUser();
+      if (!user || !user.id) {
+        toast.error('Você precisa estar logado para visualizar suas consultas');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('Buscando consultas para o usuário:', user.id);
+      
+      // Chamar serviço sem passar ID (ele será obtido internamente)
       const response = await ConsultaService.getConsultasByCliente();
-      console.log('Consultas recebidas:', response.data);
-      
-      // Sort consultations by date (most recent first)
-      const sortedConsultas = response.data.sort((a, b) => {
-        return new Date(b.data_hora) - new Date(a.data_hora);
-      });
-      
-      setConsultas(sortedConsultas || []);
-      setLoading(false);
+      setConsultas(response || []);
     } catch (error) {
       console.error('Erro ao carregar consultas:', error);
-      setConsultas([]);
+      toast.error('Não foi possível carregar suas consultas');
+    } finally {
       setLoading(false);
-      toast.error('Erro ao carregar suas consultas');
+    }
+  };
+
+  const fetchHistorico = async () => {
+    try {
+      setLoading(true);
+      const response = await ConsultaService.getConsultasByCliente();
+      
+      // Filtrar apenas consultas concluídas ou canceladas
+      const historico = response.filter(consulta => 
+        consulta.status?.nome === 'Concluída' || 
+        consulta.status?.nome === 'Cancelada'
+      );
+      
+      setConsultasHistorico(historico || []);
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+      toast.error('Não foi possível carregar seu histórico');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -220,16 +250,14 @@ function ClienteAgendamentosPage() {
   const getStatusClass = (status) => {
     if (!status) return '';
     
-    console.log('Status recebido:', status);
-    
     switch (status.nome?.toLowerCase()) {
       case 'confirmada':
         return 'confirmado';
-      case 'agendada':
+      case 'pendente': 
         return 'pendente';
       case 'cancelada':
         return 'cancelado';
-      case 'finalizada':
+      case 'concluída':
         return 'concluido';
       default:
         return '';
@@ -256,48 +284,109 @@ function ClienteAgendamentosPage() {
           </ActionButton>
         </SectionTitle>
         
+        <div style={{ 
+          display: 'flex', 
+          gap: '1rem', 
+          marginBottom: '1rem',
+          borderBottom: '1px solid #ecf0f1',
+          paddingBottom: '0.5rem'
+        }}>
+          <Button 
+            onClick={() => setActiveTab('agendadas')}
+            style={{
+              backgroundColor: activeTab === 'agendadas' ? '#3498db' : 'transparent',
+              color: activeTab === 'agendadas' ? 'white' : '#3498db',
+              border: activeTab === 'agendadas' ? 'none' : '1px solid #3498db'
+            }}
+          >
+            Consultas Agendadas
+          </Button>
+          <Button 
+            onClick={() => setActiveTab('historico')}
+            style={{
+              backgroundColor: activeTab === 'historico' ? '#3498db' : 'transparent',
+              color: activeTab === 'historico' ? 'white' : '#3498db',
+              border: activeTab === 'historico' ? 'none' : '1px solid #3498db'
+            }}
+          >
+            Histórico
+          </Button>
+        </div>
+        
         <AppointmentList>
           {loading ? (
             <EmptyState>
-              <p>Carregando consultas...</p>
+              <p>Carregando...</p>
             </EmptyState>
-          ) : consultas.length > 0 ? (
-            consultas.map(consulta => (
-              <AppointmentItem key={consulta.id}>
-                <div className="appointment-info">
-                  <div className="date-time">
-                    <div className="date">{formatDate(consulta.data_hora)}</div>
-                    <div className="time">{formatTime(consulta.data_hora)}</div>
-                  </div>
-                  <div className="details">
-                    <div className="service">
-                      Consulta com Dr(a). {consulta.medico?.nome || 'Médico'}
+          ) : activeTab === 'agendadas' ? (
+            consultas.length > 0 ? (
+              consultas
+                .filter(c => c.status?.nome !== 'Concluída' && c.status?.nome !== 'Cancelada')
+                .map(consulta => (
+                  <AppointmentItem key={consulta.id}>
+                    <div className="appointment-info">
+                      <div className="date-time">
+                        <div className="date">{formatDate(consulta.data_hora)}</div>
+                        <div className="time">{formatTime(consulta.data_hora)}</div>
+                      </div>
+                      <div className="details">
+                        <div className="service">
+                          Consulta com Dr(a). {consulta.medico?.nome || 'Médico'}
+                        </div>
+                        <div className="notes">{consulta.observacoes || 'Sem observações'}</div>
+                      </div>
                     </div>
-                    <div className="notes">{consulta.observacoes || 'Sem observações'}</div>
-                  </div>
-                </div>
-                <div className="status-actions">
-                  <span className={`status ${getStatusClass(consulta.status)}`}>
-                    {consulta.status?.nome || 'Pendente'}
-                  </span>
-                  {(consulta.status?.nome === 'Agendada') && (
-                    <Button 
-                      danger
-                      onClick={() => handleCancelAppointment(consulta.id)}
-                    >
-                      Cancelar
-                    </Button>
-                  )}
-                </div>
-              </AppointmentItem>
-            ))
+                    <div className="status-actions">
+                      <span className={`status ${getStatusClass(consulta.status)}`}>
+                        {consulta.status?.nome || 'Pendente'}
+                      </span>
+                      {(consulta.status?.nome === 'Agendada') && (
+                        <Button 
+                          danger
+                          onClick={() => handleCancelAppointment(consulta.id)}
+                        >
+                          Cancelar
+                        </Button>
+                      )}
+                    </div>
+                  </AppointmentItem>
+                ))
+            ) : (
+              <EmptyState>
+                <p>Você não tem nenhuma consulta agendada.</p>
+                <ActionButton to="/cliente-dashboard/agendamentos/novo-agendamento" primary>
+                  Agendar Consulta
+                </ActionButton>
+              </EmptyState>
+            )
           ) : (
-            <EmptyState>
-              <p>Você não tem nenhuma consulta agendada.</p>
-              <ActionButton to="/cliente-dashboard/agendamentos/novo-agendamento" primary>
-                Agendar Consulta
-              </ActionButton>
-            </EmptyState>
+            consultasHistorico.length > 0 ? (
+              consultasHistorico.map(consulta => (
+                <AppointmentItem key={consulta.id}>
+                  <div className="appointment-info">
+                    <div className="date-time">
+                      <div className="date">{formatDate(consulta.data_hora)}</div>
+                      <div className="time">{formatTime(consulta.data_hora)}</div>
+                    </div>
+                    <div className="details">
+                      <div className="service">
+                        Consulta com Dr(a). {consulta.medico?.nome || 'Médico'}
+                      </div>
+                      <div className="notes">{consulta.observacoes || 'Sem observações'}</div>
+                    </div>
+                  </div>
+                  <div className="status-actions">
+                    <span className={`status ${getStatusClass(consulta.status)}`}>
+                      {consulta.status?.nome || 'Status desconhecido'}
+                    </span>
+                  </div>
+                </AppointmentItem>
+              ))
+            ) : (
+              <EmptyState>
+                <p>Você não tem histórico de consultas.</p>
+              </EmptyState>
+            )
           )}
         </AppointmentList>
       </AppointmentsContainer>

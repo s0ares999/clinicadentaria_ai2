@@ -73,13 +73,8 @@ exports.findAll = async (req, res) => {
           include: [
             {
               model: Utilizador,
-              as: 'cliente',
+              as: 'utilizador',
               attributes: ['id', 'nome', 'email']
-            },
-            {
-              model: Utilizador,
-              as: 'medico',
-              attributes: ['id', 'nome']
             }
           ]
         },
@@ -110,13 +105,8 @@ exports.findOne = async (req, res) => {
           include: [
             {
               model: Utilizador,
-              as: 'cliente',
+              as: 'utilizador',
               attributes: ['id', 'nome', 'email']
-            },
-            {
-              model: Utilizador,
-              as: 'medico',
-              attributes: ['id', 'nome']
             }
           ]
         },

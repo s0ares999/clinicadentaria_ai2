@@ -32,25 +32,34 @@ exports.findOne = async (req, res) => {
   try {
     const id = req.params.id;
     
-    const utilizador = await Utilizador.findByPk(id, {
-      attributes: { exclude: ['senha'] },
-      include: [{
-        model: TipoUtilizador,
-        as: 'tipoUtilizador',
-        attributes: ['nome']
-      }]
+    const utilizador = await Utilizador.findOne({
+      where: { id: id },
+      include: [
+        {
+          model: Medico,
+          as: 'medico',
+          include: [
+            {
+              model: Especialidade,
+              as: 'especialidade'
+            }
+          ]
+        }
+      ],
+      attributes: { exclude: ['senha'] }
     });
-    
+
     if (!utilizador) {
       return res.status(404).json({
-        message: `Utilizador com ID ${id} não encontrado!`
+        message: `Utilizador com id=${id} não encontrado`
       });
     }
-    
+
     res.status(200).json(utilizador);
   } catch (error) {
+    console.error('Erro ao buscar utilizador:', error);
     res.status(500).json({
-      message: error.message || "Ocorreu um erro ao buscar o utilizador."
+      message: error.message || "Erro ao buscar o utilizador."
     });
   }
 };

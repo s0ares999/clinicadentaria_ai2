@@ -52,13 +52,6 @@ module.exports = (sequelize, Sequelize) => {
       });
     }
     
-    if (models.Consulta) {
-      Cliente.hasMany(models.Consulta, {
-        foreignKey: 'cliente_id',
-        as: 'consultas'
-      });
-    }
-    
     if (models.Pagamento) {
       Cliente.hasMany(models.Pagamento, {
         foreignKey: 'cliente_id',

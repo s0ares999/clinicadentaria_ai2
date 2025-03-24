@@ -6,7 +6,7 @@ class UsuarioService {
   }
 
   async getUsuarioById(id) {
-    return api.get(`utilizadores/${id}`);
+    return api.get(`utilizador/${id}`);
   }
 
   async updateUsuario(id, userData) {

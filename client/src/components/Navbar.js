@@ -9,11 +9,15 @@ const NavbarContainer = styled.nav`
   padding: 1rem 2rem;
   background-color: #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative;
-  justify-content: space-between; /* Espaço entre logo e links */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  justify-content: space-between;
 
   @media (max-width: 768px) {
-    justify-content: flex-start; /* Alinha os itens à esquerda em mobile */
+    justify-content: flex-start;
   }
 `;
 
@@ -178,6 +182,13 @@ function Navbar() {
     );
   };
 
+  // Adicione esta função para verificar se é médico
+  const isMedicoUser = (user) => {
+    if (!user) return false;
+    return user.tipo === 'medico' || 
+           (user.tipoUtilizador && user.tipoUtilizador.nome === 'medico');
+  };
+
   return (
     <NavbarContainer>
       <Hamburger onClick={toggleMenu}>
@@ -194,11 +205,10 @@ function Navbar() {
           <NavLink to="/dashboard">Dashboard</NavLink>
         )}
         {isClientUser(currentUser) && (
-          <NavLink to={{
-            pathname: "/cliente-dashboard",
-            // Forçar tipo cliente para garantir acesso
-            state: { forceClienteAccess: true }
-          }}>Área do Cliente</NavLink>
+          <NavLink to="/cliente-dashboard">Área do Cliente</NavLink>
+        )}
+        {isMedicoUser(currentUser) && (
+          <NavLink to="/medico">Dashboard Médico</NavLink>
         )}
       </NavLinks>
       <MobileNavLinks style={{ display: isMenuOpen ? 'flex' : 'none' }}>
@@ -209,11 +219,10 @@ function Navbar() {
           <NavLink to="/dashboard">Dashboard</NavLink>
         )}
         {isClientUser(currentUser) && (
-          <NavLink to={{
-            pathname: "/cliente-dashboard",
-            // Forçar tipo cliente para garantir acesso
-            state: { forceClienteAccess: true }
-          }}>Área do Cliente</NavLink>
+          <NavLink to="/cliente-dashboard">Área do Cliente</NavLink>
+        )}
+        {isMedicoUser(currentUser) && (
+          <NavLink to="/medico">Dashboard Médico</NavLink>
         )}
       </MobileNavLinks>
       <AuthButtons>

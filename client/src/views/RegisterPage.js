@@ -254,6 +254,13 @@ function RegisterPage() {
           especialidade_id: especialidadeId,
           crm: crm
         };
+        
+        // Verificar se os campos obrigatórios estão preenchidos
+        if (!especialidadeId || !crm) {
+          setError('CRM e especialidade são obrigatórios para médicos');
+          setLoading(false);
+          return;
+        }
       } else if (role === 'admin') {
         dadosEspecificos = {
           nivel_acesso: nivelAcesso
@@ -272,7 +279,6 @@ function RegisterPage() {
 
       if (response.data) {
         setSuccessful(true);
-        // Redirecionar ou exibir mensagem de sucesso
         setTimeout(() => {
           navigate('/login');
         }, 2000);

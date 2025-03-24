@@ -10,7 +10,7 @@ const PageContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 40px 20px;
-`;
+`;  
 
 const WelcomeSection = styled.div`
   background-color: #f8f9fa;

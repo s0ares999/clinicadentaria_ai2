@@ -148,6 +148,22 @@ if (process.env.NODE_ENV === 'development') {
   console.log("\n");
 }
 
+// Adicione um log para verificar as rotas carregadas
+console.log("\n=== ROTAS REGISTRADAS ===");
+app._router.stack.forEach(middleware => {
+  if (middleware.route) {
+    // Rotas registradas diretamente
+    console.log(`${Object.keys(middleware.route.methods).join(', ')} ${middleware.route.path}`);
+  } else if (middleware.name === 'router') {
+    // Rotas registradas via router
+    middleware.handle.stack.forEach(handler => {
+      if (handler.route) {
+        console.log(`${Object.keys(handler.route.methods).join(', ')} ${middleware.regexp} ${handler.route.path}`);
+      }
+    });
+  }
+});
+
 // Iniciar servidor
 const startServer = async () => {
   const dbInitialized = await initializeDatabase();

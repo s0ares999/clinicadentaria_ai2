@@ -1,35 +1,23 @@
-module.exports = (sequelize, DataTypes) => {
+module.exports = (sequelize, Sequelize) => {
   const Consulta = sequelize.define("Consulta", {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    cliente_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    medico_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false
+    utilizador_id: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Utilizadores',
+        key: 'id'
+      }
     },
     data_hora: {
-      type: DataTypes.DATE,
+      type: Sequelize.DATE,
       allowNull: false
     },
-    duracao: {
-      type: DataTypes.INTEGER,
-      defaultValue: 30 // em minutos
-    },
-    estado: {
-      type: DataTypes.STRING(20),
-      defaultValue: 'agendada'
-    },
     observacoes: {
-      type: DataTypes.TEXT
+      type: Sequelize.TEXT
     },
-    tratamento_id: {
-      type: DataTypes.INTEGER
+    status_id: {
+      type: Sequelize.INTEGER,
+      defaultValue: 1
     }
   }, {
     tableName: 'Consultas',
@@ -44,21 +32,14 @@ module.exports = (sequelize, DataTypes) => {
 
   Consulta.associate = function(models) {
     Consulta.belongsTo(models.Utilizador, {
-      foreignKey: 'cliente_id',
-      as: 'cliente'
+      foreignKey: 'utilizador_id',
+      as: 'utilizador'
     });
     
-    Consulta.belongsTo(models.Utilizador, {
-      foreignKey: 'medico_id',
-      as: 'medico'
+    Consulta.belongsTo(models.ConsultaStatus, {
+      foreignKey: 'status_id',
+      as: 'status'
     });
-    
-    if (models.Tratamento) {
-      Consulta.belongsTo(models.Tratamento, {
-        foreignKey: 'tratamento_id',
-        as: 'tratamento'
-      });
-    }
     
     if (models.Pagamento) {
       Consulta.hasOne(models.Pagamento, {

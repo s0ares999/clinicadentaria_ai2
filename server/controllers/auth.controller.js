@@ -293,80 +293,53 @@ exports.verifyToken = (req, res) => {
 // Método para registrar novo utilizador
 exports.signup = async (req, res) => {
   try {
-    if (!req.body.nome || !req.body.email || !req.body.password) {
-      return res.status(400).json({ message: "Campos obrigatórios não preenchidos" });
+    const { email, password, username, telefone, role, dadosEspecificos, nome } = req.body;
+
+    // Buscar o tipo de utilizador
+    const tipoUtilizador = await TipoUtilizador.findOne({
+      where: { nome: role }
+    });
+
+    if (!tipoUtilizador) {
+      return res.status(400).json({
+        message: "Tipo de utilizador não encontrado"
+      });
     }
-    
-    // Verificar se e-mail já existe
-    const [utilizadorExistente] = await db.sequelize.query(
-      'SELECT * FROM "Utilizadores" WHERE email = ?',
-      {
-        replacements: [req.body.email],
-        type: db.sequelize.QueryTypes.SELECT
-      }
-    );
-    
-    if (utilizadorExistente) {
-      return res.status(400).json({ message: "E-mail já está em uso" });
-    }
-    
-    // Hash da senha
-    const senhaCriptografada = bcrypt.hashSync(req.body.password, 8);
-    
-    // Criar utilizador com SQL direto
-    const result = await db.sequelize.query(
-      'INSERT INTO "Utilizadores" (nome, email, senha, telefone, tipo_utilizador_id, "createdAt", "updatedAt") ' +
-      'VALUES (?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id',
-      {
-        replacements: [
-          req.body.nome,
-          req.body.email,
-          senhaCriptografada,
-          req.body.telefone || null,
-          req.body.tipo_utilizador_id || 1
-        ],
-        type: db.sequelize.QueryTypes.INSERT
-      }
-    );
-    
-    const novoId = result[0][0].id;
-    
-    // Se for cliente, adicionar à tabela Clientes
-    if (!req.body.tipo_utilizador_id || req.body.tipo_utilizador_id === 1) {
+
+    // Criar o utilizador base
+    const utilizador = await Utilizador.create({
+      email,
+      senha: bcrypt.hashSync(password, 8),
+      username,
+      nome,
+      telefone,
+      tipo_utilizador_id: tipoUtilizador.id
+    });
+
+    // Se for médico, criar registro na tabela Medicos
+    if (role === 'medico') {
       try {
-        await db.sequelize.query(
-          'INSERT INTO "Clientes" (utilizador_id, morada, data_nascimento, nif, telefone) ' +
-          'VALUES (?, ?, ?, ?, ?)',
-          {
-            replacements: [
-              novoId,
-              req.body.morada || null,
-              req.body.dataNascimento || null,
-              req.body.nif || null,
-              req.body.telefone || null
-            ],
-            type: db.sequelize.QueryTypes.INSERT
-          }
-        );
-        console.log("✅ Cliente criado com sucesso");
-      } catch (clienteError) {
-        console.error("❌ Erro ao criar registro de cliente:", clienteError);
+        await Medico.create({
+          utilizador_id: utilizador.id,
+          especialidade_id: dadosEspecificos.especialidade_id,
+          crm: dadosEspecificos.crm
+        });
+      } catch (medicoError) {
+        // Se houver erro ao criar o médico, deletar o utilizador criado
+        await utilizador.destroy();
+        throw new Error('Erro ao criar registro de médico: ' + medicoError.message);
       }
     }
-    
-    res.status(201).json({
-      message: "Utilizador registrado com sucesso",
-      utilizador: {
-        id: novoId,
-        nome: req.body.nome,
-        email: req.body.email
-      }
+
+    res.status(200).json({
+      success: true,
+      message: "Utilizador registrado com sucesso!"
     });
   } catch (error) {
-    console.error("❌ Erro no registro:", error);
-    res.status(500).json({ 
-      message: "Erro ao registrar utilizador", 
-      error: error.message 
+    console.error('Erro no registro:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Ocorreu um erro durante o registro."
     });
   }
 };

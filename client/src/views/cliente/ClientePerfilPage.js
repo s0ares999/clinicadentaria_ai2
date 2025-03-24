@@ -102,28 +102,6 @@ const Button = styled.button`
   }
 `;
 
-const HistoryContainer = styled.div`
-  margin-top: 2rem;
-`;
-
-const HistoryItem = styled.div`
-  background-color: #f8f9fa;
-  border-left: 3px solid #3498db;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  border-radius: 4px;
-`;
-
-const HistoryDate = styled.div`
-  font-size: 0.875rem;
-  color: #7f8c8d;
-  margin-bottom: 0.5rem;
-`;
-
-const HistoryContent = styled.div`
-  color: #2c3e50;
-`;
-
 const EmptyState = styled.div`
   text-align: center;
   padding: 2rem;
@@ -283,26 +261,6 @@ const ClientePerfilPage = () => {
             {saving ? 'A guardar...' : 'Guardar Alterações'}
           </Button>
         </Form>
-      </ProfileSection>
-      
-      <ProfileSection>
-        <SectionTitle>Histórico de Atividades</SectionTitle>
-        <HistoryContainer>
-          {historico.length > 0 ? (
-            historico.map((item, index) => (
-              <HistoryItem key={index}>
-                <HistoryDate>{formatDate(item.date)}</HistoryDate>
-                <HistoryContent>
-                  <strong>{item.action}</strong>: {item.details}
-                </HistoryContent>
-              </HistoryItem>
-            ))
-          ) : (
-            <EmptyState>
-              <p>Nenhuma atividade registrada ainda.</p>
-            </EmptyState>
-          )}
-        </HistoryContainer>
       </ProfileSection>
     </ProfileContainer>
   );

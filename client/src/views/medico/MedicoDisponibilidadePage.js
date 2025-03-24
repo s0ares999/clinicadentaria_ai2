@@ -158,7 +158,8 @@ function MedicoDisponibilidadePage() {
   const fetchDisponibilidades = async () => {
     try {
       setLoading(true);
-      const response = await DisponibilidadeService.getDisponibilidadesByMedico(currentUser.user.id);
+      const user = AuthService.getCurrentUser();
+      const response = await DisponibilidadeService.getDisponibilidadesByMedico(user.id);
       setDisponibilidades(response.data || []);
       setLoading(false);
     } catch (error) {

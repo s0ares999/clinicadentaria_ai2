@@ -6,84 +6,56 @@ const Medico = db.Medico;
 const Disponibilidade = db.Disponibilidade;
 const Pagamento = db.Pagamento;
 const { Op } = require('sequelize');
+const TipoUtilizador = db.TipoUtilizador;
 
 const ConsultaController = {
   // Criar nova consulta
   async create(req, res) {
     try {
-      // Validar dados
-      if (!req.body.cliente_id || !req.body.medico_id || !req.body.data_hora) {
+      console.log("Dados recebidos:", req.body);
+      
+      // Validação mínima
+      if (!req.body.data_hora) {
         return res.status(400).json({
-          message: "Campos obrigatórios não preenchidos!"
+          message: "Campo obrigatório não preenchido: data_hora é necessário!"
         });
       }
 
-      // Verificar se o cliente existe
-      const cliente = await Utilizador.findByPk(req.body.cliente_id);
-      if (!cliente) {
-        return res.status(404).json({
-          message: "Cliente não encontrado!"
+      // Usar o ID do usuário autenticado
+      const utilizador_id = req.userId;
+      console.log("ID do usuário do token:", utilizador_id);
+      
+      if (!utilizador_id) {
+        return res.status(401).json({
+          message: "Utilizador não autenticado!"
         });
       }
 
-      // Verificar se o médico existe
-      const medico = await Utilizador.findByPk(req.body.medico_id);
-      if (!medico) {
-        return res.status(404).json({
-          message: "Médico não encontrado!"
-        });
-      }
-
-      // Verificar disponibilidade do médico
-      const dataConsulta = new Date(req.body.data_hora);
-      const horaConsulta = dataConsulta.getHours() + ':' + dataConsulta.getMinutes() + ':00';
-      const disponibilidade = await Disponibilidade.findOne({
-        where: {
-          medico_id: req.body.medico_id,
-          data: dataConsulta.toISOString().split('T')[0],
-          hora_inicio: { [Op.lte]: horaConsulta },
-          hora_fim: { [Op.gte]: horaConsulta },
-          status_id: 1 // Assumindo que 1 é o status "Disponível"
-        }
-      });
-
-      if (!disponibilidade) {
-        return res.status(400).json({
-          message: "Médico não disponível nesta data e horário!"
-        });
-      }
-
-      // Buscar o status padrão (ex: "Agendada")
-      const statusAgendada = await ConsultaStatus.findOne({
-        where: { nome: 'Agendada' }
-      });
-
-      if (!statusAgendada) {
-        return res.status(500).json({
-          message: "Status de consulta não encontrado!"
-        });
-      }
-
-      // Criar consulta
-      const consulta = await Consulta.create({
-        cliente_id: req.body.cliente_id,
-        medico_id: req.body.medico_id,
+      // Criar a consulta com o ID do usuário extraído do token
+      const consultaData = {
+        utilizador_id: utilizador_id,
         data_hora: req.body.data_hora,
-        duracao: req.body.duracao || 30,
-        estado: req.body.estado || "agendada",
-        observacoes: req.body.observacoes || null,
-        tratamento_id: req.body.tratamento_id || null,
-        status_id: statusAgendada.id
+        observacoes: req.body.observacoes || '',
+        status_id: 1 // Status inicial (Pendente)
+      };
+
+      console.log("Dados para criar consulta:", consultaData);
+
+      const consulta = await Consulta.create(consultaData, {
+        fields: ['utilizador_id', 'data_hora', 'observacoes', 'status_id']
       });
 
       return res.status(201).json({
-        message: "Consulta criada com sucesso!",
+        success: true,
+        message: "Consulta agendada com sucesso!",
         consulta
       });
     } catch (error) {
-      console.error(error);
+      console.error("Erro ao criar consulta:", error);
       return res.status(500).json({
-        message: error.message || "Ocorreu um erro ao criar a consulta."
+        success: false,
+        message: "Erro ao criar consulta: " + error.message,
+        error: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   },
@@ -95,21 +67,12 @@ const ConsultaController = {
         include: [
           {
             model: Utilizador,
-            as: 'cliente',
-            attributes: ['id', 'nome', 'email', 'telefone']
-          },
-          {
-            model: Utilizador,
-            as: 'medico',
+            as: 'utilizador',
             attributes: ['id', 'nome', 'email', 'telefone']
           },
           {
             model: ConsultaStatus,
             as: 'status'
-          },
-          {
-            model: Pagamento,
-            as: 'pagamento'
           }
         ]
       });
@@ -132,21 +95,12 @@ const ConsultaController = {
         include: [
           {
             model: Utilizador,
-            as: 'cliente',
-            attributes: ['id', 'nome', 'email', 'telefone']
-          },
-          {
-            model: Utilizador,
-            as: 'medico',
+            as: 'utilizador',
             attributes: ['id', 'nome', 'email', 'telefone']
           },
           {
             model: ConsultaStatus,
             as: 'status'
-          },
-          {
-            model: Pagamento,
-            as: 'pagamento'
           }
         ]
       });
@@ -166,38 +120,70 @@ const ConsultaController = {
     }
   },
 
-  // Buscar consultas por médico
-  async findByMedico(req, res) {
+  // Buscar consultas por tipo de utilizador
+  async findByTipoUtilizador(req, res) {
     try {
-      const medicoId = req.params.id;
+      const utilizadorId = req.params.id;
+      const tipoUsuario = req.query.tipo; // cliente ou medico
       
-      const consultas = await Consulta.findAll({
-        where: { medico_id: medicoId },
-        include: ["cliente", "tratamento"]
+      console.log(`Buscando consultas para utilizador ${utilizadorId} do tipo ${tipoUsuario}`);
+      
+      // Buscar o utilizador para verificar o tipo
+      const utilizador = await Utilizador.findByPk(utilizadorId, {
+        include: [{
+          model: TipoUtilizador,
+          as: 'tipoUtilizador'
+        }]
       });
+      
+      if (!utilizador) {
+        return res.status(404).json({
+          message: "Utilizador não encontrado!"
+        });
+      }
+      
+      // Verificar se o tipo corresponde
+      if (utilizador.tipoUtilizador?.nome.toLowerCase() !== tipoUsuario.toLowerCase()) {
+        return res.status(400).json({
+          message: `Este utilizador não é do tipo ${tipoUsuario}!`
+        });
+      }
+      
+      // Buscar consultas relacionadas a este utilizador
+      let consultas;
+      
+      if (tipoUsuario.toLowerCase() === 'medico') {
+        // Para médicos, filtrar consultas que não são deste médico
+        console.log("Buscando consultas para o médico ID:", utilizadorId);
+        consultas = await Consulta.findAll({
+          include: [{
+            model: ConsultaStatus,
+            as: 'status'
+          }, {
+            model: Utilizador,
+            as: 'utilizador',
+            attributes: ['id', 'nome', 'email', 'telefone']
+          }]
+        });
+        
+        console.log(`Encontradas ${consultas.length} consultas`);
+      } else {
+        // Para clientes, buscar apenas as consultas do cliente
+        consultas = await Consulta.findAll({
+          where: { utilizador_id: utilizadorId },
+          include: [{
+            model: ConsultaStatus,
+            as: 'status'
+          }]
+        });
+      }
 
+      console.log("Consultas encontradas:", consultas.length);
+      console.log("Exemplo de consulta:", consultas[0] || "Nenhuma consulta encontrada");
+      
       return res.status(200).json(consultas);
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({
-        message: error.message || "Ocorreu um erro ao buscar as consultas."
-      });
-    }
-  },
-
-  // Buscar consultas por cliente
-  async findByCliente(req, res) {
-    try {
-      const clienteId = req.params.id;
-      
-      const consultas = await Consulta.findAll({
-        where: { cliente_id: clienteId },
-        include: ["medico", "tratamento"]
-      });
-
-      return res.status(200).json(consultas);
-    } catch (error) {
-      console.error(error);
+      console.error("Erro ao buscar consultas:", error);
       return res.status(500).json({
         message: error.message || "Ocorreu um erro ao buscar as consultas."
       });
@@ -256,7 +242,144 @@ const ConsultaController = {
         message: error.message || "Ocorreu um erro ao excluir a consulta."
       });
     }
+  },
+
+  // Médico aceitar consulta
+  async aceitarConsulta(req, res) {
+    try {
+      const consultaId = req.params.id;
+      
+      // Buscar o ID do status "Confirmada"
+      const statusConfirmada = await ConsultaStatus.findOne({
+        where: { nome: 'Confirmada' }
+      });
+      
+      if (!statusConfirmada) {
+        return res.status(404).json({
+          message: "Status 'Confirmada' não encontrado!"
+        });
+      }
+      
+      // Atualizar consulta com o ID correto
+      await Consulta.update(
+        { status_id: statusConfirmada.id },
+        { where: { id: consultaId } }
+      );
+      
+      return res.status(200).json({
+        message: "Consulta confirmada com sucesso!"
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        message: error.message || "Ocorreu um erro ao confirmar a consulta."
+      });
+    }
+  },
+
+  // Médico recusar consulta
+  async recusarConsulta(req, res) {
+    try {
+      const consultaId = req.params.id;
+      
+      // Verificar se a consulta existe
+      const consulta = await Consulta.findByPk(consultaId, {
+        include: [{
+          model: ConsultaStatus,
+          as: 'status'
+        }]
+      });
+      
+      if (!consulta) {
+        return res.status(404).json({
+          message: "Consulta não encontrada!"
+        });
+      }
+      
+      // Verificar se a consulta está pendente
+      if (consulta.status_id !== 1) {
+        return res.status(400).json({
+          message: "Esta consulta não está pendente!"
+        });
+      }
+      
+      // Atualizar status da consulta
+      await consulta.update({
+        status_id: 4 // ID para "Cancelada"
+      });
+      
+      return res.status(200).json({
+        message: "Consulta recusada com sucesso."
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        message: error.message || "Ocorreu um erro ao recusar a consulta."
+      });
+    }
+  },
+
+  // Adicione esta função ao controller
+  async findPendentes(req, res) {
+    try {
+      const consultas = await Consulta.findAll({
+        where: { 
+          status_id: 1 // Status "Pendente"
+        },
+        include: [
+          {
+            model: db.Utilizador,
+            as: 'utilizador',
+            attributes: ['id', 'nome', 'email', 'telefone'],
+            include: [
+              {
+                model: db.TipoUtilizador,
+                as: 'tipoUtilizador'
+              }
+            ]
+          },
+          {
+            model: db.ConsultaStatus,
+            as: 'status'
+          }
+        ],
+        order: [['data_hora', 'ASC']]
+      });
+
+      res.status(200).json(consultas);
+    } catch (error) {
+      console.error('Erro ao buscar consultas pendentes:', error);
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao buscar as consultas pendentes."
+      });
+    }
+  },
+
+  // Buscar todos os status de consulta
+  async findAllStatus(req, res) {
+    try {
+      const status = await ConsultaStatus.findAll({
+        order: [['id', 'ASC']]
+      });
+      
+      res.status(200).json(status);
+    } catch (error) {
+      console.error('Erro ao buscar status de consulta:', error);
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao buscar os status de consulta."
+      });
+    }
   }
 };
+
+// Adicionar esta linha APÓS a definição do objeto ConsultaController
+(async () => {
+  try {
+    const allStatus = await ConsultaStatus.findAll();
+    console.log("Status de consulta disponíveis:", allStatus.map(s => `${s.id}: ${s.nome}`));
+  } catch (err) {
+    console.error("Erro ao verificar status de consulta:", err);
+  }
+})();
 
 module.exports = ConsultaController; 

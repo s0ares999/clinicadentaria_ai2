@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import AuthService from '../../services/auth.service';
 import { useNavigate } from 'react-router-dom';
 import ConsultaService from '../../services/consulta.service';
-import api from '../../services/api.config';
-
-const API_URL = "http://localhost:8000/api";
 
 const Container = styled.div`
   display: flex;
@@ -108,167 +104,82 @@ const Button = styled.button`
   }
 `;
 
-const ErrorMessage = styled.div`
-  color: #e74c3c;
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-`;
-
-const TimeGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 0.5rem;
-  margin-top: 1rem;
-`;
-
-const TimeOption = styled.div`
-  padding: 0.5rem;
-  text-align: center;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
-  background-color: ${props => props.selected ? '#3498db' : '#f8f9fa'};
-  color: ${props => props.selected ? 'white' : '#2c3e50'};
-  transition: all 0.2s;
-  
-  &:hover {
-    background-color: ${props => props.selected ? '#2980b9' : '#e0e0e0'};
-  }
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
 function ClienteNovoAgendamentoPage() {
   const [dataAgendamento, setDataAgendamento] = useState('');
   const [horaSelecionada, setHoraSelecionada] = useState('');
-  const [medicos, setMedicos] = useState([]);
-  const [medicoSelecionado, setMedicoSelecionado] = useState('');
   const [observacoes, setObservacoes] = useState('');
-  const [disponibilidades, setDisponibilidades] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Verificar se o usuário está autenticado
     const user = AuthService.getCurrentUser();
     
     if (!user || !user.accessToken) {
-      navigate('/login');
+      console.error("Usuário não autenticado");
+      toast.error('Você precisa estar logado para agendar consultas');
       return;
     }
     
-    // Carregar médicos disponíveis
-    carregarMedicos();
+    console.log("Usuário autenticado na montagem do componente:", {
+      id: user.id,
+      email: user.email,
+      token: user.accessToken ? "presente" : "ausente"
+    });
   }, [navigate]);
-
-  useEffect(() => {
-    if (dataAgendamento && medicoSelecionado) {
-      carregarDisponibilidades(medicoSelecionado, dataAgendamento);
-    }
-  }, [dataAgendamento, medicoSelecionado]);
-
-  const carregarMedicos = async () => {
-    try {
-      const response = await api.get('utilizadores/medicos');
-      setMedicos(response.data);
-    } catch (error) {
-      console.error('Erro ao carregar médicos:', error);
-      toast.error('Não foi possível carregar a lista de médicos');
-    }
-  };
-
-  const carregarDisponibilidades = async (medicoId, data) => {
-    try {
-      const response = await api.get(
-        `disponibilidades/medico/${medicoId}/data/${data}`
-      );
-      
-      setDisponibilidades(response.data);
-    } catch (error) {
-      console.error('Erro ao carregar disponibilidades:', error);
-      toast.error('Não foi possível carregar os horários disponíveis');
-      setDisponibilidades([]);
-    }
-  };
-
-  const handleSelectHora = (hora) => {
-    setHoraSelecionada(hora === horaSelecionada ? '' : hora);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!dataAgendamento || !horaSelecionada || !medicoSelecionado) {
-      toast.error('Por favor, preencha todos os campos obrigatórios');
+    if (!dataAgendamento || !horaSelecionada) {
+      toast.error('Por favor, selecione data e hora para a consulta');
+      return;
+    }
+    
+    const user = AuthService.getCurrentUser();
+    console.log("Dados do usuário antes da submissão:", user);
+    
+    if (!user || !user.accessToken) {
+      console.error("Usuário não autenticado ou token não encontrado");
+      toast.error("Você precisa estar logado para agendar uma consulta");
+      navigate('/login');
       return;
     }
     
     try {
       setSubmitting(true);
-      
-      // Get current user
-      const user = AuthService.getCurrentUser();
-      
-      // Format date and time for the API
       const dataHora = `${dataAgendamento}T${horaSelecionada}:00`;
       
       const consultaData = {
-        cliente_id: user.id,
-        medico_id: medicoSelecionado,
         data_hora: dataHora,
-        observacoes: observacoes
+        observacoes: observacoes || ''
       };
       
-      // Use the ConsultaService to create the appointment
-      const response = await ConsultaService.createConsulta(consultaData);
+      console.log("Enviando dados:", consultaData);
+      console.log("Token usado:", user.accessToken.substring(0, 20) + "...");
       
+      const response = await ConsultaService.createConsulta(consultaData);
       toast.success('Consulta agendada com sucesso!');
       navigate('/cliente-dashboard/agendamentos');
     } catch (error) {
-      console.error('Erro ao agendar consulta:', error);
+      console.error('Erro completo:', error);
+      if (error.response) {
+        console.error('Status:', error.response.status);
+        console.error('Dados do erro:', error.response.data);
+        
+        // Tratamento específico para erro 401
+        if (error.response.status === 401) {
+          toast.error('Sua sessão expirou. Por favor, faça login novamente.');
+          AuthService.logout(); // Limpa dados da sessão
+          setTimeout(() => navigate('/login'), 2000); // Redireciona após 2 segundos
+          return;
+        }
+      }
+      
       toast.error(error.response?.data?.message || 'Erro ao agendar consulta');
     } finally {
       setSubmitting(false);
     }
   };
-
-  // Função para formatar a disponibilidade em intervalos de 30 minutos
-  const formatarHorariosDisponiveis = () => {
-    if (!disponibilidades || disponibilidades.length === 0) return [];
-    
-    const horarios = [];
-    
-    disponibilidades.forEach(disp => {
-      const [horaInicio, minInicio] = disp.hora_inicio.split(':').map(Number);
-      const [horaFim, minFim] = disp.hora_fim.split(':').map(Number);
-      
-      let horaAtual = horaInicio;
-      let minAtual = minInicio;
-      
-      // Criar intervalos de 30 minutos
-      while (
-        horaAtual < horaFim || 
-        (horaAtual === horaFim && minAtual < minFim)
-      ) {
-        const horaFormatada = `${horaAtual.toString().padStart(2, '0')}:${minAtual.toString().padStart(2, '0')}`;
-        horarios.push(horaFormatada);
-        
-        // Incrementar 30 minutos
-        minAtual += 30;
-        if (minAtual >= 60) {
-          horaAtual += 1;
-          minAtual = 0;
-        }
-      }
-    });
-    
-    return horarios;
-  };
-
-  const horariosDisponiveis = formatarHorariosDisponiveis();
 
   return (
     <Container>
@@ -276,70 +187,48 @@ function ClienteNovoAgendamentoPage() {
         <SectionTitle>Agendar Nova Consulta</SectionTitle>
         <Form onSubmit={handleSubmit}>
           <FormGroup>
-            <Label htmlFor="medico">Médico</Label>
-            <Select
-              id="medico"
-              value={medicoSelecionado}
-              onChange={(e) => setMedicoSelecionado(e.target.value)}
-              required
-            >
-              <option value="">Selecione um médico</option>
-              {medicos.map((medico) => (
-                <option key={medico.id} value={medico.id}>
-                  Dr(a). {medico.nome} - {medico.medico?.especialidade?.nome || "Clínica Geral"}
-                </option>
-              ))}
-            </Select>
-          </FormGroup>
-          
-          <FormGroup>
-            <Label htmlFor="data">Data</Label>
+            <Label>Data*</Label>
             <Input
               type="date"
-              id="data"
               value={dataAgendamento}
               onChange={(e) => setDataAgendamento(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
               required
             />
           </FormGroup>
-          
-          {dataAgendamento && medicoSelecionado && (
-            <FormGroup style={{ gridColumn: '1 / -1' }}>
-              <Label>Horários Disponíveis</Label>
-              {horariosDisponiveis.length > 0 ? (
-                <TimeGrid>
-                  {horariosDisponiveis.map((hora) => (
-                    <TimeOption
-                      key={hora}
-                      selected={hora === horaSelecionada}
-                      onClick={() => handleSelectHora(hora)}
-                    >
-                      {hora}
-                    </TimeOption>
-                  ))}
-                </TimeGrid>
-              ) : (
-                <ErrorMessage>
-                  Não há horários disponíveis para esta data. Por favor, selecione outra data.
-                </ErrorMessage>
-              )}
-            </FormGroup>
-          )}
-          
+
+          <FormGroup>
+            <Label>Horário Preferido*</Label>
+            <Select
+              value={horaSelecionada}
+              onChange={(e) => setHoraSelecionada(e.target.value)}
+              required
+            >
+              <option value="">Selecione um horário</option>
+              <option value="08:00">08:00</option>
+              <option value="09:00">09:00</option>
+              <option value="10:00">10:00</option>
+              <option value="11:00">11:00</option>
+              <option value="14:00">14:00</option>
+              <option value="15:00">15:00</option>
+              <option value="16:00">16:00</option>
+              <option value="17:00">17:00</option>
+            </Select>
+          </FormGroup>
+
           <FormGroup style={{ gridColumn: '1 / -1' }}>
-            <Label htmlFor="observacoes">Observações (opcional)</Label>
+            <Label>Observações</Label>
             <Input
               as="textarea"
-              id="observacoes"
+              rows="4"
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
-              style={{ height: '100px', resize: 'vertical' }}
+              placeholder="Adicione observações importantes sobre a consulta..."
             />
           </FormGroup>
-          
-          <Button type="submit" disabled={submitting || !horaSelecionada}>
-            {submitting ? 'Agendando...' : 'Agendar Consulta'}
+
+          <Button type="submit" disabled={submitting}>
+            {submitting ? 'Agendando...' : 'Solicitar Consulta'}
           </Button>
         </Form>
       </ScheduleContainer>

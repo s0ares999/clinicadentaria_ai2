@@ -7,26 +7,30 @@ const JWT_SECRET = process.env.JWT_SECRET || 'clinica_dentaria_secret_key';
 
 const authMiddleware = {
   verifyToken: async (req, res, next) => {
-    try {
-      console.log("\n=== VERIFICANDO TOKEN ===");
-      let token = req.headers.authorization?.split(' ')[1] || 
-                  req.headers['x-access-token'];
-      
-      if (!token) {
-        console.log("❌ Token não fornecido");
-        return res.status(401).json({
-          success: false,
-          message: 'Token não fornecido'
-        });
-      }
+    console.log("\n=== VERIFICANDO TOKEN ===");
+    console.log("URL:", req.originalUrl);
+    console.log("Método:", req.method);
+    console.log("Headers de autenticação:", {
+      authorization: req.headers.authorization ? "presente" : "ausente",
+      xAccessToken: req.headers['x-access-token'] ? "presente" : "ausente"
+    });
+    
+    // Obtenha o token de ambos os cabeçalhos possíveis
+    const token = req.headers['x-access-token'] || 
+                  req.headers.authorization?.split(' ')[1];
 
-      console.log("🎟️ Token recebido:", token);
-      const decoded = jwt.verify(token, JWT_SECRET);
-      console.log("🔓 Token decodificado:", {
-        id: decoded.id,
-        email: decoded.email,
-        tipo: decoded.tipo
+    if (!token) {
+      return res.status(401).json({
+        message: "Token não fornecido!"
       });
+    }
+
+    try {
+      // Decodificar o token
+      const decoded = jwt.verify(token, JWT_SECRET);
+      req.userId = decoded.id;
+      req.userEmail = decoded.email;
+      req.userTipo = decoded.tipo;
       
       const utilizador = await Utilizador.findOne({
         where: { id: decoded.id },
@@ -56,11 +60,10 @@ const authMiddleware = {
       
       next();
     } catch (error) {
-      console.error('❌ Erro na verificação do token:', error);
+      console.error("Erro na verificação do token:", error);
       return res.status(401).json({
-        success: false,
-        message: error.name === 'TokenExpiredError' ? 
-          'Token expirado' : 'Token inválido'
+        message: "Token inválido ou expirado!",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   },

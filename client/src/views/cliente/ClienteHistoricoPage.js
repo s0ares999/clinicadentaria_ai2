@@ -20,32 +20,23 @@ const HistoryContainer = styled.div`
   padding: 2rem;
 `;
 
-const SectionTitle = styled.h3`
+const SectionTitle = styled.div`
   font-size: 1.25rem;
   color: #2c3e50;
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #ecf0f1;
-`;
-
-const Tabs = styled.div`
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  justify-content: space-between;
+  align-items: center;
 `;
 
-const Tab = styled.button`
-  padding: 0.75rem 1.5rem;
-  background-color: ${props => props.active ? '#3498db' : '#f5f5f5'};
-  color: ${props => props.active ? 'white' : '#333'};
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  
-  &:hover {
-    background-color: ${props => props.active ? '#3498db' : '#e0e0e0'};
-  }
+const CategoryTitle = styled.h4`
+  font-size: 1.1rem;
+  color: #34495e;
+  margin: 1.5rem 0 1rem 0;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px dashed #ecf0f1;
 `;
 
 const ListItem = styled.div`
@@ -94,54 +85,38 @@ const EmptyState = styled.div`
 `;
 
 function ClienteHistoricoPage() {
-  const [historico, setHistorico] = useState([]);
   const [consultasHistorico, setConsultasHistorico] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('consultas');
 
   useEffect(() => {
-    if (activeTab === 'consultas') {
-      fetchHistoricoConsultas();
-    } else {
-      fetchHistoricoCliente();
-    }
-  }, [activeTab]);
+    fetchHistoricoConsultas();
+  }, []);
 
   const fetchHistoricoConsultas = async () => {
     try {
       setLoading(true);
-      const response = await ConsultaService.getConsultasByCliente();
+      console.log("Iniciando busca de histórico de consultas");
       
-      // Filtrar apenas as consultas finalizadas ou canceladas
-      const historicoConsultas = response.data.filter(
-        consulta => consulta.status?.nome === 'Finalizada' || consulta.status?.nome === 'Cancelada'
+      const consultas = await ConsultaService.getConsultasByCliente();
+      console.log("Consultas recebidas:", consultas);
+      
+      // Filtrando consultas concluídas ou canceladas
+      const historicoConsultas = consultas.filter(
+        consulta => {
+          console.log("Verificando status:", consulta.status);
+          return consulta.status?.nome === 'Finalizada' || 
+                 consulta.status?.nome === 'Concluída' || 
+                 consulta.status?.nome === 'Cancelada';
+        }
       );
       
+      console.log("Histórico filtrado:", historicoConsultas);
       setConsultasHistorico(historicoConsultas || []);
       setLoading(false);
     } catch (error) {
       console.error('Erro ao carregar histórico de consultas:', error);
-      setLoading(false);
       toast.error('Erro ao carregar seu histórico de consultas');
-    }
-  };
-
-  const fetchHistoricoCliente = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('clientes/profile');
-      
-      if (response.data && response.data.historico) {
-        setHistorico(response.data.historico || []);
-      } else {
-        setHistorico([]);
-      }
-      
       setLoading(false);
-    } catch (error) {
-      console.error('Erro ao carregar histórico do cliente:', error);
-      setLoading(false);
-      toast.error('Erro ao carregar seu histórico');
     }
   };
 
@@ -157,53 +132,44 @@ function ClienteHistoricoPage() {
   return (
     <Container>
       <HistoryContainer>
-        <SectionTitle>Meu Histórico</SectionTitle>
-        
-        <Tabs>
-          <Tab 
-            active={activeTab === 'consultas'} 
-            onClick={() => setActiveTab('consultas')}
+        <SectionTitle>
+          Meu Histórico
+          <button 
+            onClick={() => {
+              setLoading(true);
+              fetchHistoricoConsultas();
+            }}
+            style={{
+              padding: '5px 10px',
+              fontSize: '0.8rem',
+              backgroundColor: '#3498db',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
           >
-            Consultas
-          </Tab>
-          <Tab 
-            active={activeTab === 'geral'} 
-            onClick={() => setActiveTab('geral')}
-          >
-            Histórico Geral
-          </Tab>
-        </Tabs>
+            Recarregar
+          </button>
+        </SectionTitle>
         
         {loading ? (
           <EmptyState>Carregando histórico...</EmptyState>
         ) : (
-          activeTab === 'consultas' ? (
-            consultasHistorico.length > 0 ? (
-              consultasHistorico.map(consulta => (
-                <ListItem key={consulta.id}>
-                  <span className="date">{formatDate(consulta.data_hora)}</span>
-                  <span className="description">
-                    Consulta com Dr(a). {consulta.medico?.nome || 'Médico'}
-                  </span>
-                  <span className={`status ${consulta.status?.nome === 'Finalizada' ? 'concluido' : 'cancelado'}`}>
-                    {consulta.status?.nome || 'Desconhecido'}
-                  </span>
-                </ListItem>
-              ))
-            ) : (
-              <EmptyState>Você ainda não tem histórico de consultas.</EmptyState>
-            )
+          consultasHistorico.length > 0 ? (
+            consultasHistorico.map(consulta => (
+              <ListItem key={consulta.id}>
+                <span className="date">{formatDate(consulta.data_hora)}</span>
+                <span className="description">
+                  Consulta {consulta.observacoes ? `- ${consulta.observacoes}` : ''}
+                </span>
+                <span className={`status ${(consulta.status?.nome === 'Finalizada' || consulta.status?.nome === 'Concluída') ? 'concluido' : 'cancelado'}`}>
+                  {consulta.status?.nome || 'Desconhecido'}
+                </span>
+              </ListItem>
+            ))
           ) : (
-            historico.length > 0 ? (
-              historico.map((item, index) => (
-                <ListItem key={index}>
-                  <span className="date">{formatDate(item.data)}</span>
-                  <span className="description">{item.descricao}</span>
-                </ListItem>
-              ))
-            ) : (
-              <EmptyState>Você ainda não tem histórico geral registrado.</EmptyState>
-            )
+            <EmptyState>Você ainda não tem histórico de consultas.</EmptyState>
           )
         )}
       </HistoryContainer>

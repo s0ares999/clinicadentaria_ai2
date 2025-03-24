@@ -1,8 +1,7 @@
 import axios from 'axios';
 import AuthService from './auth.service';
 
-const API_URL = process.env.REACT_APP_API_URL || 
-  (window.location.hostname === 'localhost' ? 'http://localhost:8000/api/' : '/api/');
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -11,16 +10,31 @@ const api = axios.create({
   }
 });
 
+// Função para obter cabeçalhos de autenticação
+const authHeader = () => {
+  const user = AuthService.getCurrentUser();
+  if (user && user.accessToken) {
+    return { 'x-access-token': user.accessToken };
+  } else {
+    return {};
+  }
+};
+
 // Interceptor para adicionar token em todas as requisições
 api.interceptors.request.use(
   (config) => {
-    const user = AuthService.getCurrentUser();
-    if (user?.accessToken) {
-      config.headers['Authorization'] = `Bearer ${user.accessToken}`;
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user && user.accessToken) {
+      config.headers.Authorization = `Bearer ${user.accessToken}`;
+      console.log("Adicionando token à requisição:", config.url);
+    } else {
+      console.log("Requisição sem token:", config.url);
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 // Interceptor para tratamento de erros e refresh token

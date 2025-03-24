@@ -109,23 +109,21 @@ class AuthService {
   }
 
   getCurrentUser() {
+    const userStr = localStorage.getItem("user");
+    if (!userStr) return null;
+    
     try {
-      const userStr = localStorage.getItem('user');
-      if (!userStr) return null;
-      
+      // Adicionar verificação extra de token
       const user = JSON.parse(userStr);
-      if (!user.accessToken) return null;
-
-      // Verificar se o token está expirado
-      const tokenInfo = this.decodeToken(user.accessToken);
-      if (tokenInfo.exp && tokenInfo.exp * 1000 < Date.now()) {
+      if (!user.accessToken) {
+        console.error("Token não encontrado no objeto do usuário");
         this.logout();
         return null;
       }
-
       return user;
     } catch (error) {
-      console.error('Erro ao recuperar usuário:', error);
+      console.error("Erro ao analisar dados do usuário:", error);
+      this.logout();
       return null;
     }
   }

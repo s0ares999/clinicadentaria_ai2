@@ -13,8 +13,11 @@ class ClienteService {
 
   async updateClienteProfile(clienteData) {
     try {
-      const response = await api.put('cliente/perfil', clienteData);
-      return response.data;
+      const response = await api.put('/cliente/perfil', clienteData);
+      if (response.data.success) {
+        return response.data;
+      }
+      throw new Error(response.data.message || 'Erro ao atualizar perfil');
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
       throw error;

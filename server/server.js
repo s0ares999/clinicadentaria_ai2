@@ -33,7 +33,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Middleware para debug das requisições
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
+  console.log('\n=== Nova Requisição ===');
+  console.log('Método:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
   next();
 });
 

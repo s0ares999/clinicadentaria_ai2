@@ -132,179 +132,58 @@ const EmptyState = styled.div`
 
 const API_URL = 'http://localhost:8000/api';
 
-function ClientePerfilPage({ clienteData }) {
+const ClientePerfilPage = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [cliente, setCliente] = useState(null);
   const [historico, setHistorico] = useState([]);
   
-  // Campos do formulário
-  const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
-  const [telefone, setTelefone] = useState('');
-  const [dataNascimento, setDataNascimento] = useState('');
-  const [morada, setMorada] = useState('');
-  const [nif, setNif] = useState('');
+  const [formData, setFormData] = useState({
+    nome: '',
+    email: '',
+    telefone: '',
+    dataNascimento: '',
+    morada: '',
+    nif: ''
+  });
   
   const currentUser = AuthService.getCurrentUser();
   
   useEffect(() => {
-    // Primeiro tentamos usar os dados passados como prop
-    if (clienteData) {
-      console.log("Using clienteData from props:", clienteData);
-      setCliente(clienteData);
-      setFormData(clienteData);
-      
-      // Processar histórico se existir
-      if (clienteData.historico) {
-        try {
-          const historicoArray = Array.isArray(clienteData.historico) 
-            ? clienteData.historico 
-            : (typeof clienteData.historico === 'string' 
-               ? JSON.parse(clienteData.historico) 
-               : []);
-          setHistorico(historicoArray);
-        } catch (e) {
-          console.error("Erro ao processar histórico:", e);
-          setHistorico([]);
-        }
-      }
-    } else {
-      // Se não houver dados via prop, buscamos da API
-      fetchClienteData();
-    }
-  }, [clienteData]);
-  
-  const fetchClienteData = async () => {
-    try {
-      setLoading(true);
-      console.log("Fetching client data from API...");
-      
-      const response = await ClienteService.getClienteProfile();
-      
-      if (response && response.data) {
-        console.log("Client data received:", response.data);
-        
-        // Tentar localizar os dados do cliente na estrutura da resposta
-        const clientData = response.data.cliente || response.data;
-        console.log("Extracted client data:", clientData);
-        
-        setCliente(clientData);
-        setFormData(clientData);
-        
-        // Processar histórico
-        if (clientData.historico) {
-          try {
-            const historicoArray = Array.isArray(clientData.historico) 
-              ? clientData.historico 
-              : (typeof clientData.historico === 'string' 
-                 ? JSON.parse(clientData.historico) 
-                 : []);
-            setHistorico(historicoArray);
-          } catch (e) {
-            console.error("Erro ao processar histórico:", e);
-            setHistorico([]);
-          }
-        }
-      } else {
-        console.warn("No client data received, using current user data");
-        setFormData({
-          nome: currentUser?.nome || currentUser?.username || '',
-          email: currentUser?.email || '',
-          telefone: currentUser?.telefone || '',
-          dataNascimento: '',
-          morada: '',
-          nif: ''
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao carregar dados do cliente:', error);
-      toast.error('Erro ao carregar seus dados');
-      
-      // Fallback para os dados do usuário
-      setFormData({
-        nome: currentUser?.nome || currentUser?.username || '',
-        email: currentUser?.email || '',
-        telefone: currentUser?.telefone || '',
-        dataNascimento: '',
-        morada: '',
-        nif: ''
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const setFormData = (data) => {
-    console.log("Setting form data with:", data);
-    setNome(data.nome || '');
-    setEmail(data.email || '');
-    setTelefone(data.telefone || '');
-    
-    // Formatar a data de nascimento para o formato esperado pelo input type="date"
-    let formattedDate = '';
-    if (data.dataNascimento) {
+    const fetchData = async () => {
       try {
-        // Tenta extrair apenas a parte da data se for uma string ISO
-        formattedDate = data.dataNascimento.split('T')[0];
-      } catch (e) {
-        console.error("Erro ao formatar data:", e);
-        formattedDate = '';
+        const response = await ClienteService.getClienteProfile();
+        console.log("Dados recebidos:", response);
+        
+        if (response.success && response.data) {
+          setFormData({
+            nome: response.data.nome || '',
+            email: response.data.email || '',
+            telefone: response.data.telefone || '',
+            dataNascimento: response.data.dataNascimento || '',
+            morada: response.data.morada || '',
+            nif: response.data.nif || ''
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+        toast.error("Erro ao carregar dados do perfil");
       }
-    }
-    setDataNascimento(formattedDate);
-    
-    setMorada(data.morada || '');
-    setNif(data.nif || '');
-  };
+    };
+
+    fetchData();
+  }, []);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    
     try {
-      const clienteData = {
-        nome,
-        email,
-        telefone,
-        dataNascimento,
-        morada,
-        nif
-      };
-      
-      // Use ClienteService instead of direct axios call
-      await ClienteService.updateClienteProfile(clienteData);
-      
-      toast.success('Perfil atualizado com sucesso!');
-      setSaving(false);
-      
-      // Atualizar dados locais
-      setCliente({...cliente, ...clienteData});
-      
-      // Adicionar entrada ao histórico
-      const newHistoryEntry = {
-        date: new Date().toISOString(),
-        action: 'Atualização de perfil',
-        details: 'Informações pessoais atualizadas'
-      };
-      
-      const updatedHistorico = [newHistoryEntry, ...historico];
-      setHistorico(updatedHistorico);
-      
-      // Atualizar histórico no servidor - consider moving this to a service method too
-      try {
-        await api.post('clientes/historico', { 
-          historico: JSON.stringify(updatedHistorico) 
-        });
-      } catch (historyError) {
-        console.warn('Erro ao atualizar histórico:', historyError);
-        // Don't show error to user since the profile was updated successfully
+      const response = await ClienteService.updateClienteProfile(formData);
+      if (response.success) {
+        toast.success("Perfil atualizado com sucesso!");
       }
-      
     } catch (error) {
-      console.error('Erro ao atualizar perfil:', error);
-      toast.error('Erro ao atualizar perfil');
-      setSaving(false);
+      console.error("Erro ao atualizar perfil:", error);
+      toast.error("Erro ao atualizar perfil");
     }
   };
   
@@ -333,8 +212,8 @@ function ClientePerfilPage({ clienteData }) {
             <Input
               type="text"
               id="nome"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
+              value={formData.nome}
+              onChange={(e) => setFormData({...formData, nome: e.target.value})}
               required
             />
           </FormGroup>
@@ -344,8 +223,8 @@ function ClientePerfilPage({ clienteData }) {
             <Input
               type="email"
               id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
               required
               disabled
             />
@@ -360,8 +239,8 @@ function ClientePerfilPage({ clienteData }) {
               <Input
                 type="tel"
                 id="telefone"
-                value={telefone}
-                onChange={(e) => setTelefone(e.target.value)}
+                value={formData.telefone}
+                onChange={(e) => setFormData({...formData, telefone: e.target.value})}
                 required
               />
             </FormGroup>
@@ -371,8 +250,8 @@ function ClientePerfilPage({ clienteData }) {
               <Input
                 type="date"
                 id="dataNascimento"
-                value={dataNascimento}
-                onChange={(e) => setDataNascimento(e.target.value)}
+                value={formData.dataNascimento}
+                onChange={(e) => setFormData({...formData, dataNascimento: e.target.value})}
                 required
               />
             </FormGroup>
@@ -383,8 +262,8 @@ function ClientePerfilPage({ clienteData }) {
             <Input
               type="text"
               id="morada"
-              value={morada}
-              onChange={(e) => setMorada(e.target.value)}
+              value={formData.morada}
+              onChange={(e) => setFormData({...formData, morada: e.target.value})}
               required
             />
           </FormGroup>
@@ -394,8 +273,8 @@ function ClientePerfilPage({ clienteData }) {
             <Input
               type="text"
               id="nif"
-              value={nif}
-              onChange={(e) => setNif(e.target.value)}
+              value={formData.nif}
+              onChange={(e) => setFormData({...formData, nif: e.target.value})}
               required
             />
           </FormGroup>
@@ -427,6 +306,6 @@ function ClientePerfilPage({ clienteData }) {
       </ProfileSection>
     </ProfileContainer>
   );
-}
+};
 
 export default ClientePerfilPage;

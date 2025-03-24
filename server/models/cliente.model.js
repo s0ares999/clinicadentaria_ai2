@@ -1,15 +1,11 @@
 module.exports = (sequelize, Sequelize) => {
-  const Cliente = sequelize.define("cliente", {
-    id: {
-      type: Sequelize.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
+  const Cliente = sequelize.define("Cliente", {
     utilizador_id: {
       type: Sequelize.INTEGER,
+      primaryKey: true,
       allowNull: false,
       references: {
-        model: 'utilizadores',
+        model: 'Utilizadores',
         key: 'id'
       }
     },
@@ -44,7 +40,7 @@ module.exports = (sequelize, Sequelize) => {
       field: 'updated_at'
     }
   }, {
-    tableName: 'clientes',
+    tableName: 'Clientes',
     timestamps: true
   });
 

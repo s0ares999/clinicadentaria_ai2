@@ -5,76 +5,133 @@ const db = require("../models");
 const Utilizador = db.Utilizador;
 const TipoUtilizador = db.TipoUtilizador;
 const Cliente = db.Cliente;
+const Admin = db.Admin;
+const Medico = db.Medico;
 
 // Login usando a tabela Utilizadores
 exports.signin = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log("\n=== TENTATIVA DE LOGIN ===");
+    console.log("📧 Email recebido:", email);
+    console.log("🔑 Password recebido (length):", password?.length || 0);
 
-    console.log("=== TENTATIVA DE LOGIN ===");
-    console.log("Email:", email);
-
-    // Validar dados de entrada
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email e senha são obrigatórios"
-      });
+    // Verificar se as tabelas existem
+    try {
+      const [tables] = await db.sequelize.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public'
+      `);
+      console.log("Tabelas encontradas:", tables.map(t => t.table_name));
+    } catch (err) {
+      console.error("Erro ao listar tabelas:", err);
     }
 
-    // Buscar usuário
+    // Tentar buscar direto com SQL primeiro
+    const [utilizadorSQL] = await db.sequelize.query(`
+      SELECT u.*, t.nome as tipo_nome 
+      FROM "Utilizadores" u 
+      LEFT JOIN "TipoUtilizador" t ON u.tipo_utilizador_id = t.id 
+      WHERE u.email = :email
+    `, {
+      replacements: { email },
+      type: db.sequelize.QueryTypes.SELECT
+    });
+
+    console.log("Resultado SQL direto:", utilizadorSQL);
+
+    // Buscar com Sequelize
     const utilizador = await Utilizador.findOne({
       where: { email },
       include: [{
         model: TipoUtilizador,
-        as: 'tipoUtilizador'
-      }]
+        as: 'tipoUtilizador',
+        attributes: ['nome']
+      }],
+      logging: console.log
     });
 
     if (!utilizador) {
-      console.log("❌ Usuário não encontrado");
+      console.log("❌ Utilizador não encontrado para o email:", email);
       return res.status(401).json({
         success: false,
         message: "Email ou senha incorretos"
       });
     }
 
-    // Verificar senha
+    console.log("Dados do utilizador encontrado:", {
+      id: utilizador.id,
+      email: utilizador.email,
+      temSenha: !!utilizador.senha,
+      senhaTamanho: utilizador.senha?.length,
+      tipoUtilizador: utilizador.tipoUtilizador?.nome
+    });
+
+    console.log("\n🔐 Verificando senha...");
+    console.log("Senha armazenada (hash):", utilizador.senha);
+    console.log("Senha recebida (length):", password.length);
+
+    // Verificar se a senha está em formato hash
+    const isSenhaHashed = utilizador.senha.startsWith('$2') && utilizador.senha.length === 60;
+    console.log("Senha está hasheada?", isSenhaHashed);
+
     const senhaValida = await bcrypt.compare(password, utilizador.senha);
+    console.log("Resultado da verificação da senha:", senhaValida);
+    
     if (!senhaValida) {
-      console.log("❌ Senha inválida");
+      console.log("❌ Senha inválida para o utilizador:", email);
       return res.status(401).json({
         success: false,
         message: "Email ou senha incorretos"
       });
     }
+
+    // Verificar tipo de utilizador
+    console.log("\n👤 Verificando tipo de utilizador...");
+    if (!utilizador.tipoUtilizador) {
+      console.log("❌ Tipo de utilizador não encontrado");
+      console.log("tipo_utilizador_id:", utilizador.tipo_utilizador_id);
+      return res.status(401).json({
+        success: false,
+        message: "Tipo de utilizador não encontrado"
+      });
+    }
+
+    const tipo = utilizador.tipoUtilizador.nome;
+    console.log("✅ Tipo de utilizador encontrado:", tipo);
 
     // Gerar token
+    console.log("\n🎟️ Gerando token...");
     const token = jwt.sign(
       { 
         id: utilizador.id,
         email: utilizador.email,
-        tipo: utilizador.tipoUtilizador?.nome || 'cliente'
+        tipo: tipo
       },
       process.env.JWT_SECRET || 'clinica_dentaria_secret_key',
       { expiresIn: '24h' }
     );
+    console.log("✅ Token gerado com sucesso");
 
     // Retornar resposta
-    res.status(200).json({
+    console.log("\n📤 Enviando resposta...");
+    return res.status(200).json({
       success: true,
+      accessToken: token,
       id: utilizador.id,
       nome: utilizador.nome,
       email: utilizador.email,
-      tipo: utilizador.tipoUtilizador?.nome || 'cliente',
-      accessToken: token
+      tipo: tipo
     });
 
   } catch (error) {
-    console.error("❌ Erro no login:", error);
-    res.status(500).json({
+    console.error("\n❌ Erro completo:", error);
+    console.error("Stack:", error.stack);
+    return res.status(500).json({
       success: false,
-      message: "Erro interno do servidor"
+      message: "Erro interno do servidor",
+      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

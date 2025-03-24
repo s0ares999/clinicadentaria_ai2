@@ -7,45 +7,58 @@ const API_URL = process.env.REACT_APP_API_URL ||
 class AuthService {
   async login(email, password) {
     try {
-      console.log("Tentando login com:", { email });
+      console.log("\n=== INICIANDO LOGIN ===");
+      console.log("📤 Enviando requisição para:", 'auth/signin');
+      console.log("Dados enviados:", { 
+        email, 
+        passwordLength: password?.length || 0 
+      });
       
       const response = await api.post('auth/signin', { 
         email, 
-        password 
+        password
       });
 
-      console.log("Resposta do servidor:", response.data);
+      console.log("\n📥 Resposta recebida:");
+      console.log("Status:", response.status);
+      console.log("Headers:", response.headers);
+      console.log("Dados:", {
+        ...response.data,
+        accessToken: response.data.accessToken ? '[PRESENTE]' : '[AUSENTE]'
+      });
 
-      // Verificar se a resposta contém os dados necessários
-      if (!response.data || !response.data.accessToken) {
-        console.error("Resposta inválida do servidor:", response.data);
-        throw new Error('Resposta inválida do servidor');
+      if (!response.data.success || !response.data.accessToken) {
+        console.error("❌ Resposta inválida:", response.data);
+        throw new Error(response.data.message || 'Resposta inválida do servidor');
       }
 
-      // Garantir que temos todas as informações necessárias
       const userData = {
         ...response.data,
-        tipo: response.data.tipo || 'cliente', // fallback para 'cliente' se não especificado
+        tipo: response.data.tipo || 'cliente',
         accessToken: response.data.accessToken,
         id: response.data.id
       };
 
-      // Armazenar no localStorage
-      localStorage.setItem('user', JSON.stringify(userData));
-      
-      return userData;
-    } catch (error) {
-      console.error('Erro detalhado no login:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
+      console.log("\n💾 Salvando dados do usuário:", {
+        ...userData,
+        accessToken: '[PRESENTE]'
       });
 
-      // Repassar a mensagem de erro do servidor se disponível
-      if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      }
-      throw error;
+      localStorage.setItem('user', JSON.stringify(userData));
+      return userData;
+      
+    } catch (error) {
+      console.error("\n❌ Erro no login:");
+      console.error("Status:", error.response?.status);
+      console.error("Dados do erro:", error.response?.data);
+      console.error("Mensagem:", error.message);
+      console.error("Stack:", error.stack);
+
+      throw new Error(
+        error.response?.data?.message || 
+        error.message || 
+        'Erro ao realizar login'
+      );
     }
   }
 

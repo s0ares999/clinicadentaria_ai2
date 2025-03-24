@@ -1,5 +1,5 @@
 module.exports = (sequelize, Sequelize) => {
-  const Utilizador = sequelize.define("utilizador", {
+  const Utilizador = sequelize.define("Utilizador", {
     id: {
       type: Sequelize.INTEGER,
       primaryKey: true,
@@ -21,17 +21,26 @@ module.exports = (sequelize, Sequelize) => {
     telefone: {
       type: Sequelize.STRING
     },
+    tipo_utilizador_id: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'TipoUtilizador',
+        key: 'id'
+      }
+    },
     createdAt: {
       type: Sequelize.DATE,
-      field: 'created_at'
+      field: 'createdAt'
     },
     updatedAt: {
       type: Sequelize.DATE,
-      field: 'updated_at'
+      field: 'updatedAt'
     }
   }, {
-    tableName: 'utilizadores',
-    timestamps: true
+    tableName: 'Utilizadores',
+    timestamps: true,
+    underscored: false
   });
 
   // Método de associação para ser chamado após todos os modelos serem definidos

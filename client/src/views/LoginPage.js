@@ -4,7 +4,8 @@ import styled from 'styled-components';
 import AuthService from '../services/auth.service';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { toast } from 'react-hot-toast';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -127,6 +128,10 @@ function LoginPage() {
     setLoading(true);
     setMessage("");
 
+    console.log("\n=== TENTATIVA DE LOGIN NA PÁGINA ===");
+    console.log("Email:", email);
+    console.log("Senha (length):", password?.length || 0);
+
     try {
       if (!email || !password) {
         throw new Error('Por favor, preencha todos os campos');
@@ -134,12 +139,15 @@ function LoginPage() {
 
       console.log("Iniciando processo de login com email:", email);
       
-      const response = await AuthService.login(email, password);
-      console.log("Login bem-sucedido:", response);
+      const userData = await AuthService.login(email, password);
+      console.log("\n✅ Login bem-sucedido:", {
+        ...userData,
+        accessToken: userData.accessToken ? '[PRESENTE]' : '[AUSENTE]'
+      });
 
       // Determinar rota com base no tipo de usuário
       let redirectPath;
-      switch (response.tipo?.toLowerCase()) {
+      switch (userData.tipo?.toLowerCase()) {
         case 'admin':
           redirectPath = '/admin/dashboard';
           break;
@@ -153,11 +161,16 @@ function LoginPage() {
       navigate(redirectPath);
       
     } catch (error) {
-      console.error("Erro no login:", error);
+      console.error("\n❌ Erro no login na página:");
+      console.error("Tipo:", error.name);
+      console.error("Mensagem:", error.message);
+      console.error("Stack:", error.stack);
       
       let errorMessage;
       if (error.response) {
         const { status, data } = error.response;
+        console.error("Status:", status);
+        console.error("Dados do erro:", data);
         
         switch (status) {
           case 401:
@@ -186,53 +199,56 @@ function LoginPage() {
   };
 
   return (
-    <PageContainer>
-      <Navbar />
-      
-      <MainContent>
-        <LoginCard>
-          <CardTitle>Login</CardTitle>
-          
-          {message && <ErrorMessage>{message}</ErrorMessage>}
-          
-          <Form onSubmit={handleLogin}>
-            <FormGroup>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                type="email"
-                id="email"
-                name="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </FormGroup>
+    <>
+      <ToastContainer />
+      <PageContainer>
+        <Navbar />
+        
+        <MainContent>
+          <LoginCard>
+            <CardTitle>Login</CardTitle>
             
-            <FormGroup>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                type="password"
-                id="password"
-                name="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </FormGroup>
+            {message && <ErrorMessage>{message}</ErrorMessage>}
             
-            <Button type="submit" disabled={loading}>
-              {loading ? 'A carregar...' : 'Entrar'}
-            </Button>
-          </Form>
-          
-          <RegisterLink>
-            Não tem uma conta? <Link to="/register">Registe-se aqui</Link>
-          </RegisterLink>
-        </LoginCard>
-      </MainContent>
-      
-      <Footer />
-    </PageContainer>
+            <Form onSubmit={handleLogin}>
+              <FormGroup>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </FormGroup>
+              
+              <FormGroup>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </FormGroup>
+              
+              <Button type="submit" disabled={loading}>
+                {loading ? 'A carregar...' : 'Entrar'}
+              </Button>
+            </Form>
+            
+            <RegisterLink>
+              Não tem uma conta? <Link to="/register">Registe-se aqui</Link>
+            </RegisterLink>
+          </LoginCard>
+        </MainContent>
+        
+        <Footer />
+      </PageContainer>
+    </>
   );
 }
 

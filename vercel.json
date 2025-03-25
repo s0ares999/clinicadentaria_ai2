@@ -1,0 +1,6 @@
+{
+    "buildCommand": "cd client && npm ci && npm run build",
+    "outputDirectory": "client/build",
+    "devCommand": "cd client && npm run start",
+    "installCommand": "cd client && npm install"
+  }

@@ -199,7 +199,7 @@ function ClienteFaturasPage() {
   };
 
   const formatarValor = (valor) => {
-    return `${valor.toFixed(2)}€`;
+    return `${parseFloat(valor).toFixed(2)}€`;
   };
 
   const getStatusClass = (statusNome) => {
@@ -226,6 +226,11 @@ function ClienteFaturasPage() {
   };
 
   const faturasExibidas = filtrarFaturas();
+
+  const visualizarPDF = (faturaId) => {
+    const pdfUrl = FaturaService.getPDFUrl(faturaId);
+    window.open(pdfUrl, '_blank');
+  };
 
   return (
     <FaturasContainer>
@@ -294,13 +299,17 @@ function ClienteFaturasPage() {
                 </FaturaDetail>
               </FaturaBody>
               
-              {fatura.status?.nome === 'Emitida' && (
-                <FaturaActions>
-                  <Button secondary onClick={() => confirmarPagamento(fatura.id)}>
+              <FaturaActions>
+                <Button onClick={() => visualizarPDF(fatura.id)}>
+                  <i className="fas fa-file-pdf"></i> Visualizar PDF
+                </Button>
+                
+                {fatura.status?.nome === 'Emitida' && (
+                  <Button secondary onClick={() => confirmarPagamento(fatura.id)} style={{ marginLeft: '10px' }}>
                     Confirmar Pagamento
                   </Button>
-                </FaturaActions>
-              )}
+                )}
+              </FaturaActions>
             </FaturaItem>
           ))}
         </FaturasList>

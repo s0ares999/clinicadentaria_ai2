@@ -14,7 +14,10 @@ router.use(function(req, res, next) {
   next();
 });
 
-// Adicionar middleware de autenticação para todas as rotas
+// Rota do PDF - com middleware específico
+router.get("/:id/pdf", authMiddleware.verifyTokenFromQuery, faturaController.getFaturaPDF);
+
+// Adicionar middleware de autenticação para todas as outras rotas
 router.use(authMiddleware.verifyToken);
 
 // Obter faturas do cliente logado

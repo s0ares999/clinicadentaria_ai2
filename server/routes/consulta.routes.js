@@ -122,4 +122,10 @@ router.get("/status", (req, res) => {
 });
 
 // Endpoint para obter consultas concluídas de um médico
-router.get('/concluidas/medico/:id', consultaController.getConsultasConcluidasByMedico); 
+router.get('/concluidas/medico/:id', consultaController.getConsultasConcluidasByMedico);
+
+// Obter dados de uma consulta específica
+router.get("/:id", consultaController.getConsulta);
+
+// Obter fatura associada a uma consulta
+router.get("/:id/fatura", consultaController.getFatura); 

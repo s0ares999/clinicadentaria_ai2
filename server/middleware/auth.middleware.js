@@ -16,8 +16,12 @@ const authMiddleware = {
     });
     
     // Obtenha o token de ambos os cabeçalhos possíveis
-    const token = req.headers['x-access-token'] || 
-                  req.headers.authorization?.split(' ')[1];
+    let token = req.headers['x-access-token'] || 
+                  req.headers.authorization;
+
+    if (token) {
+      token = token.split(' ')[1];
+    }
 
     if (!token) {
       return res.status(401).json({
@@ -96,6 +100,40 @@ const authMiddleware = {
       });
     }
     next();
+  },
+
+  verifyTokenFromQuery: (req, res, next) => {
+    console.log("\n=== VERIFICANDO TOKEN DA QUERY ===");
+    console.log("URL:", req.originalUrl);
+    
+    // Verificar se há um token na query string (utilizado para PDFs)
+    let token = req.query.token;
+    console.log("Token na query:", token ? "presente" : "ausente");
+    
+    if (!token) {
+      console.log("❌ Token não encontrado na query");
+      return res.status(401).json({
+        message: "Token não fornecido na query!"
+      });
+    }
+    
+    try {
+      // Decodificar o token
+      const decoded = jwt.verify(token, JWT_SECRET);
+      console.log("✅ Token da query verificado com sucesso");
+      console.log("👤 Usuário autenticado:", decoded);
+      
+      // Se o token for válido, salva o ID do usuário na requisição
+      req.userId = decoded.id;
+      req.userEmail = decoded.email;
+      req.userTipo = decoded.tipo;
+      next();
+    } catch (error) {
+      console.error("Erro na verificação do token da query:", error);
+      return res.status(401).json({
+        message: "Token inválido ou expirado na query!"
+      });
+    }
   }
 };
 

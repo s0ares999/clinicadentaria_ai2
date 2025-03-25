@@ -102,7 +102,16 @@ const FaturaService = {
       console.error("Erro ao buscar consultas concluídas sem fatura:", error);
       throw error;
     }
-  }
+  },
+
+  // Obter URL do PDF da fatura
+  getPDFUrl: (faturaId) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = user ? user.accessToken : '';
+    
+    // Retorna a URL completa com o token de autenticação
+    return `${API_URL}/faturas/${faturaId}/pdf?token=${token}`;
+  },
 };
 
 export default FaturaService; 

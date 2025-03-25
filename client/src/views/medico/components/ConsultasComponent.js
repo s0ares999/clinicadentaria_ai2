@@ -20,6 +20,7 @@ import { toast } from 'react-hot-toast';
 import ConsultaService from '../../../services/consulta.service';
 import MedicoService from '../../../services/medico.service';
 import FaturaService from '../../../services/fatura.service';
+import api from '../../../services/api.config';
 
 function ConsultasComponent() {
   const [consultas, setConsultas] = useState([]);
@@ -164,6 +165,23 @@ function ConsultasComponent() {
     }
   };
 
+  const handleViewFatura = async (consulta) => {
+    try {
+      // Obter a fatura associada à consulta
+      const response = await api.get(`http://localhost:8000/api/consulta/${consulta.id}/fatura`);
+      if (response.data && response.data.id) {
+        // Abrir o PDF em uma nova aba
+        const pdfUrl = FaturaService.getPDFUrl(response.data.id);
+        window.open(pdfUrl, '_blank');
+      } else {
+        toast.error('Não foi possível localizar a fatura desta consulta');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar fatura:', error);
+      toast.error('Erro ao buscar informações da fatura');
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -243,17 +261,7 @@ function ConsultasComponent() {
                       <Button
                         color="success"
                         variant="outlined"
-                        onClick={() => {
-                          const currentPath = window.location.pathname;
-                          // Se já estiver em uma rota do dashboard
-                          if (currentPath.includes('medico-dashboard')) {
-                            // Navega para a página de faturas dentro do dashboard
-                            window.location.href = currentPath.split('/').slice(0, 2).join('/') + '/faturas';
-                          } else {
-                            // Fallback para o caminho absoluto
-                            window.location.href = '/medico-dashboard/faturas';
-                          }
-                        }}
+                        onClick={() => handleViewFatura(consulta)}
                       >
                         Ver Fatura
                       </Button>

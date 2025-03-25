@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import MedicoPerfilComponent from './components/MedicoPerfilComponent';
 import ConsultasComponent from './components/ConsultasComponent';
 import MedicoFaturasPage from './MedicoFaturasPage';
+import MedicoHistoricoPage from './MedicoHistoricoPage';
 import AuthService from '../../services/auth.service';
 import Navbar from '../../components/Navbar';
 
@@ -148,7 +149,7 @@ function MedicoDashboardPage() {
       case 'consultas':
         return <ConsultasComponent />;
       case 'historico':
-        return <ConsultasComponent historico />;
+        return <MedicoHistoricoPage />;
       case 'faturas':
         return <MedicoFaturasPage />;
       default:

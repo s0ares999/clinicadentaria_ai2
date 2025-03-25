@@ -63,9 +63,42 @@ class MedicoService {
       
       // Usar a mesma rota que está definida no backend
       const response = await api.get(`consulta/utilizador/${user.id}?tipo=medico`);
-      return response.data;
+      
+      // Filtrar para remover consultas com status "Concluída" (status_id = 3)
+      // Estas consultas devem aparecer apenas no histórico
+      const consultasFiltradas = response.data.filter(consulta => 
+        !consulta.status || consulta.status.id !== 3
+      );
+      
+      console.log(`Total de consultas: ${response.data.length}, Após filtro: ${consultasFiltradas.length}`);
+      
+      return consultasFiltradas;
     } catch (error) {
       console.error('Erro ao buscar consultas:', error);
+      throw error;
+    }
+  }
+
+  async getConsultasConcluidas() {
+    try {
+      const user = AuthService.getCurrentUser();
+      if (!user || !user.id) {
+        throw new Error('Usuário não identificado');
+      }
+      
+      // Usar a mesma rota que está definida no backend
+      const response = await api.get(`consulta/utilizador/${user.id}?tipo=medico`);
+      
+      // Filtrar para incluir apenas consultas com status "Concluída" (status_id = 3)
+      const consultasConcluidas = response.data.filter(consulta => 
+        consulta.status && consulta.status.id === 3
+      );
+      
+      console.log(`Total de consultas: ${response.data.length}, Concluídas: ${consultasConcluidas.length}`);
+      
+      return consultasConcluidas;
+    } catch (error) {
+      console.error('Erro ao buscar consultas concluídas:', error);
       throw error;
     }
   }

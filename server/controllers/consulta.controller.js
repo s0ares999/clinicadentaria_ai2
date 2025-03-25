@@ -429,6 +429,71 @@ const ConsultaController = {
         error: error.message 
       });
     }
+  },
+
+  // getFatura: Busca a fatura associada a uma consulta
+  getFatura: async (req, res) => {
+    try {
+      const consultaId = req.params.id;
+      
+      // Buscar fatura associada à consulta
+      const fatura = await db.Fatura.findOne({
+        where: { consulta_id: consultaId },
+        include: [
+          {
+            model: db.FaturaStatus,
+            as: 'status'
+          }
+        ]
+      });
+      
+      if (!fatura) {
+        return res.status(404).json({ 
+          message: "Nenhuma fatura encontrada para esta consulta"
+        });
+      }
+      
+      res.status(200).json(fatura);
+    } catch (error) {
+      console.error("Erro ao buscar fatura da consulta:", error);
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao buscar a fatura da consulta"
+      });
+    }
+  },
+
+  // getConsulta: Busca detalhes de uma consulta específica
+  getConsulta: async (req, res) => {
+    try {
+      const consultaId = req.params.id;
+      
+      const consulta = await db.Consulta.findByPk(consultaId, {
+        include: [
+          {
+            model: db.Utilizador,
+            as: 'utilizador',
+            attributes: ['id', 'nome', 'email']
+          },
+          {
+            model: db.ConsultaStatus,
+            as: 'status'
+          }
+        ]
+      });
+      
+      if (!consulta) {
+        return res.status(404).json({
+          message: "Consulta não encontrada"
+        });
+      }
+      
+      res.status(200).json(consulta);
+    } catch (error) {
+      console.error("Erro ao buscar detalhes da consulta:", error);
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao buscar os detalhes da consulta"
+      });
+    }
   }
 };
 

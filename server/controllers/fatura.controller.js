@@ -5,6 +5,7 @@ const FaturaPagamento = db.FaturaPagamento;
 const FaturaStatus = db.FaturaStatus;
 const Consulta = db.Consulta;
 const Utilizador = db.Utilizador;
+const PDFService = require('../services/pdf.service');
 
 const controller = {
   // Criar nova fatura
@@ -259,14 +260,9 @@ const controller = {
   getFaturasByCliente: async (req, res) => {
     try {
       const userId = req.userId;
-
-      if (!userId) {
-        return res.status(401).json({
-          message: "Utilizador não autenticado!"
-        });
-      }
-
-      // Buscar faturas relacionadas às consultas do cliente
+      console.log("Buscando faturas para o cliente ID:", userId);
+      
+      // Buscar faturas do cliente logado
       const faturas = await Fatura.findAll({
         include: [
           {
@@ -286,9 +282,25 @@ const controller = {
             ]
           }
         ],
-        order: [['createdAt', 'DESC']]
+        order: [['id', 'DESC']]
       });
 
+      // Log para depuração do formato dos dados
+      if (faturas.length > 0) {
+        console.log("Exemplo de fatura - primeiro registro:", {
+          id: faturas[0].id,
+          valor_total: faturas[0].valor_total,
+          tipo_valor_total: typeof faturas[0].valor_total,
+          observacoes: faturas[0].observacoes,
+          status: faturas[0].status ? {
+            id: faturas[0].status.id,
+            nome: faturas[0].status.nome
+          } : null
+        });
+      } else {
+        console.log("Nenhuma fatura encontrada para este cliente");
+      }
+      
       res.status(200).json(faturas);
     } catch (error) {
       console.error("Erro ao buscar faturas do cliente:", error);
@@ -616,7 +628,76 @@ const controller = {
         message: error.message || "Ocorreu um erro ao atualizar a fatura."
       });
     }
-  }
+  },
+
+  // getFaturaPDF: Gera e serve o PDF da fatura
+  getFaturaPDF: async (req, res) => {
+    try {
+      const faturaId = req.params.id;
+      
+      // Buscar dados da fatura com todas as relações necessárias
+      const fatura = await Fatura.findByPk(faturaId, {
+        include: [
+          {
+            model: FaturaStatus,
+            as: 'status'
+          },
+          {
+            model: Consulta,
+            as: 'consulta',
+            include: [
+              {
+                model: Utilizador,
+                as: 'utilizador',
+                attributes: ['id', 'nome', 'email']
+              }
+            ]
+          }
+        ]
+      });
+      
+      if (!fatura) {
+        return res.status(404).json({
+          message: "Fatura não encontrada!"
+        });
+      }
+      
+      // Verificar se o usuário atual tem permissão para acessar esta fatura
+      const currentUser = req.userId;
+      
+      // Se o usuário for o cliente da consulta ou o médico, permitir acesso
+      if (fatura.consulta.utilizador.id !== currentUser) {
+        const medico = await db.Medico.findOne({
+          where: {
+            utilizador_id: currentUser
+          }
+        });
+        
+        if (!medico) {
+          return res.status(403).json({
+            message: "Você não tem permissão para acessar esta fatura."
+          });
+        }
+      }
+      
+      // Gerar o PDF
+      const pdfBuffer = await PDFService.generateInvoicePDF(fatura);
+      
+      // Configurar os headers para download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="fatura-${faturaId}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      // Enviar o buffer do PDF como resposta
+      res.send(pdfBuffer);
+      
+    } catch (error) {
+      console.error("Erro ao gerar PDF da fatura:", error);
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao gerar o PDF da fatura."
+      });
+    }
+  },
 };
 
 module.exports = controller;

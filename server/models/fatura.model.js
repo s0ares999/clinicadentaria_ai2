@@ -5,9 +5,20 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },
+    consulta_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Consultas',
+        key: 'id'
+      }
+    },
     valor_total: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false
+    },
+    observacoes: {
+      type: DataTypes.TEXT
     },
     status_id: {
       type: DataTypes.INTEGER,
@@ -22,6 +33,11 @@ module.exports = (sequelize, DataTypes) => {
     Fatura.belongsTo(models.FaturaStatus, {
       foreignKey: 'status_id',
       as: 'status'
+    });
+    
+    Fatura.belongsTo(models.Consulta, {
+      foreignKey: 'consulta_id',
+      as: 'consulta'
     });
     
     Fatura.belongsToMany(models.Pagamento, {

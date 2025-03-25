@@ -12,6 +12,7 @@ import ClientePerfilPage from './cliente/ClientePerfilPage';
 import ClienteAgendamentosPage from './cliente/ClienteAgendamentosPage';
 import ClienteHistoricoPage from './cliente/ClienteHistoricoPage';
 import ClienteNovoAgendamentoPage from './cliente/ClienteNovoAgendamentoPage';
+import ClienteFaturasPage from './cliente/ClienteFaturasPage';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -273,6 +274,7 @@ function ClientDashboardPage() {
     if (path.includes('agendamentos') && !path.includes('novo-agendamento')) return 'agendamentos';
     if (path.includes('novo-agendamento')) return 'novo-agendamento';
     if (path.includes('historico')) return 'historico';
+    if (path.includes('faturas')) return 'faturas';
     return 'perfil';
   };
 
@@ -321,6 +323,12 @@ function ClientDashboardPage() {
                 Histórico de Consultas
               </Link>
             </MenuItem>
+            <MenuItem active={getActivePath() === 'faturas'}>
+              <Link to="/cliente-dashboard/faturas">
+                <span className="icon"><i className="fas fa-file-invoice-dollar"></i></span>
+                Minhas Faturas
+              </Link>
+            </MenuItem>
             <MenuItem>
               <Link to="/" onClick={() => AuthService.logout()}>
                 <span className="icon"><i className="fas fa-sign-out-alt"></i></span>
@@ -337,6 +345,7 @@ function ClientDashboardPage() {
               {getActivePath() === 'agendamentos' && 'Meus Agendamentos'}
               {getActivePath() === 'novo-agendamento' && 'Novo Agendamento'}
               {getActivePath() === 'historico' && 'Histórico de Consultas'}
+              {getActivePath() === 'faturas' && 'Minhas Faturas'}
             </PageTitle>
             <BreadcrumbNav>
               <Link to="/">Início</Link> / <span>Área do Cliente</span> / 
@@ -345,6 +354,7 @@ function ClientDashboardPage() {
                 {getActivePath() === 'agendamentos' && ' Meus Agendamentos'}
                 {getActivePath() === 'novo-agendamento' && ' Novo Agendamento'}
                 {getActivePath() === 'historico' && ' Histórico de Consultas'}
+                {getActivePath() === 'faturas' && ' Minhas Faturas'}
               </span>
             </BreadcrumbNav>
           </DashboardHeader>
@@ -388,6 +398,7 @@ function ClientDashboardPage() {
                 <Route path="agendamentos" element={<ClienteAgendamentosPage />} />
                 <Route path="agendamentos/novo-agendamento" element={<ClienteNovoAgendamentoPage />} />
                 <Route path="historico" element={<ClienteHistoricoPage />} />
+                <Route path="faturas" element={<ClienteFaturasPage />} />
               </Routes>
             </>
           )}

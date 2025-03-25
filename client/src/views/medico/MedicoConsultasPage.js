@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import ConsultaService from '../../services/consulta.service';
 import AuthService from '../../services/auth.service';
+import CriarFaturaButton from '../../components/CriarFaturaButton';
+import FaturaService from '../../services/fatura.service';
 
 const Container = styled.div`
   display: flex;
@@ -199,6 +201,41 @@ function MedicoConsultasPage() {
     });
   };
 
+  const getStatusClass = (status) => {
+    if (!status) return '';
+    
+    switch (status.nome?.toLowerCase()) {
+      case 'agendada':
+        return 'agendada';
+      case 'confirmada':
+        return 'confirmada';
+      case 'finalizada':
+        return 'finalizada';
+      case 'cancelada':
+        return 'cancelada';
+      default:
+        return '';
+    }
+  };
+
+  const criarFatura = async (consulta) => {
+    try {
+      if (window.confirm(`Deseja criar uma fatura para a consulta #${consulta.id}?`)) {
+        await FaturaService.criarFatura(consulta.id, {
+          valor_total: 50.00,
+          observacoes: `Consulta realizada em ${formatarData(consulta.data_hora)}`,
+          status_id: 1
+        });
+        
+        toast.success('Fatura criada com sucesso');
+        fetchConsultas();
+      }
+    } catch (error) {
+      console.error('Erro ao criar fatura:', error);
+      toast.error('Erro ao criar fatura');
+    }
+  };
+
   return (
     <Container>
       <Title>Minhas Consultas</Title>
@@ -252,8 +289,8 @@ function MedicoConsultasPage() {
                     <td>{formatarHora(consulta.data_hora)}</td>
                     <td>{consulta.cliente?.nome || 'Paciente'}</td>
                     <td>
-                      <Status className={consulta.status?.nome.toLowerCase()}>
-                        {consulta.status?.nome}
+                      <Status className={getStatusClass(consulta.status)}>
+                        {consulta.status?.nome || 'Status desconhecido'}
                       </Status>
                     </td>
                     <td>
@@ -269,6 +306,11 @@ function MedicoConsultasPage() {
                           onClick={() => handleFinalizarConsulta(consulta.id)}
                         >
                           Finalizar
+                        </Button>
+                      )}
+                      {consulta.status?.nome === 'Concluída' && !consulta.tem_fatura && (
+                        <Button onClick={() => criarFatura(consulta)}>
+                          <i className="fas fa-file-invoice"></i> Criar Fatura
                         </Button>
                       )}
                     </td>

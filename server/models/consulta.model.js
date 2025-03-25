@@ -18,6 +18,10 @@ module.exports = (sequelize, Sequelize) => {
     status_id: {
       type: Sequelize.INTEGER,
       defaultValue: 1
+    },
+    tem_fatura: {
+      type: Sequelize.BOOLEAN,
+      defaultValue: false
     }
   }, {
     tableName: 'Consultas',
@@ -45,6 +49,13 @@ module.exports = (sequelize, Sequelize) => {
       Consulta.hasOne(models.Pagamento, {
         foreignKey: 'consulta_id',
         as: 'pagamento'
+      });
+    }
+    
+    if (models.Fatura) {
+      Consulta.hasOne(models.Fatura, {
+        foreignKey: 'consulta_id',
+        as: 'fatura'
       });
     }
   };

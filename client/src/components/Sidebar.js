@@ -25,6 +25,13 @@ const SidebarItem = styled(Link)`
 const Sidebar = () => {
   const location = useLocation();
 
+  const clienteLinks = [
+    { to: "/cliente-dashboard/perfil", icon: "user", text: "Meu Perfil" },
+    { to: "/cliente-dashboard/agendamentos", icon: "calendar-check", text: "Meus Agendamentos" },
+    { to: "/cliente-dashboard/historico", icon: "history", text: "Histórico de Consultas" },
+    { to: "/cliente-dashboard/faturas", icon: "file-invoice", text: "Minhas Faturas" },
+  ];
+
   return (
     <div>
       {/* Remover a duplicação de links, manter apenas um */}

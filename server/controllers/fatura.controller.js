@@ -253,6 +253,369 @@ const controller = {
         message: error.message || "Ocorreu um erro ao cancelar a fatura."
       });
     }
+  },
+  
+  // Obter faturas do cliente logado
+  getFaturasByCliente: async (req, res) => {
+    try {
+      const userId = req.userId;
+
+      if (!userId) {
+        return res.status(401).json({
+          message: "Utilizador não autenticado!"
+        });
+      }
+
+      // Buscar faturas relacionadas às consultas do cliente
+      const faturas = await Fatura.findAll({
+        include: [
+          {
+            model: FaturaStatus,
+            as: 'status'
+          },
+          {
+            model: Consulta,
+            as: 'consulta',
+            where: { utilizador_id: userId },
+            include: [
+              {
+                model: Utilizador,
+                as: 'utilizador',
+                attributes: ['id', 'nome', 'email']
+              }
+            ]
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
+      res.status(200).json(faturas);
+    } catch (error) {
+      console.error("Erro ao buscar faturas do cliente:", error);
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao buscar as faturas do cliente."
+      });
+    }
+  },
+  
+  // Método para obter uma fatura específica
+  getFaturaById: async (req, res) => {
+    try {
+      const id = req.params.id;
+      const userId = req.userId;
+
+      const fatura = await Fatura.findByPk(id, {
+        include: [
+          {
+            model: FaturaStatus,
+            as: 'status'
+          },
+          {
+            model: Consulta,
+            as: 'consulta',
+            include: [
+              {
+                model: Utilizador,
+                as: 'utilizador',
+                attributes: ['id', 'nome', 'email']
+              }
+            ]
+          }
+        ]
+      });
+
+      if (!fatura) {
+        return res.status(404).json({
+          message: `Fatura com ID ${id} não encontrada!`
+        });
+      }
+
+      // Verificar se o utilizador tem permissão para ver esta fatura
+      if (fatura.consulta && fatura.consulta.utilizador_id !== userId) {
+        return res.status(403).json({
+          message: "Você não tem permissão para ver esta fatura!"
+        });
+      }
+
+      res.status(200).json(fatura);
+    } catch (error) {
+      console.error("Erro ao buscar fatura:", error);
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao buscar a fatura."
+      });
+    }
+  },
+  
+  // Criar fatura para uma consulta
+  createFatura: async (req, res) => {
+    try {
+      const consultaId = req.params.consultaId;
+      const { valor_total, observacoes, status_id } = req.body;
+
+      // Verificar se a consulta existe
+      const consulta = await Consulta.findByPk(consultaId, {
+        include: [
+          {
+            model: Utilizador,
+            as: 'utilizador',
+            attributes: ['id', 'nome', 'email']
+          }
+        ]
+      });
+
+      if (!consulta) {
+        return res.status(404).json({
+          message: "Consulta não encontrada!"
+        });
+      }
+
+      // Verificar se a consulta já possui uma fatura
+      const faturaExistente = await Fatura.findOne({
+        where: { consulta_id: consultaId }
+      });
+
+      if (faturaExistente) {
+        return res.status(400).json({
+          message: "Esta consulta já possui uma fatura associada."
+        });
+      }
+
+      // Criar a fatura
+      const fatura = await Fatura.create({
+        consulta_id: consultaId,
+        valor_total,
+        observacoes,
+        status_id: status_id || 1 // 1 = Emitida (padrão)
+      });
+      
+      // Atualizar a consulta para indicar que possui fatura
+      await consulta.update({ tem_fatura: true });
+
+      // Buscar fatura completa com relações
+      const faturaCompleta = await Fatura.findByPk(fatura.id, {
+        include: [
+          {
+            model: FaturaStatus,
+            as: 'status'
+          },
+          {
+            model: Consulta,
+            as: 'consulta',
+            include: [
+              {
+                model: Utilizador,
+                as: 'utilizador',
+                attributes: ['id', 'nome', 'email']
+              }
+            ]
+          }
+        ]
+      });
+
+      res.status(201).json({
+        message: "Fatura criada com sucesso!",
+        fatura: faturaCompleta
+      });
+    } catch (error) {
+      console.error("Erro ao criar fatura para consulta:", error);
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao criar a fatura."
+      });
+    }
+  },
+  
+  // Atualizar status da fatura
+  updateFaturaStatus: async (req, res) => {
+    try {
+      const id = req.params.id;
+      const { statusId } = req.body;
+
+      if (!statusId) {
+        return res.status(400).json({
+          message: "ID do status é obrigatório!"
+        });
+      }
+
+      // Verificar se o status existe
+      const status = await FaturaStatus.findByPk(statusId);
+      if (!status) {
+        return res.status(404).json({
+          message: `Status com ID ${statusId} não encontrado!`
+        });
+      }
+
+      // Buscar a fatura
+      const fatura = await Fatura.findByPk(id);
+      if (!fatura) {
+        return res.status(404).json({
+          message: `Fatura com ID ${id} não encontrada!`
+        });
+      }
+
+      // Atualizar status
+      await fatura.update({ status_id: statusId });
+
+      res.status(200).json({
+        message: `Fatura atualizada para status: ${status.nome}`,
+        fatura: {
+          id: fatura.id,
+          status: status.nome
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar status da fatura:", error);
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao atualizar o status da fatura."
+      });
+    }
+  },
+  
+  // Registrar pagamento da fatura
+  registerPagamento: async (req, res) => {
+    try {
+      const faturaId = req.params.id;
+      const { data_pagamento, metodo_pagamento, valor } = req.body;
+
+      // Buscar a fatura
+      const fatura = await Fatura.findByPk(faturaId);
+      if (!fatura) {
+        return res.status(404).json({
+          message: `Fatura com ID ${faturaId} não encontrada!`
+        });
+      }
+
+      // Criar registro de pagamento
+      const pagamento = await FaturaPagamento.create({
+        fatura_id: faturaId,
+        data_pagamento: data_pagamento || new Date(),
+        metodo_pagamento,
+        valor: valor || fatura.valor_total
+      });
+
+      // Atualizar status da fatura para "Paga"
+      const statusPaga = await FaturaStatus.findOne({
+        where: { nome: 'Paga' }
+      });
+
+      if (statusPaga) {
+        await fatura.update({ status_id: statusPaga.id });
+      }
+
+      res.status(200).json({
+        message: "Pagamento registrado com sucesso!",
+        pagamento
+      });
+    } catch (error) {
+      console.error("Erro ao registrar pagamento:", error);
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao registrar o pagamento."
+      });
+    }
+  },
+
+  // getFaturasByMedico: Obtém todas as faturas relacionadas às consultas atendidas pelo médico logado
+  getFaturasByMedico: async (req, res) => {
+    try {
+      const userId = req.userId;
+
+      if (!userId) {
+        return res.status(401).json({
+          message: "Utilizador não autenticado!"
+        });
+      }
+
+      // Como não temos um campo específico para médico nas consultas,
+      // vamos buscar todas as faturas e permitir que o frontend filtre
+      // ou implemente uma lógica adicional se necessário
+      const faturas = await Fatura.findAll({
+        include: [
+          {
+            model: FaturaStatus,
+            as: 'status'
+          },
+          {
+            model: Consulta,
+            as: 'consulta',
+            include: [
+              {
+                model: Utilizador,
+                as: 'utilizador',
+                attributes: ['id', 'nome', 'email']
+              }
+            ]
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
+      res.status(200).json(faturas);
+    } catch (error) {
+      console.error("Erro ao buscar faturas do médico:", error);
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao buscar as faturas do médico."
+      });
+    }
+  },
+
+  // updateFatura: Atualiza os dados de uma fatura existente
+  updateFatura: async (req, res) => {
+    try {
+      const faturaId = req.params.id;
+      const { valor_total, observacoes } = req.body;
+      
+      // Verificar se a fatura existe
+      const fatura = await Fatura.findByPk(faturaId);
+      
+      if (!fatura) {
+        return res.status(404).json({
+          message: "Fatura não encontrada!"
+        });
+      }
+      
+      // Verificar se a fatura já foi paga ou cancelada
+      if (fatura.status_id !== 1) { // 1 = Emitida
+        return res.status(400).json({
+          message: "Não é possível editar faturas que já foram pagas ou canceladas."
+        });
+      }
+      
+      // Atualizar a fatura
+      await fatura.update({
+        valor_total: valor_total || fatura.valor_total,
+        observacoes: observacoes !== undefined ? observacoes : fatura.observacoes
+      });
+      
+      // Buscar fatura atualizada com relações
+      const faturaAtualizada = await Fatura.findByPk(faturaId, {
+        include: [
+          {
+            model: FaturaStatus,
+            as: 'status'
+          },
+          {
+            model: Consulta,
+            as: 'consulta',
+            include: [
+              {
+                model: Utilizador,
+                as: 'utilizador',
+                attributes: ['id', 'nome', 'email']
+              }
+            ]
+          }
+        ]
+      });
+      
+      res.status(200).json({
+        message: "Fatura atualizada com sucesso!",
+        fatura: faturaAtualizada
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar fatura:", error);
+      res.status(500).json({
+        message: error.message || "Ocorreu um erro ao atualizar a fatura."
+      });
+    }
   }
 };
 

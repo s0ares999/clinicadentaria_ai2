@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import MedicoPerfilComponent from './components/MedicoPerfilComponent';
 import ConsultasComponent from './components/ConsultasComponent';
+import MedicoFaturasPage from './MedicoFaturasPage';
 import AuthService from '../../services/auth.service';
 import Navbar from '../../components/Navbar';
 
@@ -148,6 +149,8 @@ function MedicoDashboardPage() {
         return <ConsultasComponent />;
       case 'historico':
         return <ConsultasComponent historico />;
+      case 'faturas':
+        return <MedicoFaturasPage />;
       default:
         return <MedicoPerfilComponent />;
     }
@@ -202,6 +205,14 @@ function MedicoDashboardPage() {
             Histórico de Consultas
           </NavItem>
 
+          <NavItem 
+            className={activeTab === 'faturas' ? 'active' : ''} 
+            onClick={() => setActiveTab('faturas')}
+          >
+            <i className="fas fa-file-invoice-dollar"></i>
+            Gestão de Faturas
+          </NavItem>
+
           <NavItem onClick={handleLogout}>
             <i className="fas fa-sign-out-alt"></i>
             Sair
@@ -213,14 +224,18 @@ function MedicoDashboardPage() {
             <Link to="/">Início</Link> / Área do Médico / {
               activeTab === 'perfil' ? 'Meu Perfil' :
               activeTab === 'consultas' ? 'Consultas' :
-              'Histórico de Consultas'
+              activeTab === 'historico' ? 'Histórico de Consultas' :
+              activeTab === 'faturas' ? 'Gestão de Faturas' :
+              ''
             }
           </BreadcrumbNav>
 
           <h2>{
             activeTab === 'perfil' ? 'Meu Perfil' :
             activeTab === 'consultas' ? 'Consultas' :
-            'Histórico de Consultas'
+            activeTab === 'historico' ? 'Histórico de Consultas' :
+            activeTab === 'faturas' ? 'Gestão de Faturas' :
+            ''
           }</h2>
 
           <ProfileHeader>

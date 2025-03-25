@@ -98,6 +98,29 @@ class ConsultaService {
     return api.get('consulta/pendentes');
   }
 
+  async getConsultasConcluidas() {
+    try {
+      const user = AuthService.getCurrentUser();
+      if (!user || !user.id) {
+        throw new Error('Usuário não identificado');
+      }
+      
+      // Como não temos campo medico_id, vamos usar a rota para consultas do tipo médico
+      // e filtrar por status "Concluída" no frontend
+      const response = await api.get(`consulta/utilizador/${user.id}?tipo=medico`);
+      
+      // Filtramos as consultas concluídas no frontend
+      const consultasConcluidas = response.data.filter(
+        consulta => consulta.status?.nome === 'Concluída'
+      );
+      
+      return consultasConcluidas;
+    } catch (error) {
+      console.error('Erro ao buscar consultas concluídas:', error);
+      throw error;
+    }
+  }
+
   async aceitarConsulta(consultaId) {
     try {
       const response = await api.put(`consulta/${consultaId}/aceitar`);

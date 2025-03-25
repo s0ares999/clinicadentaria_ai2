@@ -369,6 +369,66 @@ const ConsultaController = {
         message: error.message || "Ocorreu um erro ao buscar os status de consulta."
       });
     }
+  },
+
+  // Retorna todas as consultas concluídas de um médico específico
+  getConsultasConcluidasByMedico: async (req, res) => {
+    try {
+      const medicoId = req.params.id;
+      
+      // Buscar o ID do status "Concluída"
+      const statusConcluida = await db.ConsultaStatus.findOne({
+        where: { nome: 'Concluída' }
+      });
+      
+      if (!statusConcluida) {
+        return res.status(404).json({ message: "Status 'Concluída' não encontrado" });
+      }
+      
+      // Buscar consultas com status "Concluída"
+      // Como não temos o campo medico_id, vamos buscar todas as consultas concluídas
+      // e implementar uma lógica adicional para filtrar as do médico específico
+      const consultas = await Consulta.findAll({
+        where: { 
+          status_id: statusConcluida.id 
+        },
+        include: [
+          {
+            model: Utilizador,
+            as: 'utilizador',
+            attributes: ['id', 'nome', 'email', 'telefone']
+          },
+          {
+            model: db.ConsultaStatus,
+            as: 'status'
+          }
+        ],
+        order: [['data_hora', 'DESC']]
+      });
+      
+      // Filtragem adicional poderia ser feita aqui se necessário
+      // Por exemplo, verificar outra tabela que relacione médico com consulta
+      
+      // Verificar se cada consulta já possui fatura associada
+      const consultasComInfo = await Promise.all(consultas.map(async (consulta) => {
+        const fatura = await db.Fatura.findOne({
+          where: { consulta_id: consulta.id }
+        });
+        
+        return {
+          ...consulta.toJSON(),
+          tem_fatura: !!fatura
+        };
+      }));
+      
+      return res.status(200).json(consultasComInfo);
+    } catch (error) {
+      console.error("Erro ao buscar consultas concluídas do médico:", error);
+      return res.status(500).json({ 
+        message: "Erro ao buscar consultas concluídas", 
+        error: error.message 
+      });
+    }
   }
 };
 

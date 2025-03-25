@@ -19,6 +19,7 @@ import {
 import { toast } from 'react-hot-toast';
 import ConsultaService from '../../../services/consulta.service';
 import MedicoService from '../../../services/medico.service';
+import FaturaService from '../../../services/fatura.service';
 
 function ConsultasComponent() {
   const [consultas, setConsultas] = useState([]);
@@ -28,6 +29,11 @@ function ConsultasComponent() {
   const [loading, setLoading] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [faturaDialogOpen, setFaturaDialogOpen] = useState(false);
+  const [faturaData, setFaturaData] = useState({
+    valor_total: '',
+    observacoes: ''
+  });
 
   const STATUS_IDS = {
     PENDENTE: 1,
@@ -127,6 +133,37 @@ function ConsultasComponent() {
     }
   };
 
+  const handleOpenFaturaDialog = (consulta) => {
+    setSelectedConsulta(consulta);
+    setFaturaData({
+      valor_total: '50.00', // Valor padrão
+      observacoes: `Consulta realizada em ${new Date(consulta.data_hora).toLocaleDateString('pt-PT')}`
+    });
+    setFaturaDialogOpen(true);
+  };
+
+  const handleCriarFatura = async () => {
+    try {
+      if (!faturaData.valor_total || parseFloat(faturaData.valor_total) <= 0) {
+        toast.error('O valor da fatura deve ser maior que zero');
+        return;
+      }
+
+      await FaturaService.criarFatura(selectedConsulta.id, {
+        valor_total: parseFloat(faturaData.valor_total),
+        observacoes: faturaData.observacoes,
+        status_id: 1 // 1 = Emitida
+      });
+
+      toast.success('Fatura criada com sucesso!');
+      setFaturaDialogOpen(false);
+      loadConsultas();
+    } catch (error) {
+      console.error('Erro ao criar fatura:', error);
+      toast.error('Erro ao criar fatura');
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -189,6 +226,36 @@ function ConsultasComponent() {
                         }}
                       >
                         Finalizar
+                      </Button>
+                    )}
+                    
+                    {consulta.status?.nome === 'Concluída' && !consulta.tem_fatura && (
+                      <Button
+                        color="warning"
+                        variant="contained"
+                        onClick={() => handleOpenFaturaDialog(consulta)}
+                      >
+                        Criar Fatura
+                      </Button>
+                    )}
+                    
+                    {consulta.status?.nome === 'Concluída' && consulta.tem_fatura && (
+                      <Button
+                        color="success"
+                        variant="outlined"
+                        onClick={() => {
+                          const currentPath = window.location.pathname;
+                          // Se já estiver em uma rota do dashboard
+                          if (currentPath.includes('medico-dashboard')) {
+                            // Navega para a página de faturas dentro do dashboard
+                            window.location.href = currentPath.split('/').slice(0, 2).join('/') + '/faturas';
+                          } else {
+                            // Fallback para o caminho absoluto
+                            window.location.href = '/medico-dashboard/faturas';
+                          }
+                        }}
+                      >
+                        Ver Fatura
                       </Button>
                     )}
                     
@@ -271,6 +338,51 @@ function ConsultasComponent() {
             variant="contained"
           >
             Salvar Alteração
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={faturaDialogOpen} onClose={() => setFaturaDialogOpen(false)}>
+        <DialogTitle>Criar Fatura para Consulta</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Consulta de: {selectedConsulta?.utilizador?.nome}
+            </Typography>
+            <Typography variant="subtitle2" gutterBottom>
+              Data: {selectedConsulta ? new Date(selectedConsulta.data_hora).toLocaleString('pt-PT') : ''}
+            </Typography>
+
+            <TextField
+              fullWidth
+              type="number"
+              label="Valor Total (€)"
+              value={faturaData.valor_total}
+              onChange={(e) => setFaturaData({ ...faturaData, valor_total: e.target.value })}
+              margin="normal"
+              inputProps={{ step: "0.01", min: "0" }}
+              required
+            />
+            
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Observações"
+              value={faturaData.observacoes}
+              onChange={(e) => setFaturaData({ ...faturaData, observacoes: e.target.value })}
+              margin="normal"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFaturaDialogOpen(false)}>Cancelar</Button>
+          <Button 
+            onClick={handleCriarFatura} 
+            color="warning"
+            variant="contained"
+          >
+            Emitir Fatura
           </Button>
         </DialogActions>
       </Dialog>

@@ -125,12 +125,14 @@ const authRoutes = require('./routes/auth.routes');
 const clienteRoutes = require('./routes/cliente.routes');
 const consultaRoutes = require('./routes/consulta.routes');
 const utilizadorRoutes = require('./routes/utilizador.routes');
+const faturaRoutes = require('./routes/fatura.routes');
 
 // Definir rotas
 app.use('/api/auth', authRoutes);
 app.use('/api/cliente', clienteRoutes);
 app.use('/api/consulta', consultaRoutes);
 app.use('/api/utilizador', utilizadorRoutes);
+app.use('/api/faturas', faturaRoutes);
 
 // Rota raiz para verificação de API
 app.get('/api', (req, res) => {

@@ -119,4 +119,7 @@ router.get("/status", (req, res) => {
   } else {
     res.status(501).json({ message: "Função findAllStatus não implementada" });
   }
-}); 
+});
+
+// Endpoint para obter consultas concluídas de um médico
+router.get('/concluidas/medico/:id', consultaController.getConsultasConcluidasByMedico); 

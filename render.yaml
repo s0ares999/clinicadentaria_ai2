@@ -1,0 +1,24 @@
+{
+    "services": [
+        {
+            "type": "web",
+            "name": "clinica-dentaria-frontend",
+            "env": "static",
+            "buildCommand": "cd client && npm install && CI=false npm run build",
+            "staticPublishPath": "./client/build"
+        },
+        {
+            "type": "web",
+            "name": "clinica-dentaria-backend",
+            "env": "node",
+            "buildCommand": "cd server && npm install",
+            "startCommand": "cd server && npm start",
+            "envVars": [
+                {
+                    "key": "NODE_ENV",
+                    "value": "production"
+                }
+            ]
+        }
+    ]
+}

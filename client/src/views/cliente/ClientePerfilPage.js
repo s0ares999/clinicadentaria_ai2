@@ -52,11 +52,11 @@ const Label = styled.label`
   font-weight: 500;
   color: #34495e;
 `;
-
+   
 const Input = styled.input`
   padding: 0.75rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  b order-radius: 4px;
   font-size: 1rem;
   transition: border-color 0.3s;
 

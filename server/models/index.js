@@ -54,11 +54,11 @@ fs
     }
   });
 
-// Configurar associações
+// Executar as associações para cada modelo
 Object.keys(db).forEach(modelName => {
-  if (db[modelName].associate && typeof db[modelName].associate === 'function') {
+  if (db[modelName].associate) {
+    console.log(`Configurando associações para o modelo: ${modelName}`);
     try {
-      console.log(`Configurando associações para: ${modelName}`);
       db[modelName].associate(db);
     } catch (error) {
       console.error(`Erro ao configurar associações para ${modelName}:`, error);

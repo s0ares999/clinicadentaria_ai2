@@ -271,7 +271,7 @@ function RegisterPage() {
       const response = await AuthService.register(
         email, 
         password, 
-        username, 
+        nome,
         telefone, 
         role, 
         dadosEspecificos

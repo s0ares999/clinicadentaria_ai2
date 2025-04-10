@@ -293,41 +293,186 @@ exports.verifyToken = (req, res) => {
 // Método para registrar novo utilizador
 exports.signup = async (req, res) => {
   try {
-    const { email, password, username, telefone, role, dadosEspecificos, nome } = req.body;
+    // Verificar se a tabela TipoUtilizador existe e tem registros
+    console.log("Verificando tabela TipoUtilizador...");
+    try {
+      const tiposUtilizador = await TipoUtilizador.findAll();
+      console.log(`Encontrados ${tiposUtilizador.length} tipos de utilizador:`);
+      tiposUtilizador.forEach(tipo => {
+        console.log(`- ID: ${tipo.id}, Nome: ${tipo.nome}`);
+      });
+      
+      if (tiposUtilizador.length === 0) {
+        return res.status(500).json({
+          success: false,
+          message: "Não há tipos de utilizador cadastrados no sistema"
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao verificar tipos de utilizador:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao verificar tipos de utilizador"
+      });
+    }
+    
+    // Extração e normalização dos campos da requisição
+    const { 
+      email, 
+      senha, 
+      password, // Aceitar ambos senha e password
+      username, 
+      nome,
+      telefone, 
+      tipo, 
+      role, // Aceitar ambos tipo e role
+      tipo_utilizador_id,
+      data_nascimento,
+      nif,
+      morada,
+      especialidade_id,
+      crm,
+      ...outrosDados
+    } = req.body;
 
-    // Buscar o tipo de utilizador
-    const tipoUtilizador = await TipoUtilizador.findOne({
-      where: { nome: role }
-    });
+    // Determinar a senha correta (permitir ambos 'senha' ou 'password')
+    const senhaFinal = senha || password;
+    if (!senhaFinal) {
+      return res.status(400).json({
+        success: false,
+        message: "Senha é obrigatória"
+      });
+    }
+    
+    // Determinar o ID do tipo de utilizador
+    let tipoUtilizadorIdFinal = tipo_utilizador_id;
+    if (!tipoUtilizadorIdFinal) {
+      // Se não tiver tipo_utilizador_id, usar o tipo/role para determinar
+      const tipoFinal = tipo || role;
+      if (!tipoFinal) {
+        return res.status(400).json({
+          success: false,
+          message: "Tipo de utilizador é obrigatório"
+        });
+      }
 
+      console.log("Dados normalizados para registro:", {
+        email,
+        senha: senhaFinal ? "[PRESENTE]" : "[AUSENTE]",
+        nome,
+        telefone,
+        tipo: tipoFinal
+      });
+
+      // Mapear o tipo de utilizador para o ID correto
+      switch (tipoFinal) {
+        case 'cliente':
+          tipoUtilizadorIdFinal = 1;
+          break;
+        case 'admin':
+          tipoUtilizadorIdFinal = 2;
+          break;
+        case 'medico':
+          tipoUtilizadorIdFinal = 3;
+          break;
+        default:
+          return res.status(400).json({
+            success: false,
+            message: `Tipo de utilizador '${tipoFinal}' não é válido`
+          });
+      }
+    }
+
+    console.log(`Tipo de utilizador ID: ${tipoUtilizadorIdFinal}`);
+
+    // Verificar se o tipo existe antes de continuar
+    const tipoUtilizador = await TipoUtilizador.findByPk(tipoUtilizadorIdFinal);
     if (!tipoUtilizador) {
       return res.status(400).json({
-        message: "Tipo de utilizador não encontrado"
+        success: false,
+        message: `Tipo de utilizador com ID ${tipoUtilizadorIdFinal} não existe`
+      });
+    }
+    
+    console.log(`Tipo verificado: ${tipoUtilizador.nome} (ID: ${tipoUtilizador.id})`);
+
+    // Verificar se o e-mail já está em uso
+    const utilizadorExistente = await Utilizador.findOne({
+      where: { email }
+    });
+    
+    if (utilizadorExistente) {
+      return res.status(400).json({
+        success: false,
+        message: "Este e-mail já está em uso"
       });
     }
 
     // Criar o utilizador base
     const utilizador = await Utilizador.create({
       email,
-      senha: bcrypt.hashSync(password, 8),
-      username,
+      senha: bcrypt.hashSync(senhaFinal, 8),
+      username: username || nome,
       nome,
       telefone,
       tipo_utilizador_id: tipoUtilizador.id
     });
 
     // Se for médico, criar registro na tabela Medicos
-    if (role === 'medico') {
+    if (tipoUtilizador.nome === 'medico') {
       try {
+        // Verificar se especialidade_id existe
+        if (!especialidade_id) {
+          await utilizador.destroy();
+          return res.status(400).json({
+            success: false,
+            message: "Especialidade é obrigatória para médicos"
+          });
+        }
+        
+        // Verificar se CRM foi fornecido
+        if (!crm) {
+          await utilizador.destroy();
+          return res.status(400).json({
+            success: false,
+            message: "CRM é obrigatório para médicos"
+          });
+        }
+        
         await Medico.create({
           utilizador_id: utilizador.id,
-          especialidade_id: dadosEspecificos.especialidade_id,
-          crm: dadosEspecificos.crm
+          especialidade_id,
+          crm
         });
+        
+        console.log(`Médico registrado com sucesso. Especialidade: ${especialidade_id}, CRM: ${crm}`);
       } catch (medicoError) {
         // Se houver erro ao criar o médico, deletar o utilizador criado
         await utilizador.destroy();
+        console.error("Erro ao criar registro de médico:", medicoError);
         throw new Error('Erro ao criar registro de médico: ' + medicoError.message);
+      }
+    }
+    
+    // Se for cliente, criar registro na tabela Clientes
+    if (tipoUtilizador.nome === 'cliente') {
+      try {
+        await Cliente.create({
+          utilizador_id: utilizador.id,
+          nome,
+          email,
+          telefone,
+          data_nascimento,
+          morada,
+          nif
+        });
+        
+        console.log("Cliente registrado com sucesso");
+      } catch (clienteError) {
+        // Se houver erro ao criar o cliente, deletar o utilizador criado
+        await utilizador.destroy();
+        console.error("Erro ao criar registro de cliente:", clienteError);
+        throw new Error('Erro ao criar registro de cliente: ' + clienteError.message);
       }
     }
 

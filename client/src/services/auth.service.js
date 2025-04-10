@@ -70,8 +70,25 @@ class AuthService {
   async register(email, senha, nome, telefone, role, dadosEspecificos = {}) {
     try {
       console.log(`Tentando registro em ${API_URL}auth/signup`);
+      
+      // Mapear role para tipo_utilizador_id
+      let tipo_utilizador_id;
+      switch (role) {
+        case 'cliente':
+          tipo_utilizador_id = 1;
+          break;
+        case 'admin':
+          tipo_utilizador_id = 2;
+          break;
+        case 'medico':
+          tipo_utilizador_id = 3;
+          break;
+        default:
+          tipo_utilizador_id = 1; // Padrão para cliente
+      }
+      
       console.log("Dados a enviar:", {
-        nome, email, senha, telefone, tipo: role, ...dadosEspecificos
+        nome, email, senha, telefone, tipo: role, tipo_utilizador_id, ...dadosEspecificos
       });
       
       // Adicionar timeout maior para depuração
@@ -86,6 +103,7 @@ class AuthService {
         senha,
         telefone,
         tipo: role,
+        tipo_utilizador_id,
         ...dadosEspecificos // Inclui todos os dados específicos (data_nascimento, morada, nif, etc.)
       };
       

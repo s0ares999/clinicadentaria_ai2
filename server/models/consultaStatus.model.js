@@ -9,6 +9,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(50),
       allowNull: false,
       unique: true
+    },
+    descricao: {
+      type: DataTypes.TEXT
     }
   }, {
     tableName: 'ConsultaStatus',
@@ -16,10 +19,12 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   ConsultaStatus.associate = (models) => {
-    ConsultaStatus.hasMany(models.Consulta, {
-      foreignKey: 'status_id',
-      as: 'consultas'
-    });
+    if (models.Consulta) {
+      ConsultaStatus.hasMany(models.Consulta, {
+        foreignKey: 'status_id',
+        as: 'consultas'
+      });
+    }
   };
 
   return ConsultaStatus;

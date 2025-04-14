@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import { FaEdit, FaTrash, FaEye } from 'react-icons/fa';
-import UsuarioService from '../../services/usuario.service';
+import UtilizadorService from '../../services/utilizador.service';
 
 const Container = styled.div`
   padding: 2rem;
@@ -209,77 +209,77 @@ const EmptyMessage = styled.p`
   color: #95a5a6;
 `;
 
-function AdminUsuariosPage() {
-  const [usuarios, setUsuarios] = useState([]);
-  const [filteredUsuarios, setFilteredUsuarios] = useState([]);
+function AdminUtilizadoresPage() {
+  const [utilizadores, setUtilizadores] = useState([]);
+  const [filteredUtilizadores, setFilteredUtilizadores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [currentUsuario, setCurrentUsuario] = useState(null);
+  const [currentUtilizador, setCurrentUtilizador] = useState(null);
 
   useEffect(() => {
-    fetchUsuarios();
+    fetchUtilizadores();
   }, []);
 
   useEffect(() => {
-    filterUsuarios();
-  }, [usuarios, activeFilter, searchTerm]);
+    filterUtilizadores();
+  }, [utilizadores, activeFilter, searchTerm]);
 
-  const fetchUsuarios = async () => {
+  const fetchUtilizadores = async () => {
     try {
       setLoading(true);
-      const response = await UsuarioService.getAllUsuarios();
-      setUsuarios(response.data);
+      const response = await UtilizadorService.getAllUtilizadores();
+      setUtilizadores(response.data);
       setLoading(false);
     } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
-      toast.error('Erro ao carregar lista de usuários');
+      console.error('Erro ao carregar utilizadores:', error);
+      toast.error('Erro ao carregar lista de utilizadores');
       setLoading(false);
     }
   };
 
-  const filterUsuarios = () => {
-    let filtered = [...usuarios];
+  const filterUtilizadores = () => {
+    let filtered = [...utilizadores];
     
     // Filtrar por tipo
     if (activeFilter !== 'todos') {
       filtered = filtered.filter(
-        usuario => usuario.tipoUtilizador?.nome.toLowerCase() === activeFilter
+        utilizador => utilizador.tipoUtilizador?.nome.toLowerCase() === activeFilter
       );
     }
     
     // Filtrar por termo de busca
     if (searchTerm) {
       filtered = filtered.filter(
-        usuario => 
-          usuario.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          usuario.email.toLowerCase().includes(searchTerm.toLowerCase())
+        utilizador => 
+          utilizador.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          utilizador.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
-    setFilteredUsuarios(filtered);
+    setFilteredUtilizadores(filtered);
   };
 
-  const handleViewUsuario = (usuario) => {
-    setCurrentUsuario(usuario);
+  const handleViewUtilizador = (utilizador) => {
+    setCurrentUtilizador(utilizador);
     setShowModal(true);
   };
 
-  const handleEditUsuario = (usuario) => {
-    setCurrentUsuario(usuario);
+  const handleEditUtilizador = (utilizador) => {
+    setCurrentUtilizador(utilizador);
     setShowModal(true);
   };
 
-  const handleDeleteUsuario = async (id) => {
-    if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
+  const handleDeleteUtilizador = async (id) => {
+    if (window.confirm('Tem certeza que deseja excluir este utilizador?')) {
       try {
-        await UsuarioService.deleteUsuario(id);
-        toast.success('Usuário excluído com sucesso');
-        fetchUsuarios();
+        await UtilizadorService.deleteUtilizador(id);
+        toast.success('Utilizador excluído com sucesso');
+        fetchUtilizadores();
       } catch (error) {
-        console.error('Erro ao excluir usuário:', error);
-        toast.error('Erro ao excluir usuário');
+        console.error('Erro ao excluir utilizador:', error);
+        toast.error('Erro ao excluir utilizador');
       }
     }
   };
@@ -288,19 +288,19 @@ function AdminUsuariosPage() {
     e.preventDefault();
     
     try {
-      await UsuarioService.updateUsuario(currentUsuario.id, currentUsuario);
-      toast.success('Usuário atualizado com sucesso');
+      await UtilizadorService.updateUtilizador(currentUtilizador.id, currentUtilizador);
+      toast.success('Utilizador atualizado com sucesso');
       setShowModal(false);
-      fetchUsuarios();
+      fetchUtilizadores();
     } catch (error) {
-      console.error('Erro ao atualizar usuário:', error);
-      toast.error('Erro ao atualizar usuário');
+      console.error('Erro ao atualizar utilizador:', error);
+      toast.error('Erro ao atualizar utilizador');
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setCurrentUsuario(prev => ({
+    setCurrentUtilizador(prev => ({
       ...prev,
       [name]: value
     }));
@@ -345,9 +345,9 @@ function AdminUsuariosPage() {
       </FilterContainer>
       
       {loading ? (
-        <EmptyMessage>Carregando usuários...</EmptyMessage>
+        <EmptyMessage>Carregando utilizadores...</EmptyMessage>
       ) : (
-        filteredUsuarios.length > 0 ? (
+        filteredUtilizadores.length > 0 ? (
           <Table>
             <thead>
               <tr>
@@ -359,21 +359,21 @@ function AdminUsuariosPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredUsuarios.map(usuario => (
-                <tr key={usuario.id}>
-                  <td>{usuario.nome}</td>
-                  <td>{usuario.email}</td>
-                  <td>{usuario.telefone || '-'}</td>
-                  <td>{usuario.tipoUtilizador?.nome || '-'}</td>
+              {filteredUtilizadores.map(utilizador => (
+                <tr key={utilizador.id}>
+                  <td>{utilizador.nome}</td>
+                  <td>{utilizador.email}</td>
+                  <td>{utilizador.telefone || '-'}</td>
+                  <td>{utilizador.tipoUtilizador?.nome || '-'}</td>
                   <td>
                     <ActionButton 
-                      onClick={() => handleViewUsuario(usuario)}
+                      onClick={() => handleViewUtilizador(utilizador)}
                       title="Ver detalhes"
                     >
                       <FaEye />
                     </ActionButton>
                     <ActionButton 
-                      onClick={() => handleEditUsuario(usuario)}
+                      onClick={() => handleEditUtilizador(utilizador)}
                       title="Editar"
                     >
                       <FaEdit />
@@ -381,7 +381,7 @@ function AdminUsuariosPage() {
                     <ActionButton 
                       color="#e74c3c"
                       hoverColor="#c0392b"
-                      onClick={() => handleDeleteUsuario(usuario.id)}
+                      onClick={() => handleDeleteUtilizador(utilizador.id)}
                       title="Excluir"
                     >
                       <FaTrash />
@@ -392,15 +392,15 @@ function AdminUsuariosPage() {
             </tbody>
           </Table>
         ) : (
-          <EmptyMessage>Nenhum usuário encontrado</EmptyMessage>
+          <EmptyMessage>Nenhum utilizador encontrado</EmptyMessage>
         )
       )}
       
-      {showModal && currentUsuario && (
+      {showModal && currentUtilizador && (
         <Modal>
           <ModalContent>
             <ModalHeader>
-              <h3>Detalhes do Usuário</h3>
+              <h3>Detalhes do Utilizador</h3>
               <CloseButton onClick={() => setShowModal(false)}>
                 &times;
               </CloseButton>
@@ -413,7 +413,7 @@ function AdminUsuariosPage() {
                   type="text"
                   id="nome"
                   name="nome"
-                  value={currentUsuario.nome}
+                  value={currentUtilizador.nome}
                   onChange={handleInputChange}
                   required
                 />
@@ -425,7 +425,7 @@ function AdminUsuariosPage() {
                   type="email"
                   id="email"
                   name="email"
-                  value={currentUsuario.email}
+                  value={currentUtilizador.email}
                   onChange={handleInputChange}
                   required
                 />
@@ -437,7 +437,7 @@ function AdminUsuariosPage() {
                   type="text"
                   id="telefone"
                   name="telefone"
-                  value={currentUsuario.telefone || ''}
+                  value={currentUtilizador.telefone || ''}
                   onChange={handleInputChange}
                 />
               </FormGroup>
@@ -447,18 +447,18 @@ function AdminUsuariosPage() {
                 <Input
                   type="text"
                   id="tipoUtilizador"
-                  value={currentUsuario.tipoUtilizador?.nome || ''}
+                  value={currentUtilizador.tipoUtilizador?.nome || ''}
                   disabled
                 />
               </FormGroup>
               
-              {currentUsuario.tipoUtilizador?.nome === 'admin' && (
+              {currentUtilizador.tipoUtilizador?.nome === 'admin' && (
                 <FormGroup>
                   <Label htmlFor="nivelAcesso">Nível de Acesso</Label>
                   <Select
                     id="nivelAcesso"
                     name="nivelAcesso"
-                    value={currentUsuario.admin?.nivel_acesso || 'geral'}
+                    value={currentUtilizador.admin?.nivel_acesso || 'geral'}
                     onChange={handleInputChange}
                   >
                     <option value="geral">Geral</option>
@@ -479,4 +479,4 @@ function AdminUsuariosPage() {
   );
 }
 
-export default AdminUsuariosPage; 
+export default AdminUtilizadoresPage; 

@@ -12,6 +12,11 @@ router.post("/", (req, res) => {
   especialidadeController.create(req, res);
 });
 
+// Buscar especialidade por nome
+router.get("/nome/:nome", (req, res) => {
+  especialidadeController.findByNome(req, res);
+});
+
 // Buscar especialidade por ID
 router.get("/:id", (req, res) => {
   especialidadeController.findOne(req, res);

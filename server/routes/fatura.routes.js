@@ -3,7 +3,30 @@ const router = express.Router();
 const faturaController = require("../controllers/fatura.controller");
 const authMiddleware = require('../middleware/auth.middleware');
 
-module.exports = router;
+// Rota temporária para inicializar status (sem autenticação)
+router.get("/init-status", async (req, res) => {
+  try {
+    const db = require('../models');
+    
+    // Verifica se já existem os status
+    const statusCount = await db.FaturaStatus.count();
+    if (statusCount > 0) {
+      return res.status(200).json({ message: "Status já existem", count: statusCount });
+    }
+    
+    // Cria os status no banco de dados
+    await db.FaturaStatus.bulkCreate([
+      { id: 1, nome: 'Emitida' },
+      { id: 2, nome: 'Paga' },
+      { id: 3, nome: 'Cancelada' }
+    ]);
+    
+    res.status(200).json({ message: "Status de faturas inicializados com sucesso" });
+  } catch (error) {
+    console.error("Erro ao inicializar status:", error);
+    res.status(500).json({ message: "Erro ao inicializar status", error: error.message });
+  }
+});
 
 // Configurações de cabeçalho
 router.use(function(req, res, next) {
@@ -40,3 +63,5 @@ router.put("/:id/status", faturaController.updateFaturaStatus);
 
 // Registrar pagamento
 router.post("/:id/pagamento", faturaController.registerPagamento);
+
+module.exports = router;

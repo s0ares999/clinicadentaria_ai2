@@ -118,7 +118,16 @@ exports.update = async (req, res) => {
     const id = req.params.id;
     
     // Verificar se o utilizador existe
-    const utilizador = await Utilizador.findByPk(id);
+    const utilizador = await Utilizador.findByPk(id, {
+      include: [
+        {
+          model: Medico,
+          as: 'medico',
+          include: [{ model: Especialidade, as: 'especialidade' }]
+        }
+      ]
+    });
+    
     if (!utilizador) {
       return res.status(404).json({
         message: `Utilizador com ID ${id} não encontrado!`
@@ -126,7 +135,7 @@ exports.update = async (req, res) => {
     }
     
     // Verificar permissões - apenas o próprio utilizador ou um admin pode atualizar
-    if (req.userId !== utilizador.id && !req.userRole === 'admin') {
+    if (req.userId !== utilizador.id && req.userRole !== 'admin') {
       return res.status(403).json({
         message: "Você não tem permissão para atualizar este utilizador!"
       });
@@ -137,6 +146,7 @@ exports.update = async (req, res) => {
     
     if (req.body.nome) dadosAtualizados.nome = req.body.nome;
     if (req.body.telefone) dadosAtualizados.telefone = req.body.telefone;
+    if (req.body.foto_perfil) dadosAtualizados.foto_perfil = req.body.foto_perfil;
     
     // Apenas admin pode mudar o tipo de utilizador
     if (req.body.tipo_utilizador_id && req.userRole === 'admin') {
@@ -151,10 +161,46 @@ exports.update = async (req, res) => {
     // Atualizar utilizador
     await utilizador.update(dadosAtualizados);
     
+    // Verificar se foram enviados dados específicos de médico
+    if (req.body.crm || req.body.especialidade_id) {
+      // Verificar se o utilizador é um médico
+      const tipoMedico = await TipoUtilizador.findOne({
+        where: { nome: 'medico' }
+      });
+      
+      if (utilizador.tipo_utilizador_id === tipoMedico.id) {
+        // Buscar ou criar registro de médico
+        let medicoData = {
+          utilizador_id: utilizador.id
+        };
+        
+        if (req.body.crm) medicoData.crm = req.body.crm;
+        if (req.body.especialidade_id) medicoData.especialidade_id = req.body.especialidade_id;
+        
+        // Verificar se já existe um registro de médico
+        if (utilizador.medico) {
+          // Atualizar o registro existente
+          await utilizador.medico.update(medicoData);
+          console.log('Registro de médico atualizado:', medicoData);
+        } else {
+          // Criar um novo registro de médico
+          await Medico.create({
+            ...medicoData,
+            utilizador_id: utilizador.id,
+            crm: req.body.crm || 'PENDENTE',
+            especialidade_id: req.body.especialidade_id || 1
+          });
+          console.log('Novo registro de médico criado');
+        }
+      }
+    }
+    
     res.status(200).json({
       message: "Utilizador atualizado com sucesso!"
     });
   } catch (error) {
+    console.error('Erro ao atualizar utilizador:', error);
+    
     if (error.name === 'SequelizeUniqueConstraintError') {
       return res.status(400).json({
         message: "Email já está em uso!"
@@ -258,6 +304,34 @@ exports.findAllMedicos = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: error.message || "Ocorreu um erro ao buscar os médicos."
+    });
+  }
+};
+
+// Atualizar imagem de perfil do utilizador
+exports.updateProfilePicture = async (req, res, userId, imageUrl) => {
+  try {
+    // Verificar se o utilizador existe
+    const utilizador = await Utilizador.findByPk(userId);
+    
+    if (!utilizador) {
+      return res.status(404).json({
+        message: `Utilizador com ID ${userId} não encontrado!`
+      });
+    }
+    
+    // Atualizar o campo foto_perfil
+    await utilizador.update({ foto_perfil: imageUrl });
+    
+    // Retornar sucesso com a URL da imagem
+    return res.status(200).json({
+      message: "Foto de perfil atualizada com sucesso!",
+      imageUrl: imageUrl
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar foto de perfil:', error);
+    return res.status(500).json({
+      message: error.message || "Ocorreu um erro ao atualizar a foto de perfil."
     });
   }
 };

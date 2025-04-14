@@ -17,6 +17,7 @@ const ConsultaController = {
       // Validação mínima
       if (!req.body.data_hora) {
         return res.status(400).json({
+          success: false,
           message: "Campo obrigatório não preenchido: data_hora é necessário!"
         });
       }
@@ -27,8 +28,30 @@ const ConsultaController = {
       
       if (!utilizador_id) {
         return res.status(401).json({
+          success: false,
           message: "Utilizador não autenticado!"
         });
+      }
+
+      // Verificar se o status existe
+      const statusId = 1; // Status padrão "Pendente"
+      const statusExists = await ConsultaStatus.findByPk(statusId);
+      
+      if (!statusExists) {
+        console.error(`Status de consulta com ID ${statusId} não encontrado. Inicializando status...`);
+        try {
+          // Tentar inicializar os status
+          const dbInit = require('../config/db.init');
+          await dbInit.initConsultaStatus();
+          console.log("Status de consulta inicializados com sucesso!");
+        } catch (initError) {
+          console.error("Erro ao inicializar status de consulta:", initError);
+          return res.status(500).json({
+            success: false,
+            message: "Erro interno: não foi possível criar status de consulta.",
+            error: process.env.NODE_ENV === 'development' ? initError.message : undefined
+          });
+        }
       }
 
       // Criar a consulta com o ID do usuário extraído do token
@@ -36,7 +59,7 @@ const ConsultaController = {
         utilizador_id: utilizador_id,
         data_hora: req.body.data_hora,
         observacoes: req.body.observacoes || '',
-        status_id: 1 // Status inicial (Pendente)
+        status_id: statusId // Status inicial (Pendente)
       };
 
       console.log("Dados para criar consulta:", consultaData);
@@ -52,6 +75,18 @@ const ConsultaController = {
       });
     } catch (error) {
       console.error("Erro ao criar consulta:", error);
+      
+      // Verificar se é um erro de chave estrangeira
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        if (error.index?.includes('status_id')) {
+          return res.status(500).json({
+            success: false,
+            message: "Erro ao criar consulta: o status selecionado não existe. Por favor, contate o administrador do sistema.",
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+          });
+        }
+      }
+      
       return res.status(500).json({
         success: false,
         message: "Erro ao criar consulta: " + error.message,

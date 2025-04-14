@@ -23,7 +23,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     status_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      defaultValue: 1
     }
   }, {
     tableName: 'Disponibilidade',
@@ -38,7 +39,9 @@ module.exports = (sequelize, DataTypes) => {
     
     Disponibilidade.belongsTo(models.DisponibilidadeStatus, {
       foreignKey: 'status_id',
-      as: 'status'
+      as: 'status',
+      onDelete: 'NO ACTION',
+      onUpdate: 'CASCADE'
     });
   };
 

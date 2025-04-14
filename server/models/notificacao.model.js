@@ -15,7 +15,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     status_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      defaultValue: 1
     },
     data_envio: {
       type: DataTypes.DATE,
@@ -29,12 +30,16 @@ module.exports = (sequelize, DataTypes) => {
   Notificacao.associate = (models) => {
     Notificacao.belongsTo(models.Utilizador, {
       foreignKey: 'utilizador_id',
-      as: 'utilizador'
+      as: 'utilizador',
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
     });
     
     Notificacao.belongsTo(models.NotificacaoStatus, {
       foreignKey: 'status_id',
-      as: 'status'
+      as: 'status',
+      onDelete: 'NO ACTION',
+      onUpdate: 'CASCADE'
     });
   };
 

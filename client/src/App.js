@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import HomePage from './views/HomePage';
@@ -18,6 +18,29 @@ import ServiceDetailPage from './components/ServiceDetailPage';
 import MedicoDashboardPage from './views/medico/MedicoDashboardPage';
 import MedicoConsultasPendentesPage from './views/medico/MedicoConsultasPendentesPage';
 
+// Componente de Rota Protegida
+const ProtectedRoute = ({ children, adminRequired = false, clienteRequired = false, medicoRequired = false }) => {
+  const user = AuthService.getCurrentUser();
+  
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (adminRequired && user.tipo !== 'admin' && user.role !== 'admin') {
+    return <Navigate to="/" />;
+  }
+  
+  if (clienteRequired && user.tipo !== 'cliente') {
+    return <Navigate to="/" />;
+  }
+
+  if (medicoRequired && user.tipo !== 'medico') {
+    return <Navigate to="/" />;
+  }
+  
+  return children;
+};
+
 function App() {
   const [currentUser, setCurrentUser] = useState(undefined);
 
@@ -28,49 +51,11 @@ function App() {
     }
   }, []);
 
-  // Função de depuração para verificar exatamente por que o acesso está sendo negado
-  const checkClientAccess = (user) => {
-    if (!user) return false;
-    return user.tipo === 'cliente';
-  };
-
-  // Adicione esta função de verificação para médicos
-  const checkMedicoAccess = (user) => {
-    if (!user) return false;
-    return user.tipo === 'medico';
-  };
-
-  // Rota protegida melhorada
-  const ProtectedRoute = ({ children, adminRequired = false, clienteRequired = false, medicoRequired = false }) => {
-    const user = AuthService.getCurrentUser();
-    
-    if (!user) {
-      return <Navigate to="/login" />;
-    }
-    
-    if (adminRequired && user.role !== 'admin' && user.tipo !== 'admin') {
-      return <Navigate to="/" />;
-    }
-    
-    if (clienteRequired) {
-      const isClient = checkClientAccess(user);
-      
-      if (!isClient) {
-        return <Navigate to="/" />;
-      }
-    }
-
-    if (medicoRequired && !checkMedicoAccess(user)) {
-      return <Navigate to="/" />;
-    }
-    
-    return children;
-  };
-
   return (
     <div className="App">
       <Toaster position="top-center" />
       <Routes>
+        {/* Rotas públicas */}
         <Route path="/" element={<HomePage />} />
         <Route path="/sobre" element={<SobrePage />} />
         <Route path="/contactos" element={<ContactosPage />} />
@@ -79,7 +64,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/servicos/:title" element={<ServiceDetailPage/>} />
         
-        {/* Rotas protegidas que exigem autenticação como admin */}
+        {/* Admin Dashboard */}
         <Route 
           path="/dashboard" 
           element={
@@ -95,7 +80,7 @@ function App() {
           <Route path="estatisticas" element={<EstatisticasPage />} />
         </Route>
         
-        {/* Rotas protegidas que exigem autenticação como cliente */}
+        {/* Cliente Dashboard */}
         <Route 
           path="/cliente-dashboard/*" 
           element={
@@ -105,7 +90,7 @@ function App() {
           } 
         />
 
-        {/* Rotas protegidas que exigem autenticação como médico */}
+        {/* Médico Dashboard */}
         <Route 
           path="/medico/*"
           element={
@@ -113,9 +98,9 @@ function App() {
               <MedicoDashboardPage />
             </ProtectedRoute>
           } 
-        />
-        
-        <Route path="/medico/consultas-pendentes" element={<MedicoConsultasPendentesPage />} />
+        >
+          <Route path="consultas-pendentes" element={<MedicoConsultasPendentesPage />} />
+        </Route>
         
         {/* Rota para páginas não encontradas */}
         <Route path="*" element={<Navigate to="/" />} />

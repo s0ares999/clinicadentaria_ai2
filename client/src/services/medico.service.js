@@ -1,17 +1,11 @@
 import api from './api.config';
 import AuthService from './auth.service';
-import UsuarioService from './usuario.service';
+import UtilizadorService from './utilizador.service';
 
 class MedicoService {
   async getMedicoPerfil() {
     try {
-      const user = AuthService.getCurrentUser();
-      if (!user || !user.id) {
-        throw new Error('Usuário não encontrado');
-      }
-      
-      // Retornando diretamente a resposta do UsuarioService
-      return await UsuarioService.getUsuarioById(user.id);
+      return await api.get('/medicos/perfil');
     } catch (error) {
       console.error('Erro ao buscar perfil do médico:', error);
       throw error;
@@ -22,7 +16,7 @@ class MedicoService {
     try {
       const user = AuthService.getCurrentUser();
       if (!user || !user.id) {
-        throw new Error('Usuário não encontrado');
+        throw new Error('Utilizador não encontrado');
       }
       
       // Separar dados do utilizador e dados específicos do médico
@@ -32,17 +26,39 @@ class MedicoService {
         telefone: medicoData.telefone
       };
 
+      // Obter o especialidade_id da tabela Especialidade pelo nome, se existir
+      let especialidade_id = 1; // Default para caso de erro
+      
+      try {
+        if (medicoData.especialidade && medicoData.especialidade !== 'Não informada') {
+          // Buscar o ID da especialidade pelo nome
+          const especialidadeResponse = await api.get(`/especialidades/nome/${encodeURIComponent(medicoData.especialidade)}`);
+          if (especialidadeResponse.data && especialidadeResponse.data.id) {
+            especialidade_id = especialidadeResponse.data.id;
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar especialidade:', error);
+        // Continuar com o ID padrão
+      }
+
       const medicoEspecificoData = {
-        crm: medicoData.crm,
-        especialidade_id: medicoData.especialidade_id,
-        horarioAtendimento: medicoData.horarioAtendimento
+        crm: medicoData.crm || 'PENDENTE',
+        especialidade_id: especialidade_id
       };
 
-      // Atualizar ambas as tabelas
+      console.log('Dados para atualização:', {
+        utilizador: utilizadorData,
+        medico: medicoEspecificoData
+      });
+
+      // Atualizar usando a rota específica de médicos
       const response = await api.put(`/medicos/${user.id}/perfil`, {
         utilizador: utilizadorData,
         medico: medicoEspecificoData
       });
+
+      console.log('Resposta da atualização:', response.data);
 
       return {
         success: true,
@@ -58,11 +74,11 @@ class MedicoService {
     try {
       const user = AuthService.getCurrentUser();
       if (!user || !user.id) {
-        throw new Error('Usuário não identificado');
+        throw new Error('Utilizador não identificado');
       }
       
       // Usar a mesma rota que está definida no backend
-      const response = await api.get(`consulta/utilizador/${user.id}?tipo=medico`);
+      const response = await api.get(`/consultas/utilizador/${user.id}?tipo=medico`);
       
       // Filtrar para remover consultas com status "Concluída" (status_id = 3)
       // Estas consultas devem aparecer apenas no histórico
@@ -83,11 +99,11 @@ class MedicoService {
     try {
       const user = AuthService.getCurrentUser();
       if (!user || !user.id) {
-        throw new Error('Usuário não identificado');
+        throw new Error('Utilizador não identificado');
       }
       
       // Usar a mesma rota que está definida no backend
-      const response = await api.get(`consulta/utilizador/${user.id}?tipo=medico`);
+      const response = await api.get(`/consultas/utilizador/${user.id}?tipo=medico`);
       
       // Filtrar para incluir apenas consultas com status "Concluída" (status_id = 3)
       const consultasConcluidas = response.data.filter(consulta => 
@@ -111,16 +127,6 @@ class MedicoService {
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar faturas:', error);
-      throw error;
-    }
-  }
-
-  async corrigirRegistros() {
-    try {
-      const response = await api.post('/medicos/corrigir-registros');
-      return response.data;
-    } catch (error) {
-      console.error('Erro ao corrigir registros:', error);
       throw error;
     }
   }

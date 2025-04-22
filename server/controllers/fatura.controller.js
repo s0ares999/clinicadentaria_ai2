@@ -363,6 +363,9 @@ const controller = {
     try {
       const consultaId = req.params.consultaId;
       const { valor_total, observacoes, status_id } = req.body;
+      
+      console.log("Tentando criar fatura para consulta:", consultaId);
+      console.log("Dados recebidos:", req.body);
 
       // Verificar se a consulta existe
       const consulta = await Consulta.findByPk(consultaId, {
@@ -376,10 +379,13 @@ const controller = {
       });
 
       if (!consulta) {
+        console.log(`Consulta com ID ${consultaId} não encontrada!`);
         return res.status(404).json({
           message: "Consulta não encontrada!"
         });
       }
+      
+      console.log("Consulta encontrada:", consulta.id);
 
       // Verificar se a consulta já possui uma fatura
       const faturaExistente = await Fatura.findOne({
@@ -387,21 +393,43 @@ const controller = {
       });
 
       if (faturaExistente) {
+        console.log(`Consulta ${consultaId} já possui uma fatura:`, faturaExistente.id);
         return res.status(400).json({
           message: "Esta consulta já possui uma fatura associada."
         });
       }
+      
+      // Verificar se status_id existe
+      if (status_id) {
+        const statusExiste = await FaturaStatus.findByPk(status_id);
+        if (!statusExiste) {
+          console.log(`Status com ID ${status_id} não existe!`);
+          return res.status(400).json({
+            message: `Status com ID ${status_id} não existe!`
+          });
+        }
+      }
+
+      console.log("Criando fatura com os dados:", {
+        consulta_id: consultaId,
+        valor_total,
+        observacoes,
+        status_id: status_id || 1
+      });
 
       // Criar a fatura
       const fatura = await Fatura.create({
         consulta_id: consultaId,
-        valor_total,
+        valor_total: parseFloat(valor_total),
         observacoes,
         status_id: status_id || 1 // 1 = Emitida (padrão)
       });
       
+      console.log("Fatura criada com sucesso, ID:", fatura.id);
+      
       // Atualizar a consulta para indicar que possui fatura
       await consulta.update({ tem_fatura: true });
+      console.log("Consulta atualizada, tem_fatura=true");
 
       // Buscar fatura completa com relações
       const faturaCompleta = await Fatura.findByPk(fatura.id, {
@@ -429,7 +457,18 @@ const controller = {
         fatura: faturaCompleta
       });
     } catch (error) {
-      console.error("Erro ao criar fatura para consulta:", error);
+      console.error("Erro detalhado ao criar fatura para consulta:", error);
+      console.error("Tipo de erro:", error.name);
+      console.error("Mensagem:", error.message);
+      console.error("Stack:", error.stack);
+      
+      if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeDatabaseError') {
+        return res.status(400).json({
+          message: "Erro nos dados fornecidos: " + error.message,
+          errors: error.errors?.map(e => e.message)
+        });
+      }
+      
       res.status(500).json({
         message: error.message || "Ocorreu um erro ao criar a fatura."
       });

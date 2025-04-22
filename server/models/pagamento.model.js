@@ -16,7 +16,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     status_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      defaultValue: 1
     }
   }, {
     tableName: 'Pagamentos',
@@ -31,7 +32,9 @@ module.exports = (sequelize, DataTypes) => {
     
     Pagamento.belongsTo(models.PagamentoStatus, {
       foreignKey: 'status_id',
-      as: 'status'
+      as: 'status',
+      onDelete: 'NO ACTION',
+      onUpdate: 'CASCADE'
     });
     
     Pagamento.belongsToMany(models.Fatura, {

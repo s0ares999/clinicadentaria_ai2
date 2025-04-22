@@ -228,25 +228,48 @@ function MedicoFaturasPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.valor_total || parseFloat(formData.valor_total) <= 0) {
-      toast.error("O valor da fatura deve ser maior que zero");
+    // Validar valor total
+    let valorTotal;
+    try {
+      valorTotal = parseFloat(formData.valor_total);
+      if (isNaN(valorTotal) || valorTotal <= 0) {
+        toast.error("O valor da fatura deve ser maior que zero");
+        return;
+      }
+    } catch (error) {
+      toast.error("O valor informado é inválido");
       return;
     }
     
     try {
-      await FaturaService.criarFatura(consultaSelecionada.id, {
-        valor_total: parseFloat(formData.valor_total),
+      console.log("Enviando dados para criar fatura:", {
+        consulta_id: consultaSelecionada.id,
+        valor_total: valorTotal,
+        observacoes: formData.observacoes,
+        status_id: 1
+      });
+      
+      const response = await FaturaService.criarFatura(consultaSelecionada.id, {
+        valor_total: valorTotal,
         observacoes: formData.observacoes,
         status_id: 1 // 1 = Emitida
       });
       
+      console.log("Resposta da criação de fatura:", response);
       toast.success("Fatura criada com sucesso");
       setShowModal(false);
       carregarDados();
       
     } catch (error) {
       console.error("Erro ao criar fatura:", error);
-      toast.error("Erro ao criar fatura");
+      
+      // Tentar extrair mensagem de erro mais específica da resposta da API
+      let mensagemErro = "Erro ao criar fatura";
+      if (error.response && error.response.data) {
+        mensagemErro = error.response.data.message || mensagemErro;
+      }
+      
+      toast.error(mensagemErro);
     }
   };
 

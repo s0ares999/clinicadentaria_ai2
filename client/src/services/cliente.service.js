@@ -3,7 +3,7 @@ import api from './api.config';
 class ClienteService {
   async getClienteProfile() {
     try {
-      const response = await api.get('cliente/perfil');
+      const response = await api.get('clientes/perfil');
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
@@ -13,7 +13,7 @@ class ClienteService {
 
   async updateClienteProfile(clienteData) {
     try {
-      const response = await api.put('/cliente/perfil', clienteData);
+      const response = await api.put('/clientes/perfil', clienteData);
       if (response.data.success) {
         return response.data;
       }
@@ -26,7 +26,7 @@ class ClienteService {
 
   async getConsultas() {
     try {
-      const response = await api.get('cliente/consultas');
+      const response = await api.get('clientes/consultas');
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar consultas:', error);

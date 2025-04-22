@@ -7,11 +7,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     consulta_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Consultas',
-        key: 'id'
-      }
+      allowNull: false
     },
     valor_total: {
       type: DataTypes.DECIMAL(10, 2),
@@ -22,7 +18,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     status_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      defaultValue: 1
     }
   }, {
     tableName: 'Faturas',
@@ -32,12 +29,16 @@ module.exports = (sequelize, DataTypes) => {
   Fatura.associate = (models) => {
     Fatura.belongsTo(models.FaturaStatus, {
       foreignKey: 'status_id',
-      as: 'status'
+      as: 'status',
+      onDelete: 'NO ACTION',
+      onUpdate: 'CASCADE'
     });
     
     Fatura.belongsTo(models.Consulta, {
       foreignKey: 'consulta_id',
-      as: 'consulta'
+      as: 'consulta',
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
     });
     
     Fatura.belongsToMany(models.Pagamento, {

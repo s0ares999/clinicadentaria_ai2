@@ -220,7 +220,7 @@ const AgendamentosPage = () => {
   const fetchConsultas = async () => {
     try {
       setLoading(true);
-      const response = await api.get('agendamentos');
+      const response = await api.get('consultas/agendamentos');
       setConsultas(response.data);
       setLoading(false);
     } catch (error) {

@@ -3,11 +3,11 @@ import AuthService from './auth.service';
 
 class ConsultaService {
   async getConsultas() {
-    return api.get('consulta');
+    return api.get('consultas');
   }
 
   async getConsultaById(id) {
-    return api.get(`consulta/${id}`);
+    return api.get(`consultas/${id}`);
   }
 
   async createConsulta(consultaData) {
@@ -26,7 +26,7 @@ class ConsultaService {
         }
       };
       
-      return await api.post('consulta', consultaData, config);
+      return await api.post('consultas', consultaData, config);
     } catch (error) {
       console.error('Erro na chamada de API:', error);
       if (error.response) {
@@ -37,11 +37,11 @@ class ConsultaService {
   }
 
   async updateConsulta(id, consultaData) {
-    return api.put(`consulta/${id}`, consultaData);
+    return api.put(`consultas/${id}`, consultaData);
   }
 
   async cancelConsulta(id) {
-    return api.put(`consulta/${id}/cancel`, {});
+    return api.put(`consultas/${id}/cancel`, {});
   }
 
   async getConsultasByCliente() {
@@ -52,7 +52,7 @@ class ConsultaService {
       }
       
       console.log("Buscando consultas para o usuário:", user.id);
-      const response = await api.get(`consulta/utilizador/${user.id}?tipo=cliente`);
+      const response = await api.get(`consultas/utilizador/${user.id}?tipo=cliente`);
       console.log("Resposta da API:", response);
       
       return response.data;
@@ -63,7 +63,7 @@ class ConsultaService {
   }
 
   async getConsultasByMedico(medicoId) {
-    return api.get(`consulta/medico/${medicoId}`);
+    return api.get(`consultas/medico/${medicoId}`);
   }
 
   async getConsultasMedico() {
@@ -73,7 +73,7 @@ class ConsultaService {
         throw new Error('Usuário não identificado');
       }
       
-      const response = await api.get(`consulta/utilizador/${user.id}?tipo=medico`);
+      const response = await api.get(`consultas/utilizador/${user.id}?tipo=medico`);
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar consultas:', error);
@@ -83,7 +83,7 @@ class ConsultaService {
 
   async finalizarConsulta(consultaId, observacoes) {
     try {
-      const response = await api.put(`consulta/${consultaId}`, {
+      const response = await api.put(`consultas/${consultaId}`, {
         status_id: 3, // ID para "Concluída"
         observacoes: observacoes
       });
@@ -95,7 +95,7 @@ class ConsultaService {
   }
 
   async getConsultasPendentes() {
-    return api.get('consulta/pendentes');
+    return api.get('consultas/pendentes');
   }
 
   async getConsultasConcluidas() {
@@ -107,7 +107,7 @@ class ConsultaService {
       
       // Como não temos campo medico_id, vamos usar a rota para consultas do tipo médico
       // e filtrar por status "Concluída" no frontend
-      const response = await api.get(`consulta/utilizador/${user.id}?tipo=medico`);
+      const response = await api.get(`consultas/utilizador/${user.id}?tipo=medico`);
       
       // Filtramos as consultas concluídas no frontend
       const consultasConcluidas = response.data.filter(
@@ -123,7 +123,7 @@ class ConsultaService {
 
   async aceitarConsulta(consultaId) {
     try {
-      const response = await api.put(`consulta/${consultaId}/aceitar`);
+      const response = await api.put(`consultas/${consultaId}/aceitar`);
       return response.data;
     } catch (error) {
       console.error('Erro ao aceitar consulta:', error);
@@ -133,7 +133,7 @@ class ConsultaService {
 
   async recusarConsulta(consultaId) {
     try {
-      const response = await api.put(`consulta/${consultaId}/recusar`);
+      const response = await api.put(`consultas/${consultaId}/recusar`);
       return response.data;
     } catch (error) {
       console.error('Erro ao recusar consulta:', error);
@@ -143,10 +143,20 @@ class ConsultaService {
 
   async getConsultaStatus() {
     try {
-      const response = await api.get('consulta/status');
+      const response = await api.get('consultas/status');
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar status de consulta:', error);
+      throw error;
+    }
+  }
+
+  async getFaturaFromConsulta(consultaId) {
+    try {
+      const response = await api.get(`consultas/${consultaId}/fatura`);
+      return response.data;
+    } catch (error) {
+      console.error(`Erro ao buscar fatura da consulta ${consultaId}:`, error);
       throw error;
     }
   }

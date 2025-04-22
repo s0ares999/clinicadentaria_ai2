@@ -8,6 +8,7 @@ const bodyParser = require('body-parser');
 // Importar o Sequelize diretamente para debug
 const { Sequelize } = require('sequelize');
 const db = require('./models');
+const dbInit = require('./config/db.init');
 
 // Verificar o que foi importado
 console.log("Objetos importados do ./models:", Object.keys(db));
@@ -31,6 +32,9 @@ app.use(bodyParser.json());
 // Parse requests de content-type: application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Servir arquivos estáticos
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Middleware para debug das requisições
 app.use((req, res, next) => {
   console.log('\n=== Nova Requisição ===');
@@ -47,6 +51,21 @@ function loadRoutes() {
   
   const routesDir = path.join(__dirname, "routes");
   
+  // Mapeamento de arquivos para caminhos de API
+  const routeMapping = {
+    'auth.routes.js': '/api/auth',
+    'cliente.routes.js': '/api/clientes',
+    'consulta.routes.js': '/api/consultas',
+    'utilizador.routes.js': '/api/utilizador',
+    'fatura.routes.js': '/api/faturas',
+    'especialidade.routes.js': '/api/especialidades',
+    'medico.routes.js': '/api/medicos',
+    'disponibilidade.routes.js': '/api/disponibilidades',
+    'notificacao.routes.js': '/api/notificacoes',
+    'pagamento.routes.js': '/api/pagamentos',
+    'health.routes.js': '/api/health'
+  };
+
   fs.readdirSync(routesDir).forEach(file => {
     if (file.indexOf(".routes.js") !== -1) {
       try {
@@ -55,15 +74,15 @@ function loadRoutes() {
         
         // Verificar se o arquivo exporta um roteador Express
         if (routeModule && typeof routeModule === 'function' && routeModule.stack) {
-          // Extrair o nome base para a rota
-          const basePath = file.replace(".routes.js", "");
-          app.use(`/api/${basePath}`, routeModule);
-          console.log(`Rota carregada: ${file}`);
+          // Usar o mapeamento definido ou criar um padrão
+          const apiPath = routeMapping[file] || `/api/${file.replace(".routes.js", "")}`;
+          app.use(apiPath, routeModule);
+          console.log(`✅ Rota carregada: ${file} => ${apiPath}`);
         } else {
-          console.log(`Ignorando ${file}: não parece ser um roteador Express válido`);
+          console.log(`⚠️ Ignorando ${file}: não parece ser um roteador Express válido`);
         }
       } catch (error) {
-        console.error(`Erro ao carregar rota ${file}:`, error);
+        console.error(`❌ Erro ao carregar rota ${file}:`, error);
       }
     }
   });
@@ -98,7 +117,64 @@ const initializeDatabase = async () => {
     // Sincroniza o banco de dados (somente em ambiente de desenvolvimento)
     if (process.env.NODE_ENV !== 'production') {
       console.log("🔄 Sincronizando modelos com o banco de dados...");
-      await db.sequelize.sync({ alter: false });
+      await db.sequelize.sync({ alter: true });
+      
+      // Inicializar dados básicos após sincronizar
+      await dbInit.initializeBasicData();
+      
+      // Verificar status de consulta
+      const statusConsultas = await db.ConsultaStatus.findAll();
+      console.log("Status de consulta disponíveis:", statusConsultas.map(s => ({ id: s.id, nome: s.nome })));
+      
+      // Verificar status de disponibilidade
+      try {
+        console.log("Verificando DisponibilidadeStatus...");
+        if (db.DisponibilidadeStatus) {
+          const dispStatus = await db.DisponibilidadeStatus.findAll();
+          console.log("Status de disponibilidade:", dispStatus.map(s => ({ id: s.id, nome: s.nome })));
+          
+          // Se não houver registros, criar manualmente
+          if (dispStatus.length === 0) {
+            console.log("Criando status de disponibilidade manualmente...");
+            await db.DisponibilidadeStatus.bulkCreate([
+              { id: 1, nome: 'Disponível' },
+              { id: 2, nome: 'Ocupado' },
+              { id: 3, nome: 'Reservado' }
+            ]);
+            console.log("Status de disponibilidade criados com sucesso!");
+          }
+        } else {
+          console.error("Modelo DisponibilidadeStatus não disponível!");
+        }
+      } catch (error) {
+        console.error("Erro ao verificar/criar DisponibilidadeStatus:", error);
+      }
+      
+      // Verificar status de pagamento
+      try {
+        console.log("Verificando PagamentoStatus...");
+        if (db.PagamentoStatus) {
+          const pagStatus = await db.PagamentoStatus.findAll();
+          console.log("Status de pagamento:", pagStatus.map(s => ({ id: s.id, nome: s.nome })));
+          
+          // Se não houver registros, criar manualmente
+          if (pagStatus.length === 0) {
+            console.log("Criando status de pagamento manualmente...");
+            await db.PagamentoStatus.bulkCreate([
+              { id: 1, nome: 'Pendente' },
+              { id: 2, nome: 'Pago' },
+              { id: 3, nome: 'Cancelado' },
+              { id: 4, nome: 'Recusado' }
+            ]);
+            console.log("Status de pagamento criados com sucesso!");
+          }
+        } else {
+          console.error("Modelo PagamentoStatus não disponível!");
+        }
+      } catch (error) {
+        console.error("Erro ao verificar/criar PagamentoStatus:", error);
+      }
+      
       console.log("✅ Banco de dados sincronizado com sucesso!");
     }
     
@@ -120,55 +196,24 @@ const initializeDatabase = async () => {
   }
 };
 
-// Importar rotas
-const authRoutes = require('./routes/auth.routes');
-const clienteRoutes = require('./routes/cliente.routes');
-const consultaRoutes = require('./routes/consulta.routes');
-const utilizadorRoutes = require('./routes/utilizador.routes');
-const faturaRoutes = require('./routes/fatura.routes');
-const especialidadeRoutes = require('./routes/especialidade.routes');
-const medicoRoutes = require('./routes/medico.routes');
-
-// Definir rotas
-app.use('/api/auth', authRoutes);
-app.use('/api/clientes', clienteRoutes);
-app.use('/api/consultas', consultaRoutes);
-app.use('/api/utilizador', utilizadorRoutes);
-app.use('/api/faturas', faturaRoutes);
-app.use('/api/especialidades', especialidadeRoutes);
-app.use('/api/medicos', medicoRoutes);
-
-// Rota raiz para verificação de API
-app.get('/api', (req, res) => {
-  res.json({ message: 'API da Clínica Dentária está funcionando!' });
-});
-
-// Após a definição das rotas, SUBSTITUA este código:
-if (process.env.NODE_ENV === 'development') {
-  // Lista de rotas simplificada sem dependência externa
-  console.log("\n📋 Rotas disponíveis na API:");
-  console.log(" - POST /api/auth/signin - Login de utilizador");
-  console.log(" - POST /api/auth/signup - Registro de utilizador");
-  console.log(" - GET /api/auth/verify - Verificação de token");
-  console.log(" - GET /api - Status da API");
-  console.log("\n");
+// Configurar middleware de logs apenas para desenvolvimento
+if (process.env.NODE_ENV !== 'production') {
+  // Adicione um log para verificar as rotas carregadas
+  console.log("\n=== ROTAS REGISTRADAS ===");
+  app._router.stack.forEach(middleware => {
+    if (middleware.route) {
+      // Rotas registradas diretamente
+      console.log(`${Object.keys(middleware.route.methods).join(', ')} ${middleware.route.path}`);
+    } else if (middleware.name === 'router') {
+      // Rotas registradas via router
+      middleware.handle.stack.forEach(handler => {
+        if (handler.route) {
+          console.log(`${Object.keys(handler.route.methods).join(', ')} ${middleware.regexp} ${handler.route.path}`);
+        }
+      });
+    }
+  });
 }
-
-// Adicione um log para verificar as rotas carregadas
-console.log("\n=== ROTAS REGISTRADAS ===");
-app._router.stack.forEach(middleware => {
-  if (middleware.route) {
-    // Rotas registradas diretamente
-    console.log(`${Object.keys(middleware.route.methods).join(', ')} ${middleware.route.path}`);
-  } else if (middleware.name === 'router') {
-    // Rotas registradas via router
-    middleware.handle.stack.forEach(handler => {
-      if (handler.route) {
-        console.log(`${Object.keys(handler.route.methods).join(', ')} ${middleware.regexp} ${handler.route.path}`);
-      }
-    });
-  }
-});
 
 // Iniciar servidor
 const startServer = async () => {

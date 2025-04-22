@@ -21,6 +21,11 @@ module.exports = (sequelize, Sequelize) => {
     telefone: {
       type: Sequelize.STRING
     },
+    foto_perfil: {
+      type: Sequelize.STRING,
+      allowNull: true,
+      defaultValue: null
+    },
     tipo_utilizador_id: {
       type: Sequelize.INTEGER,
       allowNull: false,

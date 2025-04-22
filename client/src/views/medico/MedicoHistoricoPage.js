@@ -14,6 +14,7 @@ import {
 import { toast } from 'react-hot-toast';
 import MedicoService from '../../services/medico.service';
 import FaturaService from '../../services/fatura.service';
+import ConsultaService from '../../services/consulta.service';
 import api from '../../services/api.config';
 
 function MedicoHistoricoPage() {
@@ -44,11 +45,16 @@ function MedicoHistoricoPage() {
 
   const handleViewFatura = async (consulta) => {
     try {
-      // Obter a fatura associada à consulta
-      const response = await api.get(`http://localhost:8000/api/consulta/${consulta.id}/fatura`);
-      if (response.data && response.data.id) {
-        // Abrir o PDF em uma nova aba
-        const pdfUrl = FaturaService.getPDFUrl(response.data.id);
+      console.log("Buscando fatura para consulta ID:", consulta.id);
+      
+      // Usar o serviço de consulta para buscar a fatura
+      const fatura = await ConsultaService.getFaturaFromConsulta(consulta.id);
+      console.log("Fatura encontrada:", fatura);
+      
+      if (fatura && fatura.id) {
+        // Obter URL do PDF e abrir em nova aba
+        const pdfUrl = FaturaService.getPDFUrl(fatura.id);
+        console.log("URL do PDF:", pdfUrl);
         window.open(pdfUrl, '_blank');
       } else {
         toast.error('Não foi possível localizar a fatura desta consulta');
@@ -57,11 +63,6 @@ function MedicoHistoricoPage() {
       console.error('Erro ao buscar fatura:', error);
       toast.error('Erro ao buscar informações da fatura');
     }
-  };
-
-  const handleCriarFatura = (consulta) => {
-    // Redirecionar para a página de faturas
-    window.location.href = '/medico-dashboard/faturas';
   };
 
   return (
@@ -112,13 +113,7 @@ function MedicoHistoricoPage() {
                         Ver Fatura
                       </Button>
                     ) : (
-                      <Button
-                        color="warning"
-                        variant="contained"
-                        onClick={() => handleCriarFatura(consulta)}
-                      >
-                        Criar Fatura
-                      </Button>
+                      <span style={{ color: '#777' }}>Sem fatura</span>
                     )}
                   </TableCell>
                 </TableRow>

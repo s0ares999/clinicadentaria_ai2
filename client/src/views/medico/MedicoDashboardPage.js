@@ -239,18 +239,6 @@ function MedicoDashboardPage() {
             ''
           }</h2>
 
-          <ProfileHeader>
-            <Avatar>
-              {getInitials(currentUser?.nome)}
-            </Avatar>
-            <ProfileInfo>
-              <h2>Bem-vindo, Dr(a). {currentUser?.nome}</h2>
-              <div className="info-item">Email: {currentUser?.email}</div>
-              <div className="info-item">CRM: {currentUser?.crm || 'Não informado'}</div>
-              <div className="info-item">Especialidade: {currentUser?.especialidade || 'Não informada'}</div>
-            </ProfileInfo>
-          </ProfileHeader>
-
           {renderContent()}
         </MainContent>
       </PageContainer>

@@ -2,11 +2,7 @@ module.exports = (sequelize, Sequelize) => {
   const Consulta = sequelize.define("Consulta", {
     utilizador_id: {
       type: Sequelize.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Utilizadores',
-        key: 'id'
-      }
+      allowNull: false
     },
     data_hora: {
       type: Sequelize.DATE,
@@ -17,7 +13,8 @@ module.exports = (sequelize, Sequelize) => {
     },
     status_id: {
       type: Sequelize.INTEGER,
-      defaultValue: 1
+      allowNull: false,
+      defaultValue: 1,
     },
     tem_fatura: {
       type: Sequelize.BOOLEAN,
@@ -30,6 +27,10 @@ module.exports = (sequelize, Sequelize) => {
       {
         name: 'idx_consultas_data',
         fields: ['data_hora']
+      },
+      {
+        name: 'idx_consultas_status',
+        fields: ['status_id']
       }
     ]
   });
@@ -42,7 +43,9 @@ module.exports = (sequelize, Sequelize) => {
     
     Consulta.belongsTo(models.ConsultaStatus, {
       foreignKey: 'status_id',
-      as: 'status'
+      as: 'status',
+      onDelete: 'NO ACTION',
+      onUpdate: 'CASCADE'
     });
     
     if (models.Pagamento) {

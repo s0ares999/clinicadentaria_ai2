@@ -211,20 +211,23 @@ function RegisterPage() {
       const fetchEspecialidades = async () => {
         try {
           const response = await axios.get('http://localhost:8000/api/especialidades');
-          setEspecialidades(response.data);
+          // Verificar se a resposta tem a estrutura correta
+          if (response.data && response.data.data) {
+            setEspecialidades(response.data.data);
+          } else {
+            console.error('Formato de resposta inválido:', response.data);
+            setEspecialidades([]);
+          }
         } catch (error) {
           console.error('Erro ao carregar especialidades:', error);
-          setEspecialidades([
-            { id: 1, nome: 'Ortodontia' },
-            { id: 2, nome: 'Endodontia' },
-            { id: 3, nome: 'Periodontia' },
-            { id: 4, nome: 'Implantodontia' },
-            { id: 5, nome: 'Odontopediatria' }
-          ]);
+          setEspecialidades([]);
         }
       };
       
       fetchEspecialidades();
+    } else {
+      // Resetar especialidades quando não for médico
+      setEspecialidades([]);
     }
   }, [role]);
   
@@ -451,11 +454,15 @@ function RegisterPage() {
                     required
                   >
                     <option value="">Selecione uma especialidade</option>
-                    {especialidades.map(esp => (
-                      <option key={esp.id} value={esp.id}>
-                        {esp.nome}
-                      </option>
-                    ))}
+                    {especialidades && especialidades.length > 0 ? (
+                      especialidades.map(esp => (
+                        <option key={esp.id} value={esp.id}>
+                          {esp.nome}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>Carregando especialidades...</option>
+                    )}
                   </Select>
                 </FormGroup>
                 

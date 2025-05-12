@@ -8,7 +8,7 @@ const Cliente = db.Cliente;
 const Admin = db.Admin;
 const Medico = db.Medico;
 
-// Utilitários
+// Utilitários a
 const validateEmail = (email) => {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return re.test(email);

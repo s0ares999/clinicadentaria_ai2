@@ -196,7 +196,11 @@ function Navbar() {
         <div />
         <div />
       </Hamburger>
-      <Logo>Clínica Dentária Viseense</Logo>
+      <Logo>
+        <Link to="/">
+          <img src="/images/logo.png" alt="Logo" style={{ width: '90%', height: '40px', objectFit: 'contain' }} />
+        </Link>
+      </Logo>
       <NavLinks>
         <NavLink to="/">Início</NavLink>
         <NavLink to="/sobre">Quem Somos</NavLink>

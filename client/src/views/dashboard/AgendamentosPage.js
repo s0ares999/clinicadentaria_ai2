@@ -513,7 +513,7 @@ const AgendamentosPage = () => {
                             minute: '2-digit'
                           })}
                         </td>
-                        <td>{consulta.cliente?.nome || 'Cliente'}</td>
+                        <td>{consulta.utilizador?.nome || 'Cliente'}</td>
                         <td>{consulta.medico?.nome || 'Médico'}</td>
                         <td>
                           <Status className={statusClassMap[consulta.status?.nome] || 'agendada'}>

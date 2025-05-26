@@ -63,7 +63,8 @@ function loadRoutes() {
     'disponibilidade.routes.js': '/api/disponibilidades',
     'notificacao.routes.js': '/api/notificacoes',
     'pagamento.routes.js': '/api/pagamentos',
-    'health.routes.js': '/api/health'
+    'health.routes.js': '/api/health',
+    'estatisticas.routes.js': '/api/estatisticas'
   };
 
   fs.readdirSync(routesDir).forEach(file => {

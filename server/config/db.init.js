@@ -138,10 +138,10 @@ const initConsultaStatus = async () => {
     
     // Criar status padrão
     const statusPadrao = [
-      { id: 1, nome: 'Pendente', descricao: 'Consulta aguardando confirmação do médico' },
-      { id: 2, nome: 'Confirmada', descricao: 'Consulta confirmada pelo médico' },
-      { id: 3, nome: 'Concluída', descricao: 'Consulta realizada com sucesso' },
-      { id: 4, nome: 'Cancelada', descricao: 'Consulta cancelada pelo médico ou paciente' }
+      { id: 1, nome: 'Pendente', descricao: null },
+      { id: 2, nome: 'Confirmada', descricao: null },
+      { id: 3, nome: 'Concluída', descricao: null },
+      { id: 4, nome: 'Cancelada', descricao: null }
     ];
     
     console.log(`Tentando inserir ${statusPadrao.length} status de consulta...`);
@@ -198,9 +198,9 @@ const initDisponibilidadeStatus = async () => {
     
     // Criar status padrão
     const statusPadrao = [
-      { id: 1, nome: 'Disponível', descricao: 'Horário disponível para agendamento' },
-      { id: 2, nome: 'Ocupado', descricao: 'Horário ocupado (não disponível)' },
-      { id: 3, nome: 'Reservado', descricao: 'Horário temporariamente reservado, aguardando confirmação' }
+      { id: 1, nome: 'ativo' },
+      { id: 2, nome: 'inativo' },
+      { id: 3, nome: 'ocupado' }
     ];
     
     console.log(`Tentando inserir ${statusPadrao.length} status de disponibilidade...`);
@@ -257,10 +257,9 @@ const initFaturaStatus = async () => {
     
     // Criar status padrão
     const statusPadrao = [
-      { id: 1, nome: 'Emitida', descricao: 'Fatura emitida aguardando pagamento' },
-      { id: 2, nome: 'Paga', descricao: 'Fatura com pagamento realizado' },
-      { id: 3, nome: 'Cancelada', descricao: 'Fatura cancelada' },
-      { id: 4, nome: 'Vencida', descricao: 'Fatura com prazo de pagamento vencido' }
+      { id: 1, nome: 'emitida' },
+      { id: 2, nome: 'paga' },
+      { id: 3, nome: 'cancelada' }
     ];
     
     console.log(`Tentando inserir ${statusPadrao.length} status de fatura...`);
@@ -317,10 +316,10 @@ const initPagamentoStatus = async () => {
     
     // Criar status padrão
     const statusPadrao = [
-      { id: 1, nome: 'Pendente', descricao: 'Pagamento pendente de processamento' },
-      { id: 2, nome: 'Pago', descricao: 'Pagamento realizado com sucesso' },
-      { id: 3, nome: 'Cancelado', descricao: 'Pagamento cancelado' },
-      { id: 4, nome: 'Recusado', descricao: 'Pagamento recusado pela operadora' }
+      { id: 1, nome: 'pendente' },
+      { id: 2, nome: 'pago' },
+      { id: 3, nome: 'cancelado' },
+      { id: 4, nome: 'estornado' }
     ];
     
     console.log(`Tentando inserir ${statusPadrao.length} status de pagamento...`);

@@ -35,6 +35,17 @@ router.get("/", (req, res) => {
   }
 });
 
+router.get("/confirmadas", (req, res) => {
+  if (typeof consultaController.getConsultasConfirmadas === 'function') {
+    consultaController.getConsultasConfirmadas(req, res);
+  } else {
+    // Implementação temporária - retorna todas as consultas com status_id = 2 (confirmadas)
+    consultaController.findAll(req, res, {
+      where: { status_id: 2 }
+    });
+  }
+});
+
 // Buscar consulta por ID
 router.get("/:id", (req, res) => {
   if (typeof consultaController.findOne === 'function') {
@@ -111,6 +122,9 @@ router.get("/pendentes", [authMiddleware.verifyToken], (req, res) => {
     });
   }
 });
+
+
+
 
 // Buscar todos os status de consulta
 router.get("/status", (req, res) => {

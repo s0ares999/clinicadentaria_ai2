@@ -497,6 +497,46 @@ const ConsultaController = {
     }
   },
 
+getConsultasConfirmadas: async (req, res) => {
+  try {
+    const { data } = req.query;
+
+    const whereClause = {
+      status_id: 2
+    };
+
+    if (data) {
+      // Garante que a data seja interpretada corretamente no fuso do servidor
+      const startDate = new Date(`${data}T00:00:00.000Z`);
+      const endDate = new Date(`${data}T00:00:00.000Z`);
+      endDate.setUTCDate(startDate.getUTCDate() + 1);
+
+      whereClause.data_hora = {
+        [db.Sequelize.Op.gte]: startDate,
+        [db.Sequelize.Op.lt]: endDate
+      };
+    }
+
+    const consultas = await db.Consulta.findAll({
+      where: whereClause,
+      include: [
+        { model: db.Utilizador, as: 'utilizador', attributes: ['id', 'nome', 'email'] },
+        { model: db.ConsultaStatus, as: 'status', attributes: ['id', 'nome'] }
+      ],
+      order: [['data_hora', 'ASC']]
+    });
+
+    return res.status(200).json(consultas);
+  } catch (error) {
+    console.error("Erro ao buscar consultas confirmadas:", error);
+    return res.status(500).json({
+      message: error.message || "Erro ao buscar as consultas confirmadas"
+    });
+  }
+},
+
+
+
   // getConsulta: Busca detalhes de uma consulta específica
   getConsulta: async (req, res) => {
     try {

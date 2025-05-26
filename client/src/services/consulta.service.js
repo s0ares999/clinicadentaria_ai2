@@ -151,6 +151,15 @@ class ConsultaService {
     }
   }
 
+  async getConsultasConfirmadas() {
+  try {
+    return await api.get('consultas/confirmadas');
+  } catch (error) {
+    console.error('Erro ao buscar consultas confirmadas:', error);
+    throw error;
+  }
+}
+
   async getFaturaFromConsulta(consultaId) {
     try {
       const response = await api.get(`consultas/${consultaId}/fatura`);

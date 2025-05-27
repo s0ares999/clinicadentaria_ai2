@@ -164,21 +164,21 @@ function ClienteFaturasPage() {
   const [activeTab, setActiveTab] = useState('todas');
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  carregarFaturas();
-}, []);
+  useEffect(() => {
+    carregarFaturas();
+  }, []);
 
-const carregarFaturas = async () => {
-  try {
-    setLoading(true);
-    const response = await FaturaService.getFaturasByCliente();
-    setFaturas(response.faturas || []);
-  } catch (error) {
-    toast.error('Não foi possível carregar suas faturas');
-  } finally {
-    setLoading(false);
-  }
-};
+  const carregarFaturas = async () => {
+    try {
+      setLoading(true);
+      const response = await FaturaService.getFaturasByCliente();
+      setFaturas(response.faturas || []);
+    } catch (error) {
+      toast.error('Não foi possível carregar suas faturas');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const confirmarPagamento = async (faturaId) => {
     try {
@@ -202,9 +202,9 @@ const carregarFaturas = async () => {
 
   const getStatusClass = (statusNome) => {
     if (!statusNome) return '';
-    
+
     const status = statusNome.toLowerCase();
-    switch(status) {
+    switch (status) {
       case 'emitida':
         return 'emitida';
       case 'paga':
@@ -218,7 +218,7 @@ const carregarFaturas = async () => {
 
   const filtrarFaturas = () => {
     if (activeTab === 'todas') return faturas;
-    return faturas.filter(fatura => 
+    return faturas.filter(fatura =>
       fatura.status?.nome.toLowerCase() === activeTab
     );
   };
@@ -238,28 +238,28 @@ const carregarFaturas = async () => {
           <i className="fas fa-sync"></i> Atualizar
         </Button>
       </SectionTitle>
-      
+
       <TabsContainer>
-        <Tab 
-          active={activeTab === 'todas'} 
+        <Tab
+          active={activeTab === 'todas'}
           onClick={() => setActiveTab('todas')}
         >
           Todas
         </Tab>
-        <Tab 
-          active={activeTab === 'emitida'} 
+        <Tab
+          active={activeTab === 'emitida'}
           onClick={() => setActiveTab('emitida')}
         >
           Pendentes
         </Tab>
-        <Tab 
-          active={activeTab === 'paga'} 
+        <Tab
+          active={activeTab === 'paga'}
           onClick={() => setActiveTab('paga')}
         >
           Pagas
         </Tab>
       </TabsContainer>
-      
+
       {loading ? (
         <EmptyState>Carregando faturas...</EmptyState>
       ) : faturasExibidas.length > 0 ? (
@@ -275,33 +275,58 @@ const carregarFaturas = async () => {
                   {fatura.status?.nome || 'Desconhecido'}
                 </FaturaStatus>
               </FaturaHeader>
-              
+
               <FaturaBody>
                 <FaturaDetail>
                   <span className="label">Consulta:</span>
                   <span className="value">
-                    {fatura.consulta ? formatarData(fatura.consulta.data_hora) : 'N/A'}
+                    {fatura.consulta
+                      ? `${formatarData(fatura.consulta.data_hora)} às ${new Date(fatura.consulta.data_hora).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}`
+                      : 'N/A'}
                   </span>
                 </FaturaDetail>
+
+                <FaturaDetail>
+                  <span className="label">Médico:</span>
+                  <span className="value">
+                    {fatura.consulta?.medico?.nome || 'Não informado'}
+                  </span>
+                </FaturaDetail>
+
                 <FaturaDetail>
                   <span className="label">Descrição:</span>
                   <span className="value">
                     {fatura.observacoes || 'Consulta odontológica'}
                   </span>
                 </FaturaDetail>
+
                 <FaturaDetail>
                   <span className="label">Valor:</span>
                   <span className="value" style={{ fontSize: '1.2rem', fontWeight: '700' }}>
                     {formatarValor(fatura.valor_total)}
                   </span>
                 </FaturaDetail>
+
+                {fatura.servicos && fatura.servicos.length > 0 && (
+                  <FaturaDetail style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <span className="label" style={{ marginBottom: '0.5rem' }}>Serviços:</span>
+                    {fatura.servicos.map((servico) => (
+                      <div key={servico.id} style={{ paddingLeft: '1rem', marginBottom: '0.25rem' }}>
+                        <div><strong>{servico.nome}</strong></div>
+                        <div style={{ fontSize: '0.85rem', color: '#7f8c8d' }}>
+                          {servico.FaturaServico.quantidade}x {parseFloat(servico.FaturaServico.preco_unitario).toFixed(2)}€ = <strong>{parseFloat(servico.FaturaServico.subtotal).toFixed(2)}€</strong>
+                        </div>
+                      </div>
+                    ))}
+                  </FaturaDetail>
+                )}
               </FaturaBody>
-              
+
               <FaturaActions>
                 <Button onClick={() => visualizarPDF(fatura.id)}>
                   <i className="fas fa-file-pdf"></i> Visualizar PDF
                 </Button>
-                
+
                 {fatura.status?.nome === 'Emitida' && (
                   <Button secondary onClick={() => confirmarPagamento(fatura.id)} style={{ marginLeft: '10px' }}>
                     Confirmar Pagamento
@@ -311,6 +336,7 @@ const carregarFaturas = async () => {
             </FaturaItem>
           ))}
         </FaturasList>
+
       ) : (
         <EmptyState>
           Não foram encontradas faturas{activeTab !== 'todas' ? ` com status "${activeTab}"` : ''}.

@@ -200,6 +200,27 @@ const EventDot = styled.div`
   margin-left: 4px;
 `;
 
+const EventIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #3498db;
+  
+  .event-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #3498db;
+    border-radius: 50%;
+    margin-right: 4px;
+  }
+  
+  .event-text {
+    white-space: nowrap;
+    font-weight: 500;
+  }
+`;
+
 const AgendamentosPage = () => {
   const [view, setView] = useState('calendar'); // 'calendar' or 'list'
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -420,7 +441,12 @@ const AgendamentosPage = () => {
                   {day.date.getDate()}
                   {consultas.some(consulta =>
                     isSameDay(new Date(consulta.data_hora), day.date)
-                  ) && <EventDot />}
+                  ) && (
+                      <EventIndicator>
+                        <div className="event-dot"></div>
+                        <span className="event-text">Ver Consultas do dia {day.date.getDate()}</span>
+                      </EventIndicator>
+                    )}
                 </div>
               </Day>
             ))}

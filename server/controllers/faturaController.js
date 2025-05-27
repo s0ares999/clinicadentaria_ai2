@@ -79,6 +79,59 @@ class FaturaController {
     }
   }
 
+  async listar(req, res) {
+  try {
+    const faturas = await Fatura.findAll({
+      include: [
+        {
+          model: Consulta,
+          as: 'consulta',
+          include: [
+            {
+              model: require('../models').Utilizador,
+              as: 'utilizador',
+              attributes: ['id', 'nome', 'email']
+            },
+            {
+              model: require('../models').Utilizador,
+              as: 'medico',
+              attributes: ['id', 'nome', 'email']
+            },
+            {
+              model: require('../models').ConsultaStatus,
+              as: 'status',
+              attributes: ['id', 'nome']
+            }
+          ]
+        },
+        {
+          model: require('../models').FaturaStatus,
+          as: 'status',
+          attributes: ['id', 'nome']
+        },
+        {
+          model: Servico,
+          as: 'servicos',
+          through: {
+            model: FaturaServico,
+            attributes: ['quantidade', 'preco_unitario', 'subtotal']
+          }
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    return res.json({
+      mensagem: 'Faturas listadas com sucesso',
+      faturas
+    });
+
+  } catch (error) {
+    console.error('Erro ao listar faturas:', error);
+    return res.status(500).json({ erro: error.message });
+  }
+}
+
   async deletar(req, res) {
     const transaction = await Fatura.sequelize.transaction();
 
@@ -104,6 +157,70 @@ class FaturaController {
       return res.status(500).json({ erro: error.message });
     }
   }
+
+  async listarPorUtilizador(req, res) {
+  try {
+    const utilizadorId = req.user?.id;
+
+    if (!utilizadorId) {
+      return res.status(401).json({ erro: 'Usuário não autenticado' });
+    }
+
+    const faturas = await Fatura.findAll({
+      include: [
+        {
+          model: Consulta,
+          as: 'consulta',
+          where: { utilizador_id: utilizadorId },
+          include: [
+            {
+              model: require('../models').Utilizador,
+              as: 'utilizador',
+              attributes: ['id', 'nome', 'email']
+            },
+            {
+              model: require('../models').Utilizador,
+              as: 'medico',
+              attributes: ['id', 'nome', 'email']
+            },
+            {
+              model: require('../models').ConsultaStatus,
+              as: 'status',
+              attributes: ['id', 'nome']
+            }
+          ]
+        },
+        {
+          model: require('../models').FaturaStatus,
+          as: 'status',
+          attributes: ['id', 'nome']
+        },
+        {
+          model: Servico,
+          as: 'servicos',
+          through: {
+            model: FaturaServico,
+            attributes: ['quantidade', 'preco_unitario', 'subtotal']
+          }
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    return res.json({
+      mensagem: 'Faturas do usuário listadas com sucesso',
+      faturas
+    });
+
+  } catch (error) {
+    console.error('Erro ao listar faturas do usuário:', error);
+    return res.status(500).json({ erro: error.message });
+  }
 }
+
+
+}
+
+
 
 module.exports = new FaturaController();

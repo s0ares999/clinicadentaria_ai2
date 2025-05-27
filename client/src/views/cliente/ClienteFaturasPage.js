@@ -164,23 +164,21 @@ function ClienteFaturasPage() {
   const [activeTab, setActiveTab] = useState('todas');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    carregarFaturas();
-  }, []);
+useEffect(() => {
+  carregarFaturas();
+}, []);
 
-  const carregarFaturas = async () => {
-    try {
-      setLoading(true);
-      const response = await FaturaService.getFaturasByCliente();
-      console.log('Faturas carregadas:', response);
-      setFaturas(response || []);
-    } catch (error) {
-      console.error('Erro ao carregar faturas:', error);
-      toast.error('Não foi possível carregar suas faturas');
-    } finally {
-      setLoading(false);
-    }
-  };
+const carregarFaturas = async () => {
+  try {
+    setLoading(true);
+    const response = await FaturaService.getFaturasByCliente();
+    setFaturas(response.faturas || []);
+  } catch (error) {
+    toast.error('Não foi possível carregar suas faturas');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const confirmarPagamento = async (faturaId) => {
     try {

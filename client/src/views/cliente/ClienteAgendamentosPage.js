@@ -212,24 +212,28 @@ function ClienteAgendamentosPage({ defaultTab = 'agendadas' }) {
   };
 
   const fetchHistorico = async () => {
-    try {
-      setLoading(true);
-      const response = await ConsultaService.getConsultasByCliente();
-      
-      // Filtrar apenas consultas concluídas ou canceladas
-      const historico = response.filter(consulta => 
-        consulta.status?.nome === 'Concluída' || 
-        consulta.status?.nome === 'Cancelada'
-      );
-      
-      setConsultasHistorico(historico || []);
-    } catch (error) {
-      console.error('Erro ao carregar histórico:', error);
-      toast.error('Não foi possível carregar seu histórico');
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    const response = await ConsultaService.getConsultasByCliente();
+    
+    // Filtrar apenas consultas concluídas ou canceladas
+    const historico = response.filter(consulta => 
+      consulta.status?.nome === 'Concluída' || 
+      consulta.status?.nome === 'Cancelada'
+    );
+    
+    // Ordenar por data (mais recentes primeiro)
+    const historicoOrdenado = historico.sort((a, b) => new Date(b.data_hora) - new Date(a.data_hora));
+    
+    setConsultasHistorico(historicoOrdenado || []);
+  } catch (error) {
+    console.error('Erro ao carregar histórico:', error);
+    toast.error('Não foi possível carregar seu histórico');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleCancelAppointment = async (id) => {
     if (window.confirm('Tem certeza que deseja cancelar esta consulta?')) {

@@ -111,7 +111,8 @@ function ClienteHistoricoPage() {
       );
       
       console.log("Histórico filtrado:", historicoConsultas);
-      setConsultasHistorico(historicoConsultas || []);
+      const historicoOrdenado = historicoConsultas.sort((a, b) => new Date(b.data_hora) - new Date(a.data_hora));
+setConsultasHistorico(historicoOrdenado || []);
       setLoading(false);
     } catch (error) {
       console.error('Erro ao carregar histórico de consultas:', error);

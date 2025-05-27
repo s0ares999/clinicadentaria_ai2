@@ -50,7 +50,7 @@ const Label = styled.label`
   font-weight: 500;
   color: #34495e;
 `;
-   
+
 const Input = styled.input`
   padding: 0.75rem;
   border: 1px solid #ddd;
@@ -113,7 +113,7 @@ const ClientePerfilPage = () => {
   const [saving, setSaving] = useState(false);
   const [cliente, setCliente] = useState(null);
   const [historico, setHistorico] = useState([]);
-  
+
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -122,48 +122,48 @@ const ClientePerfilPage = () => {
     morada: '',
     nif: ''
   });
-  
+
   const currentUser = AuthService.getCurrentUser();
-  
- useEffect(() => {
-  const fetchData = async () => {
-    setLoading(true); // liga o loading
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true); // liga o loading
+      try {
+        const response = await ClienteService.getClienteProfile();
+        if (response.success && response.data) {
+          setFormData({
+            nome: response.data.nome || '',
+            email: response.data.email || '',
+            telefone: response.data.telefone || '',
+            dataNascimento: response.data.dataNascimento || '',
+            morada: response.data.morada || '',
+            nif: response.data.nif || ''
+          });
+        }
+      } catch (error) {
+        toast.error("Erro ao carregar dados do perfil");
+      } finally {
+        setLoading(false); // desliga o loading
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true); // liga saving
     try {
-      const response = await ClienteService.getClienteProfile();
-      if (response.success && response.data) {
-        setFormData({
-          nome: response.data.nome || '',
-          email: response.data.email || '',
-          telefone: response.data.telefone || '',
-          dataNascimento: response.data.dataNascimento || '',
-          morada: response.data.morada || '',
-          nif: response.data.nif || ''
-        });
+      const response = await ClienteService.updateClienteProfile(formData);
+      if (response.success) {
+        toast.success("Perfil atualizado com sucesso!");
       }
     } catch (error) {
-      toast.error("Erro ao carregar dados do perfil");
+      toast.error("Erro ao atualizar perfil");
     } finally {
-      setLoading(false); // desliga o loading
+      setSaving(false); // desliga saving
     }
   };
-  fetchData();
-}, []);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setSaving(true); // liga saving
-  try {
-    const response = await ClienteService.updateClienteProfile(formData);
-    if (response.success) {
-      toast.success("Perfil atualizado com sucesso!");
-    }
-  } catch (error) {
-    toast.error("Erro ao atualizar perfil");
-  } finally {
-    setSaving(false); // desliga saving
-  }
-};
-  
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('pt-PT', {
@@ -174,11 +174,11 @@ const handleSubmit = async (e) => {
       minute: '2-digit'
     });
   };
-  
+
   if (loading) {
     return <div>Carregando dados do perfil...</div>;
   }
-  
+
   return (
     <ProfileContainer>
       <ProfileSection>
@@ -190,18 +190,18 @@ const handleSubmit = async (e) => {
               type="text"
               id="nome"
               value={formData.nome}
-              onChange={(e) => setFormData({...formData, nome: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
               required
             />
           </FormGroup>
-          
+
           <FormGroup>
             <Label htmlFor="email">Email</Label>
             <Input
               type="email"
               id="email"
               value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
               disabled
             />
@@ -209,7 +209,7 @@ const handleSubmit = async (e) => {
               O email não pode ser alterado
             </small>
           </FormGroup>
-          
+
           <FormRow>
             <FormGroup>
               <Label htmlFor="telefone">Telefone</Label>
@@ -217,45 +217,49 @@ const handleSubmit = async (e) => {
                 type="tel"
                 id="telefone"
                 value={formData.telefone}
-                onChange={(e) => setFormData({...formData, telefone: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
                 required
               />
             </FormGroup>
-            
+
             <FormGroup>
               <Label htmlFor="dataNascimento">Data de Nascimento</Label>
               <Input
                 type="date"
                 id="dataNascimento"
                 value={formData.dataNascimento}
-                onChange={(e) => setFormData({...formData, dataNascimento: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, dataNascimento: e.target.value })}
                 required
+                disabled
               />
+              <small style={{ color: '#7f8c8d', marginTop: '0.25rem' }}>
+                A data de nascimento não pode ser alterada
+              </small>
             </FormGroup>
           </FormRow>
-          
+
           <FormGroup>
             <Label htmlFor="morada">Morada</Label>
             <Input
               type="text"
               id="morada"
               value={formData.morada}
-              onChange={(e) => setFormData({...formData, morada: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, morada: e.target.value })}
               required
             />
           </FormGroup>
-          
+
           <FormGroup>
             <Label htmlFor="nif">NIF</Label>
             <Input
               type="text"
               id="nif"
               value={formData.nif}
-              onChange={(e) => setFormData({...formData, nif: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, nif: e.target.value })}
               required
             />
           </FormGroup>
-          
+
           <Button type="submit" disabled={saving}>
             {saving ? 'A guardar...' : 'Guardar Alterações'}
           </Button>

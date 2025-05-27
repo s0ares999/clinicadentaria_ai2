@@ -143,25 +143,26 @@ function ClienteHistoricoConsultasPage() {
     try {
       setLoading(true);
       console.log("Iniciando busca de histórico de consultas...");
-      
+
       const response = await ConsultaService.getConsultasByCliente();
       console.log("Resposta completa:", response);
-      
+
       if (!response || !Array.isArray(response)) {
         console.error("Resposta inválida da API:", response);
         setHistorico([]);
         return;
       }
-      
+
       // Filtrar apenas consultas concluídas ou canceladas
       const historicoConsultas = response.filter(consulta => {
         console.log("Verificando consulta:", consulta);
-        return consulta.status?.nome === 'Concluída' || 
-               consulta.status?.nome === 'Cancelada';
+        return consulta.status?.nome === 'Concluída' ||
+          consulta.status?.nome === 'Cancelada';
       });
-      
+
       console.log("Histórico filtrado:", historicoConsultas);
-      setHistorico(historicoConsultas || []);
+      const historicoOrdenado = historicoConsultas.sort((b, a) => new Date(b.data_hora) - new Date(a.data_hora));
+      setHistorico(historicoOrdenado || []);
     } catch (error) {
       console.error('Erro detalhado ao carregar histórico:', error);
       if (error.response) {
@@ -176,11 +177,11 @@ function ClienteHistoricoConsultasPage() {
 
   const getStatusClass = (status) => {
     if (!status) return '';
-    
+
     switch (status.nome?.toLowerCase()) {
       case 'confirmada':
         return 'confirmado';
-      case 'pendente': 
+      case 'pendente':
         return 'pendente';
       case 'cancelada':
         return 'cancelado';
@@ -207,7 +208,7 @@ function ClienteHistoricoConsultasPage() {
         <SectionTitle>
           Histórico de Consultas
         </SectionTitle>
-        
+
         <AppointmentList>
           {loading ? (
             <EmptyState>

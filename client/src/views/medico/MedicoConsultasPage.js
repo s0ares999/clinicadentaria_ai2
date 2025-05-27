@@ -3,7 +3,6 @@ import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import ConsultaService from '../../services/consulta.service';
 import AuthService from '../../services/auth.service';
-import CriarFaturaButton from '../../components/CriarFaturaButton';
 import FaturaService from '../../services/fatura.service';
 
 const Container = styled.div`
@@ -76,7 +75,7 @@ const Status = styled.span`
   font-size: 0.8rem;
   font-weight: 500;
   
-  &.agendada {
+  &.pendente {
     background-color: #fff8e1;
     color: #ffa000;
   }
@@ -86,7 +85,7 @@ const Status = styled.span`
     color: #388e3c;
   }
   
-  &.finalizada {
+  &.concluida {
     background-color: #e3f2fd;
     color: #1976d2;
   }
@@ -105,6 +104,7 @@ const Button = styled.button`
   border-radius: 4px;
   cursor: pointer;
   margin-right: 0.5rem;
+  font-size: 0.85rem;
   
   &:hover {
     background-color: ${props => props.hoverColor || '#2980b9'};
@@ -122,6 +122,20 @@ const EmptyMessage = styled.p`
   color: #95a5a6;
 `;
 
+const RefreshButton = styled.button`
+  background-color: #34495e;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  
+  &:hover {
+    background-color: #2c3e50;
+  }
+`;
+
 function MedicoConsultasPage() {
   const [consultas, setConsultas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -135,20 +149,29 @@ function MedicoConsultasPage() {
   const fetchConsultas = async () => {
     try {
       setLoading(true);
-      const response = await ConsultaService.getConsultasByMedico(currentUser.user.id);
+      console.log('Buscando consultas para o médico...');
       
-      let filteredConsultas = response.data;
+      // Usando o método correto do service
+      const response = await ConsultaService.getConsultasMedico();
+      console.log('Consultas recebidas:', response);
       
-      if (activeTab === 'agendadas') {
-        filteredConsultas = response.data.filter(consulta => 
-          consulta.status?.nome === 'Agendada' || consulta.status?.nome === 'Confirmada'
+      let filteredConsultas = response || [];
+      
+      // Filtrar consultas baseado na tab ativa
+      if (activeTab === 'pendentes') {
+        filteredConsultas = filteredConsultas.filter(consulta => 
+          consulta.status?.nome === 'Pendente'
         );
-      } else if (activeTab === 'finalizadas') {
-        filteredConsultas = response.data.filter(consulta => 
-          consulta.status?.nome === 'Finalizada'
+      } else if (activeTab === 'confirmadas') {
+        filteredConsultas = filteredConsultas.filter(consulta => 
+          consulta.status?.nome === 'Confirmada'
+        );
+      } else if (activeTab === 'concluidas') {
+        filteredConsultas = filteredConsultas.filter(consulta => 
+          consulta.status?.nome === 'Concluída'
         );
       } else if (activeTab === 'canceladas') {
-        filteredConsultas = response.data.filter(consulta => 
+        filteredConsultas = filteredConsultas.filter(consulta => 
           consulta.status?.nome === 'Cancelada'
         );
       }
@@ -158,30 +181,41 @@ function MedicoConsultasPage() {
     } catch (error) {
       console.error('Erro ao carregar consultas:', error);
       toast.error('Erro ao carregar suas consultas');
+      setConsultas([]);
       setLoading(false);
     }
   };
 
-  const handleConfirmarConsulta = async (id) => {
+  const handleAceitarConsulta = async (id) => {
     try {
-      await ConsultaService.updateConsulta(id, { 
-        status_id: 2 // Assumindo que o ID 2 é para o status "Confirmada" 
-      });
-      toast.success('Consulta confirmada com sucesso');
+      await ConsultaService.aceitarConsulta(id);
+      toast.success('Consulta aceita com sucesso');
       fetchConsultas();
     } catch (error) {
-      console.error('Erro ao confirmar consulta:', error);
-      toast.error('Erro ao confirmar consulta');
+      console.error('Erro ao aceitar consulta:', error);
+      toast.error('Erro ao aceitar consulta');
+    }
+  };
+
+  const handleRecusarConsulta = async (id) => {
+    try {
+      await ConsultaService.recusarConsulta(id);
+      toast.success('Consulta recusada');
+      fetchConsultas();
+    } catch (error) {
+      console.error('Erro ao recusar consulta:', error);
+      toast.error('Erro ao recusar consulta');
     }
   };
 
   const handleFinalizarConsulta = async (id) => {
     try {
-      await ConsultaService.updateConsulta(id, { 
-        status_id: 3 // Assumindo que o ID 3 é para o status "Finalizada" 
-      });
-      toast.success('Consulta finalizada com sucesso');
-      fetchConsultas();
+      const observacoes = prompt('Digite suas observações sobre a consulta (opcional):');
+      if (observacoes !== null) { // Não cancelou o prompt
+        await ConsultaService.finalizarConsulta(id, observacoes || '');
+        toast.success('Consulta finalizada com sucesso');
+        fetchConsultas();
+      }
     } catch (error) {
       console.error('Erro ao finalizar consulta:', error);
       toast.error('Erro ao finalizar consulta');
@@ -205,12 +239,12 @@ function MedicoConsultasPage() {
     if (!status) return '';
     
     switch (status.nome?.toLowerCase()) {
-      case 'agendada':
-        return 'agendada';
+      case 'pendente':
+        return 'pendente';
       case 'confirmada':
         return 'confirmada';
-      case 'finalizada':
-        return 'finalizada';
+      case 'concluída':
+        return 'concluida';
       case 'cancelada':
         return 'cancelada';
       default:
@@ -220,9 +254,10 @@ function MedicoConsultasPage() {
 
   const criarFatura = async (consulta) => {
     try {
-      if (window.confirm(`Deseja criar uma fatura para a consulta #${consulta.id}?`)) {
+      const valor = prompt('Digite o valor da consulta (€):', '50.00');
+      if (valor && parseFloat(valor) > 0) {
         await FaturaService.criarFatura(consulta.id, {
-          valor_total: 50.00,
+          valor_total: parseFloat(valor),
           observacoes: `Consulta realizada em ${formatarData(consulta.data_hora)}`,
           status_id: 1
         });
@@ -236,9 +271,28 @@ function MedicoConsultasPage() {
     }
   };
 
+  const visualizarFatura = async (consulta) => {
+    try {
+      const fatura = await ConsultaService.getFaturaFromConsulta(consulta.id);
+      if (fatura && fatura.id) {
+        const pdfUrl = FaturaService.getPDFUrl(fatura.id);
+        window.open(pdfUrl, '_blank');
+      } else {
+        toast.error('Fatura não encontrada para esta consulta');
+      }
+    } catch (error) {
+      console.error('Erro ao visualizar fatura:', error);
+      toast.error('Erro ao visualizar fatura');
+    }
+  };
+
   return (
     <Container>
       <Title>Minhas Consultas</Title>
+      
+      <RefreshButton onClick={fetchConsultas}>
+        Atualizar Consultas
+      </RefreshButton>
       
       <TabsContainer>
         <Tab 
@@ -248,16 +302,22 @@ function MedicoConsultasPage() {
           Todas
         </Tab>
         <Tab 
-          active={activeTab === 'agendadas'} 
-          onClick={() => setActiveTab('agendadas')}
+          active={activeTab === 'pendentes'} 
+          onClick={() => setActiveTab('pendentes')}
         >
-          Agendadas
+          Pendentes
         </Tab>
         <Tab 
-          active={activeTab === 'finalizadas'} 
-          onClick={() => setActiveTab('finalizadas')}
+          active={activeTab === 'confirmadas'} 
+          onClick={() => setActiveTab('confirmadas')}
         >
-          Finalizadas
+          Confirmadas
+        </Tab>
+        <Tab 
+          active={activeTab === 'concluidas'} 
+          onClick={() => setActiveTab('concluidas')}
+        >
+          Concluídas
         </Tab>
         <Tab 
           active={activeTab === 'canceladas'} 
@@ -279,6 +339,7 @@ function MedicoConsultasPage() {
                   <th>Hora</th>
                   <th>Paciente</th>
                   <th>Status</th>
+                  <th>Observações</th>
                   <th>Ações</th>
                 </tr>
               </thead>
@@ -287,18 +348,33 @@ function MedicoConsultasPage() {
                   <tr key={consulta.id}>
                     <td>{formatarData(consulta.data_hora)}</td>
                     <td>{formatarHora(consulta.data_hora)}</td>
-                    <td>{consulta.cliente?.nome || 'Paciente'}</td>
+                    <td>{consulta.utilizador?.nome || 'Paciente não identificado'}</td>
                     <td>
                       <Status className={getStatusClass(consulta.status)}>
                         {consulta.status?.nome || 'Status desconhecido'}
                       </Status>
                     </td>
+                    <td>{consulta.observacoes || 'Sem observações'}</td>
                     <td>
-                      {consulta.status?.nome === 'Agendada' && (
-                        <Button onClick={() => handleConfirmarConsulta(consulta.id)}>
-                          Confirmar
-                        </Button>
+                      {consulta.status?.nome === 'Pendente' && (
+                        <>
+                          <Button 
+                            color="#2ecc71"
+                            hoverColor="#27ae60"
+                            onClick={() => handleAceitarConsulta(consulta.id)}
+                          >
+                            Aceitar
+                          </Button>
+                          <Button 
+                            color="#e74c3c"
+                            hoverColor="#c0392b"
+                            onClick={() => handleRecusarConsulta(consulta.id)}
+                          >
+                            Recusar
+                          </Button>
+                        </>
                       )}
+                      
                       {consulta.status?.nome === 'Confirmada' && (
                         <Button 
                           color="#2ecc71"
@@ -308,9 +384,24 @@ function MedicoConsultasPage() {
                           Finalizar
                         </Button>
                       )}
+                      
                       {consulta.status?.nome === 'Concluída' && !consulta.tem_fatura && (
-                        <Button onClick={() => criarFatura(consulta)}>
-                          <i className="fas fa-file-invoice"></i> Criar Fatura
+                        <Button 
+                          color="#f39c12"
+                          hoverColor="#e67e22"
+                          onClick={() => criarFatura(consulta)}
+                        >
+                          Criar Fatura
+                        </Button>
+                      )}
+                      
+                      {consulta.status?.nome === 'Concluída' && consulta.tem_fatura && (
+                        <Button 
+                          color="#3498db"
+                          hoverColor="#2980b9"
+                          onClick={() => visualizarFatura(consulta)}
+                        >
+                          Ver Fatura
                         </Button>
                       )}
                     </td>
@@ -319,7 +410,10 @@ function MedicoConsultasPage() {
               </tbody>
             </Table>
           ) : (
-            <EmptyMessage>Nenhuma consulta encontrada</EmptyMessage>
+            <EmptyMessage>
+              {activeTab === 'todas' ? 'Nenhuma consulta encontrada' : 
+               `Nenhuma consulta ${activeTab} encontrada`}
+            </EmptyMessage>
           )
         )}
       </ConsultasContainer>
@@ -327,4 +421,4 @@ function MedicoConsultasPage() {
   );
 }
 
-export default MedicoConsultasPage; 
+export default MedicoConsultasPage;

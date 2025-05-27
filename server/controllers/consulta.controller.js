@@ -59,13 +59,14 @@ const ConsultaController = {
         utilizador_id: utilizador_id,
         data_hora: req.body.data_hora,
         observacoes: req.body.observacoes || '',
-        status_id: statusId // Status inicial (Pendente)
+        status_id: statusId, // Status inicial (Pendente)
+        medico_id: null // Inicialmente sem médico atribuído
       };
 
       console.log("Dados para criar consulta:", consultaData);
 
       const consulta = await Consulta.create(consultaData, {
-        fields: ['utilizador_id', 'data_hora', 'observacoes', 'status_id']
+        fields: ['utilizador_id', 'data_hora', 'observacoes', 'status_id', 'medico_id']
       });
 
       return res.status(201).json({
@@ -106,6 +107,11 @@ const ConsultaController = {
             attributes: ['id', 'nome', 'email', 'telefone']
           },
           {
+            model: Utilizador,
+            as: 'medico',
+            attributes: ['id', 'nome', 'email', 'telefone']
+          },
+          {
             model: ConsultaStatus,
             as: 'status'
           }
@@ -131,6 +137,11 @@ const ConsultaController = {
           {
             model: Utilizador,
             as: 'utilizador',
+            attributes: ['id', 'nome', 'email', 'telefone']
+          },
+          {
+            model: Utilizador,
+            as: 'medico',
             attributes: ['id', 'nome', 'email', 'telefone']
           },
           {
@@ -188,17 +199,32 @@ const ConsultaController = {
       let consultas;
       
       if (tipoUsuario.toLowerCase() === 'medico') {
-        // Para médicos, filtrar consultas que não são deste médico
+        // Para médicos, buscar consultas atribuídas a ele OU consultas pendentes (sem médico)
         console.log("Buscando consultas para o médico ID:", utilizadorId);
         consultas = await Consulta.findAll({
-          include: [{
-            model: ConsultaStatus,
-            as: 'status'
-          }, {
-            model: Utilizador,
-            as: 'utilizador',
-            attributes: ['id', 'nome', 'email', 'telefone']
-          }]
+          where: {
+            [Op.or]: [
+              { medico_id: utilizadorId }, // Consultas já atribuídas ao médico
+              { medico_id: null, status_id: 1 } // Consultas pendentes (disponíveis para aceitar)
+            ]
+          },
+          include: [
+            {
+              model: ConsultaStatus,
+              as: 'status'
+            }, 
+            {
+              model: Utilizador,
+              as: 'utilizador',
+              attributes: ['id', 'nome', 'email', 'telefone']
+            },
+            {
+              model: Utilizador,
+              as: 'medico',
+              attributes: ['id', 'nome', 'email', 'telefone']
+            }
+          ],
+          order: [['data_hora', 'ASC']]
         });
         
         console.log(`Encontradas ${consultas.length} consultas`);
@@ -206,10 +232,18 @@ const ConsultaController = {
         // Para clientes, buscar apenas as consultas do cliente
         consultas = await Consulta.findAll({
           where: { utilizador_id: utilizadorId },
-          include: [{
-            model: ConsultaStatus,
-            as: 'status'
-          }]
+          include: [
+            {
+              model: ConsultaStatus,
+              as: 'status'
+            },
+            {
+              model: Utilizador,
+              as: 'medico',
+              attributes: ['id', 'nome', 'email', 'telefone']
+            }
+          ],
+          order: [['data_hora', 'ASC']]
         });
       }
 
@@ -235,7 +269,24 @@ const ConsultaController = {
       });
 
       if (updated) {
-        const updatedConsulta = await Consulta.findByPk(id);
+        const updatedConsulta = await Consulta.findByPk(id, {
+          include: [
+            {
+              model: Utilizador,
+              as: 'utilizador',
+              attributes: ['id', 'nome', 'email', 'telefone']
+            },
+            {
+              model: Utilizador,
+              as: 'medico',
+              attributes: ['id', 'nome', 'email', 'telefone']
+            },
+            {
+              model: ConsultaStatus,
+              as: 'status'
+            }
+          ]
+        });
         return res.status(200).json({
           message: "Consulta atualizada com sucesso!",
           consulta: updatedConsulta
@@ -279,10 +330,48 @@ const ConsultaController = {
     }
   },
 
-  // Médico aceitar consulta
+  // Médico aceitar consulta - ATUALIZADO
   async aceitarConsulta(req, res) {
     try {
       const consultaId = req.params.id;
+      const medicoId = req.userId; // ID do médico logado
+      
+      console.log(`Médico ${medicoId} tentando aceitar consulta ${consultaId}`);
+      
+      // Verificar se o usuário é realmente um médico
+      const medico = await Utilizador.findByPk(medicoId, {
+        include: [{
+          model: TipoUtilizador,
+          as: 'tipoUtilizador'
+        }]
+      });
+      
+      if (!medico || medico.tipoUtilizador?.nome.toLowerCase() !== 'medico') {
+        return res.status(403).json({
+          message: "Apenas médicos podem aceitar consultas!"
+        });
+      }
+      
+      // Verificar se a consulta existe e está pendente
+      const consulta = await Consulta.findByPk(consultaId);
+      
+      if (!consulta) {
+        return res.status(404).json({
+          message: "Consulta não encontrada!"
+        });
+      }
+      
+      if (consulta.status_id !== 1) {
+        return res.status(400).json({
+          message: "Esta consulta não está pendente!"
+        });
+      }
+      
+      if (consulta.medico_id !== null) {
+        return res.status(400).json({
+          message: "Esta consulta já foi aceita por outro médico!"
+        });
+      }
       
       // Buscar o ID do status "Confirmada"
       const statusConfirmada = await ConsultaStatus.findOne({
@@ -295,19 +384,22 @@ const ConsultaController = {
         });
       }
       
-      // Atualizar consulta com o ID correto
+      // Atualizar consulta com o médico e status
       await Consulta.update(
-        { status_id: statusConfirmada.id },
+        { 
+          status_id: statusConfirmada.id,
+          medico_id: medicoId
+        },
         { where: { id: consultaId } }
       );
       
       return res.status(200).json({
-        message: "Consulta confirmada com sucesso!"
+        message: "Consulta aceita e confirmada com sucesso!"
       });
     } catch (error) {
-      console.error(error);
+      console.error("Erro ao aceitar consulta:", error);
       return res.status(500).json({
-        message: error.message || "Ocorreu um erro ao confirmar a consulta."
+        message: error.message || "Ocorreu um erro ao aceitar a consulta."
       });
     }
   },
@@ -316,6 +408,21 @@ const ConsultaController = {
   async recusarConsulta(req, res) {
     try {
       const consultaId = req.params.id;
+      const medicoId = req.userId; // ID do médico logado
+      
+      // Verificar se o usuário é realmente um médico
+      const medico = await Utilizador.findByPk(medicoId, {
+        include: [{
+          model: TipoUtilizador,
+          as: 'tipoUtilizador'
+        }]
+      });
+      
+      if (!medico || medico.tipoUtilizador?.nome.toLowerCase() !== 'medico') {
+        return res.status(403).json({
+          message: "Apenas médicos podem recusar consultas!"
+        });
+      }
       
       // Verificar se a consulta existe
       const consulta = await Consulta.findByPk(consultaId, {
@@ -338,7 +445,7 @@ const ConsultaController = {
         });
       }
       
-      // Atualizar status da consulta
+      // Atualizar status da consulta para cancelada
       await consulta.update({
         status_id: 4 // ID para "Cancelada"
       });
@@ -354,12 +461,13 @@ const ConsultaController = {
     }
   },
 
-  // Adicione esta função ao controller
+  // Buscar consultas pendentes (disponíveis para médicos)
   async findPendentes(req, res) {
     try {
       const consultas = await Consulta.findAll({
         where: { 
-          status_id: 1 // Status "Pendente"
+          status_id: 1, // Status "Pendente"
+          medico_id: null // Sem médico atribuído
         },
         include: [
           {
@@ -406,7 +514,7 @@ const ConsultaController = {
     }
   },
 
-  // Retorna todas as consultas concluídas de um médico específico
+  // Retorna todas as consultas concluídas de um médico específico - ATUALIZADO  
   getConsultasConcluidasByMedico: async (req, res) => {
     try {
       const medicoId = req.params.id;
@@ -420,17 +528,21 @@ const ConsultaController = {
         return res.status(404).json({ message: "Status 'Concluída' não encontrado" });
       }
       
-      // Buscar consultas com status "Concluída"
-      // Como não temos o campo medico_id, vamos buscar todas as consultas concluídas
-      // e implementar uma lógica adicional para filtrar as do médico específico
+      // Buscar consultas concluídas do médico específico
       const consultas = await Consulta.findAll({
         where: { 
-          status_id: statusConcluida.id 
+          status_id: statusConcluida.id,
+          medico_id: medicoId // Agora filtramos pelo médico específico
         },
         include: [
           {
             model: Utilizador,
             as: 'utilizador',
+            attributes: ['id', 'nome', 'email', 'telefone']
+          },
+          {
+            model: Utilizador,
+            as: 'medico',
             attributes: ['id', 'nome', 'email', 'telefone']
           },
           {
@@ -440,9 +552,6 @@ const ConsultaController = {
         ],
         order: [['data_hora', 'DESC']]
       });
-      
-      // Filtragem adicional poderia ser feita aqui se necessário
-      // Por exemplo, verificar outra tabela que relacione médico com consulta
       
       // Verificar se cada consulta já possui fatura associada
       const consultasComInfo = await Promise.all(consultas.map(async (consulta) => {
@@ -497,45 +606,49 @@ const ConsultaController = {
     }
   },
 
-getConsultasConfirmadas: async (req, res) => {
-  try {
-    const { data } = req.query;
+  getConsultasConfirmadas: async (req, res) => {
+    try {
+      const { data, medico_id } = req.query;
 
-    const whereClause = {
-      status_id: 2
-    };
-
-    if (data) {
-      // Garante que a data seja interpretada corretamente no fuso do servidor
-      const startDate = new Date(`${data}T00:00:00.000Z`);
-      const endDate = new Date(`${data}T00:00:00.000Z`);
-      endDate.setUTCDate(startDate.getUTCDate() + 1);
-
-      whereClause.data_hora = {
-        [db.Sequelize.Op.gte]: startDate,
-        [db.Sequelize.Op.lt]: endDate
+      const whereClause = {
+        status_id: 2 // Status confirmada
       };
+
+      // Filtrar por médico se fornecido
+      if (medico_id) {
+        whereClause.medico_id = medico_id;
+      }
+
+      if (data) {
+        // Garante que a data seja interpretada corretamente no fuso do servidor
+        const startDate = new Date(`${data}T00:00:00.000Z`);
+        const endDate = new Date(`${data}T00:00:00.000Z`);
+        endDate.setUTCDate(startDate.getUTCDate() + 1);
+
+        whereClause.data_hora = {
+          [db.Sequelize.Op.gte]: startDate,
+          [db.Sequelize.Op.lt]: endDate
+        };
+      }
+
+      const consultas = await db.Consulta.findAll({
+        where: whereClause,
+        include: [
+          { model: db.Utilizador, as: 'utilizador', attributes: ['id', 'nome', 'email'] },
+          { model: db.Utilizador, as: 'medico', attributes: ['id', 'nome', 'email'] },
+          { model: db.ConsultaStatus, as: 'status', attributes: ['id', 'nome'] }
+        ],
+        order: [['data_hora', 'ASC']]
+      });
+
+      return res.status(200).json(consultas);
+    } catch (error) {
+      console.error("Erro ao buscar consultas confirmadas:", error);
+      return res.status(500).json({
+        message: error.message || "Erro ao buscar as consultas confirmadas"
+      });
     }
-
-    const consultas = await db.Consulta.findAll({
-      where: whereClause,
-      include: [
-        { model: db.Utilizador, as: 'utilizador', attributes: ['id', 'nome', 'email'] },
-        { model: db.ConsultaStatus, as: 'status', attributes: ['id', 'nome'] }
-      ],
-      order: [['data_hora', 'ASC']]
-    });
-
-    return res.status(200).json(consultas);
-  } catch (error) {
-    console.error("Erro ao buscar consultas confirmadas:", error);
-    return res.status(500).json({
-      message: error.message || "Erro ao buscar as consultas confirmadas"
-    });
-  }
-},
-
-
+  },
 
   // getConsulta: Busca detalhes de uma consulta específica
   getConsulta: async (req, res) => {
@@ -547,6 +660,11 @@ getConsultasConfirmadas: async (req, res) => {
           {
             model: db.Utilizador,
             as: 'utilizador',
+            attributes: ['id', 'nome', 'email']
+          },
+          {
+            model: db.Utilizador,
+            as: 'medico',
             attributes: ['id', 'nome', 'email']
           },
           {
@@ -582,4 +700,4 @@ getConsultasConfirmadas: async (req, res) => {
   }
 })();
 
-module.exports = ConsultaController; 
+module.exports = ConsultaController;

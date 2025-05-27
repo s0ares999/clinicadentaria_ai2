@@ -62,8 +62,9 @@ class ConsultaService {
     }
   }
 
+  // CORRIGIDO: Rota estava errada, não existe /medico/:id
   async getConsultasByMedico(medicoId) {
-    return api.get(`consultas/medico/${medicoId}`);
+    return api.get(`consultas/utilizador/${medicoId}?tipo=medico`);
   }
 
   async getConsultasMedico() {
@@ -98,6 +99,7 @@ class ConsultaService {
     return api.get('consultas/pendentes');
   }
 
+  // CORRIGIDO: Agora usa a rota específica do backend
   async getConsultasConcluidas() {
     try {
       const user = AuthService.getCurrentUser();
@@ -105,16 +107,9 @@ class ConsultaService {
         throw new Error('Usuário não identificado');
       }
       
-      // Como não temos campo medico_id, vamos usar a rota para consultas do tipo médico
-      // e filtrar por status "Concluída" no frontend
-      const response = await api.get(`consultas/utilizador/${user.id}?tipo=medico`);
-      
-      // Filtramos as consultas concluídas no frontend
-      const consultasConcluidas = response.data.filter(
-        consulta => consulta.status?.nome === 'Concluída'
-      );
-      
-      return consultasConcluidas;
+      // Usar a rota específica que criamos no backend
+      const response = await api.get(`consultas/concluidas/medico/${user.id}`);
+      return response.data;
     } catch (error) {
       console.error('Erro ao buscar consultas concluídas:', error);
       throw error;
@@ -151,14 +146,21 @@ class ConsultaService {
     }
   }
 
-  async getConsultasConfirmadas() {
-  try {
-    return await api.get('consultas/confirmadas');
-  } catch (error) {
-    console.error('Erro ao buscar consultas confirmadas:', error);
-    throw error;
+  async getConsultasConfirmadas(data = null, medico_id = null) {
+    try {
+      const params = new URLSearchParams();
+      if (data) params.append('data', data);
+      if (medico_id) params.append('medico_id', medico_id);
+      
+      const queryString = params.toString();
+      const url = queryString ? `consultas/confirmadas?${queryString}` : 'consultas/confirmadas';
+      
+      return await api.get(url);
+    } catch (error) {
+      console.error('Erro ao buscar consultas confirmadas:', error);
+      throw error;
+    }
   }
-}
 
   async getFaturaFromConsulta(consultaId) {
     try {
@@ -166,6 +168,31 @@ class ConsultaService {
       return response.data;
     } catch (error) {
       console.error(`Erro ao buscar fatura da consulta ${consultaId}:`, error);
+      throw error;
+    }
+  }
+
+  // NOVO: Método para buscar consultas confirmadas de um médico específico
+  async getConsultasConfirmadasByMedico(medicoId, data = null) {
+    try {
+      const params = new URLSearchParams();
+      params.append('medico_id', medicoId);
+      if (data) params.append('data', data);
+      
+      const queryString = params.toString();
+      return await api.get(`consultas/confirmadas?${queryString}`);
+    } catch (error) {
+      console.error('Erro ao buscar consultas confirmadas do médico:', error);
+      throw error;
+    }
+  }
+
+  // NOVO: Método para buscar consultas confirmadas por data
+  async getConsultasConfirmadasByData(data) {
+    try {
+      return await api.get(`consultas/confirmadas?data=${data}`);
+    } catch (error) {
+      console.error('Erro ao buscar consultas confirmadas por data:', error);
       throw error;
     }
   }

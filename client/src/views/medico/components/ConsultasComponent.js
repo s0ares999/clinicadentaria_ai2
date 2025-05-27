@@ -18,9 +18,7 @@ import {
 } from '@mui/material';
 import { toast } from 'react-hot-toast';
 import ConsultaService from '../../../services/consulta.service';
-import MedicoService from '../../../services/medico.service';
 import FaturaService from '../../../services/fatura.service';
-import api from '../../../services/api.config';
 
 function ConsultasComponent() {
   const [consultas, setConsultas] = useState([]);
@@ -54,10 +52,10 @@ function ConsultasComponent() {
   const loadConsultas = async () => {
     try {
       setLoading(true);
-      // Adicionar logs de debug
       console.log("Iniciando carregamento de consultas do médico");
       
-      const response = await MedicoService.getConsultas();
+      // Usando o método correto do service para buscar consultas do médico
+      const response = await ConsultaService.getConsultasMedico();
       console.log("Resposta da API para consultas:", response);
       
       if (Array.isArray(response)) {
@@ -87,6 +85,7 @@ function ConsultasComponent() {
       toast.success('Consulta aprovada com sucesso!');
       loadConsultas();
     } catch (error) {
+      console.error('Erro ao aprovar consulta:', error);
       toast.error('Erro ao aprovar consulta');
     }
   };
@@ -97,6 +96,7 @@ function ConsultasComponent() {
       toast.success('Consulta recusada');
       loadConsultas();
     } catch (error) {
+      console.error('Erro ao recusar consulta:', error);
       toast.error('Erro ao recusar consulta');
     }
   };
@@ -106,8 +106,10 @@ function ConsultasComponent() {
       await ConsultaService.finalizarConsulta(selectedConsulta.id, observacoes);
       toast.success('Consulta finalizada com sucesso!');
       setDialogOpen(false);
+      setObservacoes('');
       loadConsultas();
     } catch (error) {
+      console.error('Erro ao finalizar consulta:', error);
       toast.error('Erro ao finalizar consulta');
     }
   };
@@ -158,6 +160,7 @@ function ConsultasComponent() {
 
       toast.success('Fatura criada com sucesso!');
       setFaturaDialogOpen(false);
+      setFaturaData({ valor_total: '', observacoes: '' });
       loadConsultas();
     } catch (error) {
       console.error('Erro ao criar fatura:', error);
@@ -167,11 +170,11 @@ function ConsultasComponent() {
 
   const handleViewFatura = async (consulta) => {
     try {
-      // Obter a fatura associada à consulta
-      const response = await api.get(`http://localhost:8000/api/consulta/${consulta.id}/fatura`);
-      if (response.data && response.data.id) {
+      // Usando o método do service para buscar a fatura
+      const fatura = await ConsultaService.getFaturaFromConsulta(consulta.id);
+      if (fatura && fatura.id) {
         // Abrir o PDF em uma nova aba
-        const pdfUrl = FaturaService.getPDFUrl(response.data.id);
+        const pdfUrl = FaturaService.getPDFUrl(fatura.id);
         window.open(pdfUrl, '_blank');
       } else {
         toast.error('Não foi possível localizar a fatura desta consulta');
@@ -188,19 +191,23 @@ function ConsultasComponent() {
         Gestão de Consultas
       </Typography>
       
-      <button 
+      <Button 
         onClick={() => loadConsultas()} 
-        style={{padding: '0.5rem 1rem', margin: '1rem 0'}}>
+        variant="outlined"
+        sx={{ mb: 2 }}
+      >
         Recarregar Consultas
-      </button>
+      </Button>
 
       {loading ? (
-        <p>Carregando consultas...</p>
+        <Typography>Carregando consultas...</Typography>
       ) : consultas.length === 0 ? (
-        <div style={{textAlign: 'center', padding: '2rem'}}>
-          <p>Nenhuma consulta encontrada.</p>
-          <small>Se isso parecer incorreto, verifique se há algum problema com a conexão.</small>
-        </div>
+        <Box sx={{ textAlign: 'center', p: 4 }}>
+          <Typography>Nenhuma consulta encontrada.</Typography>
+          <Typography variant="caption" color="text.secondary">
+            Se isso parecer incorreto, verifique se há algum problema com a conexão.
+          </Typography>
+        </Box>
       ) : (
         <TableContainer component={Paper}>
           <Table>
@@ -209,35 +216,50 @@ function ConsultasComponent() {
                 <TableCell>Data/Hora</TableCell>
                 <TableCell>Paciente</TableCell>
                 <TableCell>Status</TableCell>
+                <TableCell>Observações</TableCell>
                 <TableCell>Ações</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {consultas.map((consulta) => (
                 <TableRow key={consulta.id}>
-                  <TableCell>{new Date(consulta.data_hora).toLocaleString('pt-PT')}</TableCell>
-                  <TableCell>{consulta.utilizador?.nome || 'Paciente não identificado'}</TableCell>
-                  <TableCell>{consulta.status?.nome || 'Status desconhecido'}</TableCell>
+                  <TableCell>
+                    {new Date(consulta.data_hora).toLocaleString('pt-PT')}
+                  </TableCell>
+                  <TableCell>
+                    {consulta.utilizador?.nome || 'Paciente não identificado'}
+                  </TableCell>
+                  <TableCell>
+                    {consulta.status?.nome || 'Status desconhecido'}
+                  </TableCell>
+                  <TableCell>
+                    {consulta.observacoes || 'Sem observações'}
+                  </TableCell>
                   <TableCell>
                     {consulta.status?.nome === 'Pendente' && (
                       <>
                         <Button
                           color="primary"
+                          size="small"
                           onClick={() => handleAprovar(consulta.id)}
+                          sx={{ mr: 1 }}
                         >
                           Aprovar
                         </Button>
                         <Button
                           color="error"
+                          size="small"
                           onClick={() => handleRecusar(consulta.id)}
                         >
                           Recusar
                         </Button>
                       </>
                     )}
+                    
                     {consulta.status?.nome === 'Confirmada' && (
                       <Button
                         color="success"
+                        size="small"
                         onClick={() => {
                           setSelectedConsulta(consulta);
                           setDialogOpen(true);
@@ -251,6 +273,7 @@ function ConsultasComponent() {
                       <Button
                         color="warning"
                         variant="contained"
+                        size="small"
                         onClick={() => handleOpenFaturaDialog(consulta)}
                       >
                         Criar Fatura
@@ -261,6 +284,7 @@ function ConsultasComponent() {
                       <Button
                         color="success"
                         variant="outlined"
+                        size="small"
                         onClick={() => handleViewFatura(consulta)}
                       >
                         Ver Fatura
@@ -270,6 +294,7 @@ function ConsultasComponent() {
                     {consulta.status?.nome !== 'Concluída' && consulta.status?.nome !== 'Cancelada' && (
                       <Button
                         color="info"
+                        size="small"
                         sx={{ ml: 1 }}
                         onClick={() => {
                           setSelectedConsulta(consulta);
@@ -288,7 +313,8 @@ function ConsultasComponent() {
         </TableContainer>
       )}
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+      {/* Dialog para finalizar consulta */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Finalizar Consulta</DialogTitle>
         <DialogContent>
           <TextField
@@ -299,17 +325,24 @@ function ConsultasComponent() {
             value={observacoes}
             onChange={(e) => setObservacoes(e.target.value)}
             margin="normal"
+            placeholder="Digite suas observações sobre a consulta..."
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancelar</Button>
-          <Button onClick={handleFinalizarConsulta} color="primary">
+          <Button onClick={() => {
+            setDialogOpen(false);
+            setObservacoes('');
+          }}>
+            Cancelar
+          </Button>
+          <Button onClick={handleFinalizarConsulta} color="primary" variant="contained">
             Confirmar
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)}>
+      {/* Dialog para alterar status */}
+      <Dialog open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Alterar Status da Consulta</DialogTitle>
         <DialogContent>
           <Box component="form" sx={{ mt: 2 }}>
@@ -344,13 +377,15 @@ function ConsultasComponent() {
             onClick={handleUpdateStatus} 
             color="primary" 
             variant="contained"
+            disabled={!selectedStatus}
           >
             Salvar Alteração
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={faturaDialogOpen} onClose={() => setFaturaDialogOpen(false)}>
+      {/* Dialog para criar fatura */}
+      <Dialog open={faturaDialogOpen} onClose={() => setFaturaDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Criar Fatura para Consulta</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
@@ -384,11 +419,17 @@ function ConsultasComponent() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setFaturaDialogOpen(false)}>Cancelar</Button>
+          <Button onClick={() => {
+            setFaturaDialogOpen(false);
+            setFaturaData({ valor_total: '', observacoes: '' });
+          }}>
+            Cancelar
+          </Button>
           <Button 
             onClick={handleCriarFatura} 
             color="warning"
             variant="contained"
+            disabled={!faturaData.valor_total || parseFloat(faturaData.valor_total) <= 0}
           >
             Emitir Fatura
           </Button>
@@ -398,4 +439,4 @@ function ConsultasComponent() {
   );
 }
 
-export default ConsultasComponent; 
+export default ConsultasComponent;

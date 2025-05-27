@@ -3,8 +3,6 @@ const router = express.Router();
 const consultaController = require("../controllers/consulta.controller");
 const authMiddleware = require('../middleware/auth.middleware');
 
-module.exports = router;
-
 router.use(function(req, res, next) {
   res.header(
     "Access-Control-Allow-Headers",
@@ -13,20 +11,61 @@ router.use(function(req, res, next) {
   next();
 });
 
-// Criar consulta
-router.post(
-  "/", 
-  [authMiddleware.verifyToken],
-  (req, res) => {
-    if (typeof consultaController.create === 'function') {
-      consultaController.create(req, res);
-    } else {
-      res.status(501).json({ message: "Função create não implementada" });
-    }
-  }
-);
+// ===== ROTAS ESPECÍFICAS PRIMEIRO (ordem importa!) =====
 
-// Buscar todas as consultas (apenas admin e médicos)
+// Buscar consultas pendentes (DEVE vir antes de /:id)
+router.get("/pendentes", [authMiddleware.verifyToken], (req, res) => {
+  if (typeof consultaController.findPendentes === 'function') {
+    consultaController.findPendentes(req, res);
+  } else {
+    res.status(501).json({ message: "Função findPendentes não implementada" });
+  }
+});
+
+// Buscar consultas confirmadas (DEVE vir antes de /:id)
+router.get("/confirmadas", (req, res) => {
+  if (typeof consultaController.getConsultasConfirmadas === 'function') {
+    consultaController.getConsultasConfirmadas(req, res);
+  } else {
+    res.status(501).json({ message: "Função getConsultasConfirmadas não implementada" });
+  }
+});
+
+// Buscar todos os status de consulta (DEVE vir antes de /:id)
+router.get("/status", (req, res) => {
+  if (typeof consultaController.findAllStatus === 'function') {
+    consultaController.findAllStatus(req, res);
+  } else {
+    res.status(501).json({ message: "Função findAllStatus não implementada" });
+  }
+});
+
+// Buscar consultas concluídas de um médico específico (DEVE vir antes de /:id)
+router.get('/concluidas/medico/:id', consultaController.getConsultasConcluidasByMedico);
+
+// Buscar consultas por utilizador (DEVE vir antes de /:id)
+router.get("/utilizador/:id", [authMiddleware.verifyToken], (req, res) => {
+  if (typeof consultaController.findByTipoUtilizador === 'function') {
+    consultaController.findByTipoUtilizador(req, res);
+  } else {
+    res.status(501).json({ 
+      message: "Função findByTipoUtilizador não implementada" 
+    });
+  }
+});
+
+// ===== ROTAS GERAIS =====
+
+// Criar consulta
+router.post("/", [authMiddleware.verifyToken], (req, res) => {
+  if (typeof consultaController.create === 'function') {
+    consultaController.create(req, res);
+  } else {
+    res.status(501).json({ message: "Função create não implementada" });
+  }
+});
+
+// Buscar todas as consultas
 router.get("/", (req, res) => {
   if (typeof consultaController.findAll === 'function') {
     consultaController.findAll(req, res);
@@ -35,18 +74,39 @@ router.get("/", (req, res) => {
   }
 });
 
-router.get("/confirmadas", (req, res) => {
-  if (typeof consultaController.getConsultasConfirmadas === 'function') {
-    consultaController.getConsultasConfirmadas(req, res);
+// ===== ROTAS COM PARÂMETROS ID =====
+
+// Aceitar consulta (DEVE vir antes de /:id genérico)
+router.put("/:id/aceitar", [authMiddleware.verifyToken], (req, res) => {
+  if (typeof consultaController.aceitarConsulta === 'function') {
+    consultaController.aceitarConsulta(req, res);
   } else {
-    // Implementação temporária - retorna todas as consultas com status_id = 2 (confirmadas)
-    consultaController.findAll(req, res, {
-      where: { status_id: 2 }
-    });
+    res.status(501).json({ message: "Função aceitarConsulta não implementada" });
   }
 });
 
-// Buscar consulta por ID
+// Recusar consulta (DEVE vir antes de /:id genérico)
+router.put("/:id/recusar", [authMiddleware.verifyToken], (req, res) => {
+  if (typeof consultaController.recusarConsulta === 'function') {
+    consultaController.recusarConsulta(req, res);
+  } else {
+    res.status(501).json({ message: "Função recusarConsulta não implementada" });
+  }
+});
+
+// Cancelar consulta (DEVE vir antes de /:id genérico)
+router.put("/:id/cancel", [authMiddleware.verifyToken], (req, res) => {
+  if (typeof consultaController.cancel === 'function') {
+    consultaController.cancel(req, res);
+  } else {
+    res.status(501).json({ message: "Função cancel não implementada" });
+  }
+});
+
+// Obter fatura associada a uma consulta (DEVE vir antes de /:id genérico)
+router.get("/:id/fatura", consultaController.getFatura);
+
+// Buscar consulta por ID (DEVE vir por último entre as rotas GET com :id)
 router.get("/:id", (req, res) => {
   if (typeof consultaController.findOne === 'function') {
     consultaController.findOne(req, res);
@@ -64,26 +124,6 @@ router.put("/:id", (req, res) => {
   }
 });
 
-// Cancelar consulta
-router.put("/:id/cancel", [authMiddleware.verifyToken], (req, res) => {
-  if (typeof consultaController.cancel === 'function') {
-    consultaController.cancel(req, res);
-  } else {
-    res.status(501).json({ message: "Função cancel não implementada" });
-  }
-});
-
-// Buscar consultas por utilizador (cliente ou médico)
-router.get("/utilizador/:id", [authMiddleware.verifyToken], (req, res) => {
-  if (typeof consultaController.findByTipoUtilizador === 'function') {
-    consultaController.findByTipoUtilizador(req, res);
-  } else {
-    res.status(501).json({ 
-      message: "Função findByTipoUtilizador não implementada" 
-    });
-  }
-});
-
 // Excluir consulta
 router.delete("/:id", (req, res) => {
   if (typeof consultaController.delete === 'function') {
@@ -93,53 +133,4 @@ router.delete("/:id", (req, res) => {
   }
 });
 
-// Aceitar consulta
-router.put("/:id/aceitar", [authMiddleware.verifyToken], (req, res) => {
-  if (typeof consultaController.aceitarConsulta === 'function') {
-    consultaController.aceitarConsulta(req, res);
-  } else {
-    res.status(501).json({ message: "Função aceitarConsulta não implementada" });
-  }
-});
-
-// Recusar consulta
-router.put("/:id/recusar", [authMiddleware.verifyToken], (req, res) => {
-  if (typeof consultaController.recusarConsulta === 'function') {
-    consultaController.recusarConsulta(req, res);
-  } else {
-    res.status(501).json({ message: "Função recusarConsulta não implementada" });
-  }
-});
-
-// Listar consultas pendentes disponíveis para todos os médicos
-router.get("/pendentes", [authMiddleware.verifyToken], (req, res) => {
-  if (typeof consultaController.findPendentes === 'function') {
-    consultaController.findPendentes(req, res);
-  } else {
-    // Implementação temporária - retorna todas as consultas com estado PENDENTE
-    consultaController.findAll(req, res, {
-      where: { estado: "PENDENTE", medico_id: null }
-    });
-  }
-});
-
-
-
-
-// Buscar todos os status de consulta
-router.get("/status", (req, res) => {
-  if (typeof consultaController.findAllStatus === 'function') {
-    consultaController.findAllStatus(req, res);
-  } else {
-    res.status(501).json({ message: "Função findAllStatus não implementada" });
-  }
-});
-
-// Endpoint para obter consultas concluídas de um médico
-router.get('/concluidas/medico/:id', consultaController.getConsultasConcluidasByMedico);
-
-// Obter dados de uma consulta específica
-router.get("/:id", consultaController.getConsulta);
-
-// Obter fatura associada a uma consulta
-router.get("/:id/fatura", consultaController.getFatura); 
+module.exports = router;

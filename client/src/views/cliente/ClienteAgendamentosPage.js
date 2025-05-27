@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import api from '../../services/api.config';
 import ConsultaService from '../../services/consulta.service';
 import AuthService from '../../services/auth.service';
 
-const API_URL = "http://localhost:8000/api";
 
 const Container = styled.div`
   display: flex;

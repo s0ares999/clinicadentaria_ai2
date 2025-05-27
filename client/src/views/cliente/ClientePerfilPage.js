@@ -3,8 +3,6 @@ import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import AuthService from '../../services/auth.service';
 import ClienteService from '../../services/cliente.service';
-import api from '../../services/api.config';
-import axios from 'axios';
 
 const ProfileContainer = styled.div`
   background-color: #fff;
@@ -127,43 +125,44 @@ const ClientePerfilPage = () => {
   
   const currentUser = AuthService.getCurrentUser();
   
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await ClienteService.getClienteProfile();
-        console.log("Dados recebidos:", response);
-        
-        if (response.success && response.data) {
-          setFormData({
-            nome: response.data.nome || '',
-            email: response.data.email || '',
-            telefone: response.data.telefone || '',
-            dataNascimento: response.data.dataNascimento || '',
-            morada: response.data.morada || '',
-            nif: response.data.nif || ''
-          });
-        }
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-        toast.error("Erro ao carregar dados do perfil");
-      }
-    };
-
-    fetchData();
-  }, []);
-  
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ useEffect(() => {
+  const fetchData = async () => {
+    setLoading(true); // liga o loading
     try {
-      const response = await ClienteService.updateClienteProfile(formData);
-      if (response.success) {
-        toast.success("Perfil atualizado com sucesso!");
+      const response = await ClienteService.getClienteProfile();
+      if (response.success && response.data) {
+        setFormData({
+          nome: response.data.nome || '',
+          email: response.data.email || '',
+          telefone: response.data.telefone || '',
+          dataNascimento: response.data.dataNascimento || '',
+          morada: response.data.morada || '',
+          nif: response.data.nif || ''
+        });
       }
     } catch (error) {
-      console.error("Erro ao atualizar perfil:", error);
-      toast.error("Erro ao atualizar perfil");
+      toast.error("Erro ao carregar dados do perfil");
+    } finally {
+      setLoading(false); // desliga o loading
     }
   };
+  fetchData();
+}, []);
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setSaving(true); // liga saving
+  try {
+    const response = await ClienteService.updateClienteProfile(formData);
+    if (response.success) {
+      toast.success("Perfil atualizado com sucesso!");
+    }
+  } catch (error) {
+    toast.error("Erro ao atualizar perfil");
+  } finally {
+    setSaving(false); // desliga saving
+  }
+};
   
   const formatDate = (dateString) => {
     const date = new Date(dateString);

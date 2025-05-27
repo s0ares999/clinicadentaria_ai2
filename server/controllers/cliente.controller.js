@@ -6,12 +6,11 @@ const TipoUtilizador = db.TipoUtilizador;
 // Obter perfil do cliente
 exports.getPerfil = async (req, res) => {
   try {
-    console.log("\n=== BUSCANDO PERFIL DO CLIENTE ===");
-    console.log("👤 ID do usuário:", req.user.id);
+    const userId = req.user.id;
+    console.log("\n=== BUSCANDO PERFIL DO CLIENTE ===", userId);
 
-    // Primeiro, buscar o utilizador com seus dados completos
     const utilizador = await Utilizador.findOne({
-      where: { id: req.user.id },
+      where: { id: userId },
       include: [{
         model: TipoUtilizador,
         as: 'tipoUtilizador',
@@ -20,21 +19,14 @@ exports.getPerfil = async (req, res) => {
     });
 
     if (!utilizador) {
-      return res.status(404).json({
-        success: false,
-        message: "Utilizador não encontrado"
-      });
+      return res.status(404).json({ success: false, message: "Utilizador não encontrado" });
     }
 
-    // Buscar ou criar o cliente
-    let cliente = await Cliente.findOne({
-      where: { utilizador_id: req.user.id }
-    });
+    let cliente = await Cliente.findOne({ where: { utilizador_id: userId } });
 
     if (!cliente) {
-      // Criar novo registro de cliente
       cliente = await Cliente.create({
-        utilizador_id: req.user.id,
+        utilizador_id: userId,
         nome: utilizador.nome,
         email: utilizador.email,
         telefone: utilizador.telefone || null,
@@ -45,14 +37,13 @@ exports.getPerfil = async (req, res) => {
       console.log("✅ Novo cliente criado para utilizador_id:", cliente.utilizador_id);
     }
 
-    // Montar objeto de resposta com todos os dados
-    const responseData = {
+    res.json({
       success: true,
       data: {
         utilizador_id: cliente.utilizador_id,
-        nome: cliente.nome || utilizador.nome,
-        email: cliente.email || utilizador.email,
-        telefone: cliente.telefone || utilizador.telefone,
+        nome: cliente.nome,
+        email: cliente.email,
+        telefone: cliente.telefone,
         dataNascimento: cliente.dataNascimento,
         morada: cliente.morada,
         nif: cliente.nif,
@@ -64,67 +55,59 @@ exports.getPerfil = async (req, res) => {
           tipoUtilizador: utilizador.tipoUtilizador
         }
       }
-    };
-
-    console.log("📤 Dados enviados:", JSON.stringify(responseData, null, 2));
-    res.json(responseData);
+    });
 
   } catch (error) {
     console.error("❌ Erro ao buscar perfil:", error);
-    res.status(500).json({
-      success: false,
-      message: "Erro ao buscar perfil do cliente",
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: "Erro ao buscar perfil do cliente", error: error.message });
   }
 };
 
 // Atualizar perfil do cliente
-exports.updateClienteProfile = async (req, res) => {
+exports.updatePerfil = async (req, res) => {
   try {
-    console.log("Atualizando perfil do cliente:", req.body);
-    
-    // Verificar se o cliente existe
-    const cliente = await Cliente.findOne({
-      where: { utilizador_id: req.userId }
+    const userId = req.user.id;
+    const { nome, email, telefone, dataNascimento, morada, nif } = req.body;
+
+    const utilizador = await Utilizador.findByPk(userId);
+    if (!utilizador) {
+      return res.status(404).json({ success: false, message: "Utilizador não encontrado" });
+    }
+
+    // Atualiza o utilizador
+    await utilizador.update({
+      nome: nome || utilizador.nome,
+      email: email || utilizador.email,
+      telefone: telefone || utilizador.telefone
     });
-    
+
+    // Atualiza ou cria cliente
+    let cliente = await Cliente.findOne({ where: { utilizador_id: userId } });
     if (!cliente) {
-      return res.status(404).json({
-        message: "Perfil de cliente não encontrado"
+      cliente = await Cliente.create({
+        utilizador_id: userId,
+        nome: nome || utilizador.nome,
+        email: email || utilizador.email,
+        telefone: telefone || utilizador.telefone,
+        dataNascimento,
+        morada,
+        nif
+      });
+    } else {
+      await cliente.update({
+        nome: nome || cliente.nome,
+        email: email || cliente.email,
+        telefone: telefone || cliente.telefone,
+        dataNascimento: dataNascimento || cliente.dataNascimento,
+        morada: morada || cliente.morada,
+        nif: nif || cliente.nif
       });
     }
-    
-    // Campos que podem ser atualizados
-    const { nome, email, telefone, dataNascimento, morada, nif } = req.body;
-    
-    // Atualizar dados
-    await cliente.update({
-      nome: nome || cliente.nome,
-      email: email || cliente.email,
-      telefone: telefone || cliente.telefone,
-      dataNascimento: dataNascimento || cliente.dataNascimento,
-      morada: morada || cliente.morada,
-      nif: nif || cliente.nif
-    });
-    
-    // Também atualizar dados básicos no utilizador
-    if (nome || email || telefone) {
-      await Utilizador.update(
-        {
-          nome: nome || undefined,
-          email: email || undefined,
-          telefone: telefone || undefined
-        },
-        {
-          where: { id: req.userId }
-        }
-      );
-    }
-    
-    res.status(200).json({
+
+    res.json({
+      success: true,
       message: "Perfil atualizado com sucesso",
-      cliente: {
+      data: {
         utilizador_id: cliente.utilizador_id,
         nome: cliente.nome,
         email: cliente.email,
@@ -134,30 +117,22 @@ exports.updateClienteProfile = async (req, res) => {
         nif: cliente.nif
       }
     });
+
   } catch (error) {
-    console.error("Erro ao atualizar perfil do cliente:", error);
-    res.status(500).json({
-      message: "Erro ao atualizar perfil do cliente",
-      error: error.message
-    });
+    console.error("❌ Erro ao atualizar perfil:", error);
+    res.status(500).json({ success: false, message: "Erro ao atualizar perfil", error: error.message });
   }
 };
 
 // Obter consultas do cliente
 exports.getClienteConsultas = async (req, res) => {
   try {
-    // Implementação temporária
     res.status(200).json({
       message: "Funcionalidade em desenvolvimento",
       consultas: []
     });
   } catch (error) {
     console.error("Erro ao obter consultas do cliente:", error);
-    res.status(500).json({
-      message: "Erro ao obter consultas do cliente",
-      error: error.message
-    });
+    res.status(500).json({ message: "Erro ao obter consultas do cliente", error: error.message });
   }
 };
-
-// Implementar outros métodos conforme necessário... 

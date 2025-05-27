@@ -63,6 +63,7 @@ const FilterContainer = styled.div`
   gap: 1rem;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
+  align-items: center;
 `;
 
 const FilterButton = styled.button`
@@ -82,12 +83,16 @@ const SearchInput = styled.input`
   padding: 0.5rem 1rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  margin-left: auto;
   width: 300px;
   
   &:focus {
     outline: none;
     border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  }
+  
+  &::placeholder {
+    color: #95a5a6;
   }
 `;
 
@@ -267,21 +272,26 @@ function GestaoMedicosPage() {
 
     // Filtrar por especialidade
     if (activeFilter !== 'todos') {
-      filtered = filtered.filter(
-        medico => medico.especialidade?.nome?.toLowerCase() === activeFilter ||
-                 medico.medico?.especialidade?.nome?.toLowerCase() === activeFilter
-      );
+      filtered = filtered.filter(medico => {
+        const especialidadeNome = medico.especialidade?.nome || medico.medico?.especialidade?.nome;
+        return especialidadeNome?.toLowerCase() === activeFilter;
+      });
     }
 
     // Filtrar por termo de busca
     if (searchTerm) {
-      filtered = filtered.filter(
-        medico =>
-          medico.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          medico.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          medico.crm.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (medico.especialidade?.nome || medico.medico?.especialidade?.nome || '').toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const searchTermLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(medico => {
+        const nome = (medico.nome || '').toLowerCase();
+        const email = (medico.email || '').toLowerCase();
+        
+        const especialidade = (medico.especialidade?.nome || medico.medico?.especialidade?.nome || '').toLowerCase();
+        
+        return nome.includes(searchTermLower) ||
+               email.includes(searchTermLower) ||
+               
+               especialidade.includes(searchTermLower);
+      });
     }
 
     setFilteredMedicos(filtered);
@@ -354,12 +364,14 @@ function GestaoMedicosPage() {
           </FilterButton>
         ))}
 
-        <SearchInput
-          type="text"
-          placeholder="Buscar médico..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <div style={{ marginLeft: 'auto' }}>
+          <SearchInput
+            type="text"
+            placeholder="Buscar por nome, emai, ou especialidade..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </FilterContainer>
 
       {loading ? (
@@ -370,7 +382,7 @@ function GestaoMedicosPage() {
             <thead>
               <tr>
                 <th>Nome</th>
-                <th>CRM</th>
+                
                 <th>Especialidade</th>
                 <th>Email</th>
                 <th>Telefone</th>
@@ -380,10 +392,10 @@ function GestaoMedicosPage() {
             <tbody>
               {filteredMedicos.map(medico => (
                 <tr key={medico.id}>
-                  <td>{medico.nome}</td>
-                  <td>{medico.crm}</td>
+                  <td>{medico.nome || '-'}</td>
+                  
                   <td>{medico.especialidade?.nome || medico.medico?.especialidade?.nome || '-'}</td>
-                  <td>{medico.email}</td>
+                  <td>{medico.email || '-'}</td>
                   <td>{medico.telefone || '-'}</td>
                   <td>
                     <ActionButton
@@ -439,17 +451,6 @@ function GestaoMedicosPage() {
                 />
               </FormGroup>
 
-              <FormGroup>
-                <Label htmlFor="crm">CRM</Label>
-                <Input
-                  type="text"
-                  id="crm"
-                  name="crm"
-                  value={currentMedico.crm}
-                  onChange={handleInputChange}
-                  required
-                />
-              </FormGroup>
 
               <FormGroup>
                 <Label htmlFor="especialidade">Especialidade</Label>

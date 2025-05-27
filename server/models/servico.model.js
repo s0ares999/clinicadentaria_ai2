@@ -27,7 +27,6 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Servico.associate = (models) => {
-    // Associação com Fatura através de FaturaServico (many-to-many)
     Servico.belongsToMany(models.Fatura, {
       through: models.FaturaServico,
       foreignKey: 'servico_id',

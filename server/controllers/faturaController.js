@@ -1,25 +1,109 @@
-const { Fatura } = require('../models');
+const { Fatura, FaturaServico, Servico, Consulta } = require('../models');
+const { Op } = require('sequelize');
 
-const criarFatura = async (req, res) => {
-  try {
-    const { consulta_id, valor_total, observacoes, status_id } = req.body;
+class FaturaController {
+  async criar(req, res) {
+    const transaction = await Fatura.sequelize.transaction();
 
-    if (!consulta_id || !valor_total) {
-      return res.status(400).json({ error: 'consulta_id e valor_total são obrigatórios' });
+    try {
+      const { consulta_id, observacoes, servicos, status_id } = req.body;
+
+      if (!consulta_id || !servicos || !Array.isArray(servicos) || servicos.length === 0) {
+        return res.status(400).json({ erro: 'Dados inválidos para criação da fatura' });
+      }
+
+      const consulta = await Consulta.findByPk(consulta_id);
+      if (!consulta) {
+        await transaction.rollback();
+        return res.status(404).json({ erro: 'Consulta não encontrada' });
+      }
+
+      const faturaExistente = await Fatura.findOne({ where: { consulta_id } });
+      if (faturaExistente) {
+        await transaction.rollback();
+        return res.status(400).json({ erro: 'Já existe uma fatura para esta consulta' });
+      }
+
+      const servicosIds = servicos.map(s => s.servico_id);
+      const servicosValidos = await Servico.findAll({
+        where: { id: { [Op.in]: servicosIds }, ativo: true }
+      });
+
+      if (servicosValidos.length !== servicosIds.length) {
+        await transaction.rollback();
+        return res.status(400).json({ erro: 'Serviços inválidos ou inativos' });
+      }
+
+      const novaFatura = await Fatura.create({
+        consulta_id,
+        observacoes,
+        status_id: status_id || 1
+      }, { transaction });
+
+      const faturaServicos = [];
+      for (const s of servicos) {
+        const servico = servicosValidos.find(x => x.id === s.servico_id);
+        if (!servico) continue;
+
+        const quantidade = s.quantidade || 1;
+        const preco = s.preco_unitario || servico.preco;
+        if (quantidade <= 0 || preco <= 0) {
+          throw new Error(`Quantidade e preço devem ser maiores que zero`);
+        }
+
+        const subtotal = quantidade * preco;
+
+        const item = await FaturaServico.create({
+          fatura_id: novaFatura.id,
+          servico_id: servico.id,
+          quantidade,
+          preco_unitario: preco,
+          subtotal
+        }, { transaction });
+
+        faturaServicos.push(item);
+      }
+
+      const total = faturaServicos.reduce((sum, i) => sum + parseFloat(i.subtotal), 0);
+      novaFatura.valor_total = total;
+      await novaFatura.save({ transaction });
+
+      await transaction.commit();
+
+      return res.status(201).json({ mensagem: 'Fatura criada com sucesso', fatura: novaFatura });
+
+    } catch (error) {
+      if (!transaction.finished) await transaction.rollback();
+      console.error('Erro ao criar fatura:', error);
+      return res.status(500).json({ erro: error.message });
     }
-
-    const novaFatura = await Fatura.create({
-      consulta_id,
-      valor_total,
-      observacoes,
-      status_id: status_id || 1
-    });
-
-    return res.status(201).json(novaFatura);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Erro interno do servidor' });
   }
-};
 
-module.exports = { criarFatura };
+  async deletar(req, res) {
+    const transaction = await Fatura.sequelize.transaction();
+
+    try {
+      const { id } = req.params;
+
+      const fatura = await Fatura.findByPk(id);
+      if (!fatura) {
+        await transaction.rollback();
+        return res.status(404).json({ erro: 'Fatura não encontrada' });
+      }
+
+      await FaturaServico.destroy({ where: { fatura_id: id }, transaction });
+      await fatura.destroy({ transaction });
+
+      await transaction.commit();
+
+      return res.json({ mensagem: 'Fatura deletada com sucesso' });
+
+    } catch (error) {
+      if (!transaction.finished) await transaction.rollback();
+      console.error('Erro ao deletar fatura:', error);
+      return res.status(500).json({ erro: error.message });
+    }
+  }
+}
+
+module.exports = new FaturaController();

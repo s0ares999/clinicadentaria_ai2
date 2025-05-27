@@ -44,5 +44,10 @@ module.exports = (sequelize, DataTypes) => {
     }
   });
 
+  FaturaServico.associate = (models) => {
+    FaturaServico.belongsTo(models.Fatura, { foreignKey: 'fatura_id', as: 'fatura' });
+    FaturaServico.belongsTo(models.Servico, { foreignKey: 'servico_id', as: 'servico' });
+  };
+
   return FaturaServico;
 };

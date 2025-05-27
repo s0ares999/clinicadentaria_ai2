@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { criarFatura } = require('../controllers/faturaController');
+const FaturaController = require('../controllers/faturaController');
 
-router.post('/', criarFatura);
+// Criar fatura
+router.post('/', FaturaController.criar);
+
+// Deletar fatura
+router.delete('/:id', FaturaController.deletar);
 
 module.exports = router;

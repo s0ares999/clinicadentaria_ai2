@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     valor_total: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
+      allowNull: true, // <- Agora pode ser nulo, será calculado depois
       comment: 'Valor total calculado automaticamente baseado nos serviços'
     },
     observacoes: {
@@ -24,7 +24,12 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     tableName: 'Faturas',
-    timestamps: true
+    timestamps: true,
+    hooks: {
+      afterCreate: async (fatura, options) => {
+        await fatura.calcularValorTotal();
+      }
+    }
   });
 
   Fatura.associate = (models) => {
@@ -34,14 +39,14 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'NO ACTION',
       onUpdate: 'CASCADE'
     });
-    
+
     Fatura.belongsTo(models.Consulta, {
       foreignKey: 'consulta_id',
       as: 'consulta',
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE'
     });
-    
+
     Fatura.belongsToMany(models.Pagamento, {
       through: models.FaturaPagamento,
       foreignKey: 'fatura_id',
@@ -49,7 +54,6 @@ module.exports = (sequelize, DataTypes) => {
       as: 'pagamentos'
     });
 
-    // Nova associação com Servicos
     Fatura.belongsToMany(models.Servico, {
       through: models.FaturaServico,
       foreignKey: 'fatura_id',
@@ -58,19 +62,18 @@ module.exports = (sequelize, DataTypes) => {
     });
   };
 
-  // Método para calcular o valor total da fatura
-  Fatura.prototype.calcularValorTotal = async function() {
+  Fatura.prototype.calcularValorTotal = async function () {
     const faturaServicos = await this.sequelize.models.FaturaServico.findAll({
       where: { fatura_id: this.id }
     });
-    
+
     const total = faturaServicos.reduce((sum, item) => {
-      return sum + parseFloat(item.subtotal);
+      return sum + parseFloat(item.subtotal); // Para precisão, considere usar Decimal.js aqui
     }, 0);
-    
+
     this.valor_total = total;
     await this.save();
-    
+
     return total;
   };
 

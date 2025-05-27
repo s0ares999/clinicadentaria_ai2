@@ -16,6 +16,12 @@ const FaturaService = {
   deletarFatura: async (faturaId) => {
     const response = await api.delete(`${API_URL}/${faturaId}`);
     return response.data;
+  },
+
+  // NOVA FUNÇÃO PARA BUSCAR SERVIÇOS ATIVOS
+  getServicosAtivos: async () => {
+    const response = await api.get(`${API_URL}/servicos`);
+    return response.data;
   }
 };
 

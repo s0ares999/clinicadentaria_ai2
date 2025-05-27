@@ -10,6 +10,9 @@ router.use(authMiddleware.verifyToken);
 router.post('/', FaturaController.criar);
 router.get('/', FaturaController.listar);
 router.get('/minhas-faturas', FaturaController.listarPorUtilizador);
+router.get('/servicos', FaturaController.listarServicos);
 router.delete('/:id', FaturaController.deletar);
+
+
 
 module.exports = router;

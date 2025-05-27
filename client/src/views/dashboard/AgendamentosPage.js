@@ -4,8 +4,6 @@ import api from '../../services/api.config';
 import { toast } from 'react-toastify';
 import ConsultaService from '../../services/consulta.service';
 
-const API_URL = "http://localhost:8000/api";
-
 const Container = styled.div`
   padding: 2rem;
 `;
@@ -456,7 +454,7 @@ const AgendamentosPage = () => {
           {selectedDate && (
             <div style={{ marginTop: '1.5rem' }}>
               <h3>
-                Consultas de {selectedDate.toLocaleDateString('pt-PT')}
+                Consultas do dia {selectedDate.toLocaleDateString('pt-PT')}
               </h3>
               {loadingDia ? (
                 <p>Carregando consultas deste dia...</p>
@@ -505,14 +503,9 @@ const AgendamentosPage = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h3>
                   {selectedDate
-                    ? `Consultas de ${selectedDate.toLocaleDateString('pt-PT')}`
+                    ? `Consultas do dia ${selectedDate.toLocaleDateString('pt-PT')}`
                     : 'Todas as Consultas'}
                 </h3>
-                {selectedDate && (
-                  <Button onClick={() => setSelectedDate(null)}>
-                    Ver todas as consultas
-                  </Button>
-                )}
               </div>
 
               <Table>

@@ -28,6 +28,68 @@ const initEspecialidade = async () => {
 };
 
 /**
+ * Inicializa os serviços padrão (se não existirem)
+ */
+const initServicos = async () => {
+  try {
+    console.log("🔄 Inicializando serviços...");
+    const Servico = db.Servico;
+    if (!Servico) {
+      console.error("❌ Modelo Servico não encontrado!");
+      return false;
+    }
+    const count = await Servico.count();
+    if (count > 0) {
+      console.log(`✓ Tabela Servico já possui ${count} registros.`);
+      return true;
+    }
+    const servicosPadrao = [
+      { 
+        id: 1, 
+        nome: 'Limpeza Dentária', 
+        descricao: 'Limpeza profissional para remoção de tártaro e placa bacteriana',
+        preco: 50.00,
+        ativo: true
+      },
+      { 
+        id: 2, 
+        nome: 'Consulta de Rotina', 
+        descricao: 'Consulta de acompanhamento e avaliação oral',
+        preco: 30.00,
+        ativo: true
+      },
+      { 
+        id: 3, 
+        nome: 'Tratamento de Canal', 
+        descricao: 'Tratamento endodôntico para eliminação de infecções',
+        preco: 200.00,
+        ativo: true
+      },
+      { 
+        id: 4, 
+        nome: 'Branqueamento', 
+        descricao: 'Procedimento para clarear os dentes',
+        preco: 150.00,
+        ativo: true
+      },
+      { 
+        id: 5, 
+        nome: 'Extração Dentária', 
+        descricao: 'Remoção de dente danificado ou problemático',
+        preco: 80.00,
+        ativo: true
+      }
+    ];
+    await Servico.bulkCreate(servicosPadrao);
+    console.log("✅ Serviços inicializados com sucesso!");
+    return true;
+  } catch (error) {
+    console.error("❌ Erro ao inicializar serviços:", error);
+    return false;
+  }
+};
+
+/**
  * Inicializar dados básicos no banco de dados (tipos, status, especialidades, etc)
  */
 const initializeBasicData = async () => {
@@ -35,6 +97,7 @@ const initializeBasicData = async () => {
   
   const resultados = {
     especialidades: false,
+    servicos: false,
     tipoUtilizador: false,
     consultaStatus: false,
     disponibilidadeStatus: false,
@@ -44,7 +107,7 @@ const initializeBasicData = async () => {
   
   try {
     resultados.especialidades = await initEspecialidade();
-
+    resultados.servicos = await initServicos();
     resultados.tipoUtilizador = await initTipoUtilizador();
     resultados.consultaStatus = await initConsultaStatus();
     resultados.disponibilidadeStatus = await initDisponibilidadeStatus();
@@ -220,6 +283,7 @@ initializeBasicData().catch(err => console.error("Erro geral na inicialização:
 
 module.exports = {
   initEspecialidade,
+  initServicos,
   initializeBasicData,
   initTipoUtilizador,
   initConsultaStatus,

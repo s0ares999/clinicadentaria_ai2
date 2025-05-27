@@ -12,6 +12,17 @@ class MedicoService {
     }
   }
 
+  async getAllMedicos() {
+  try {
+    const response = await api.get('/utilizador/medicos');
+    return response;
+  } catch (error) {
+    console.error('Erro ao buscar todos os médicos:', error);
+    throw error;
+  }
+}
+
+
   async updateMedicoPerfil(medicoData) {
     try {
       const user = AuthService.getCurrentUser();

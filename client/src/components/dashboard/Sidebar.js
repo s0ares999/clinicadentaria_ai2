@@ -112,8 +112,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </Link>
         </MenuItem>
         <MenuItem>
-          <Link to="/dashboard/clientes" className={location.pathname.includes('/dashboard/clientes') ? 'active' : ''}>
-            <i className="fas fa-users"></i> Utilizadores
+          <Link to="/dashboard/GestaoMedico" className={location.pathname.includes('/dashboard/GestaoMedico') ? 'active' : ''}>
+            <i className="fas fa-users"></i> Gestão de Medicos
           </Link>
         </MenuItem>
         <MenuItem>

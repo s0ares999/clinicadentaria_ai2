@@ -1,3 +1,4 @@
+//utilizador.controller
 const db = require('../models');
 const bcrypt = require('bcryptjs');
 const Utilizador = db.Utilizador;

@@ -73,14 +73,16 @@ function loadRoutes() {
         const routePath = `./routes/${file}`;
         const routeModule = require(routePath);
         
-        // Verificar se o arquivo exporta um roteador Express
-        if (routeModule && typeof routeModule === 'function' && routeModule.stack) {
+        // CORREÇÃO: Verificação mais simples e correta para routers do Express
+        if (routeModule && typeof routeModule === 'function') {
           // Usar o mapeamento definido ou criar um padrão
           const apiPath = routeMapping[file] || `/api/${file.replace(".routes.js", "")}`;
           app.use(apiPath, routeModule);
           console.log(`✅ Rota carregada: ${file} => ${apiPath}`);
         } else {
           console.log(`⚠️ Ignorando ${file}: não parece ser um roteador Express válido`);
+          console.log(`   Tipo do módulo: ${typeof routeModule}`);
+          console.log(`   Conteúdo:`, routeModule);
         }
       } catch (error) {
         console.error(`❌ Erro ao carregar rota ${file}:`, error);

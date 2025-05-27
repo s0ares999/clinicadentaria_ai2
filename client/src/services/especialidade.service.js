@@ -1,27 +1,26 @@
 import axios from 'axios';
-import authHeader from './auth-header';
 
 const API_URL = 'http://localhost:8000/api/especialidades/';
 
 class EspecialidadeService {
   async getAllEspecialidades() {
-    return axios.get(API_URL, { headers: authHeader() });
+    return axios.get(API_URL);
   }
 
   async getEspecialidadeById(id) {
-    return axios.get(API_URL + id, { headers: authHeader() });
+    return axios.get(API_URL);
   }
 
   async createEspecialidade(especialidadeData) {
-    return axios.post(API_URL, especialidadeData, { headers: authHeader() });
+    return axios.post(API_URL);
   }
 
   async updateEspecialidade(id, especialidadeData) {
-    return axios.put(API_URL + id, especialidadeData, { headers: authHeader() });
+    return axios.put(API_URL);
   }
 
   async deleteEspecialidade(id) {
-    return axios.delete(API_URL + id, { headers: authHeader() });
+    return axios.delete(API_URL);
   }
 }
 

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import api from '../../services/api.config';
+import FaturaService from '../../services/fatura.service';
 
 const PageTitle = styled.h1`
   font-size: 1.75rem;
@@ -142,95 +144,117 @@ const StatusBadge = styled.span`
   }
 `;
 
-const Pagination = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
-  gap: 5px;
-`;
-
-const PageButton = styled.button`
-  background-color: ${props => props.active ? '#3498db' : '#fff'};
-  color: ${props => props.active ? '#fff' : '#2c3e50'};
-  border: 1px solid #e1e5e8;
+const ErrorMessage = styled.div`
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 12px;
   border-radius: 4px;
-  padding: 5px 10px;
-  cursor: pointer;
-  transition: all 0.3s;
-
-  &:hover {
-    background-color: ${props => props.active ? '#3498db' : '#f8f9fa'};
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
+  margin-bottom: 20px;
+  border: 1px solid #f5c6cb;
 `;
-
-const API_URL = 'http://localhost:8000/api';
 
 const FaturasPage = () => {
+  const navigate = useNavigate();
   const [faturas, setFaturas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchFaturas();
-  }, [currentPage]);
+  }, []);
 
   const fetchFaturas = async () => {
     try {
       setLoading(true);
-      const response = await api.get('faturas', { 
-        params: { page: currentPage - 1, size: 10 }
-      });
-      setFaturas(response.data.items || []);
-      setTotalPages(Math.ceil((response.data.total || 0) / 10));
-      setLoading(false);
+      setError('');
+      
+      // Usando o endpoint correto do seu controller
+      const response = await api.get('/faturas');
+      
+      if (response.data && response.data.faturas) {
+        setFaturas(response.data.faturas);
+      } else {
+        setFaturas([]);
+      }
+      
     } catch (error) {
-      console.error('Error fetching faturas:', error);
+      console.error('Erro ao buscar faturas:', error);
+      setError('Erro ao carregar faturas. Tente novamente.');
+      setFaturas([]);
+    } finally {
       setLoading(false);
-      // Adicionar notificação de erro quando tivermos react-toastify
     }
   };
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
-    // Implementar lógica de pesquisa quando tiver backend
   };
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('pt-PT', {
       style: 'currency',
       currency: 'EUR'
-    }).format(value);
+    }).format(value || 0);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Data não disponível';
+    return new Date(dateString).toLocaleDateString('pt-PT');
   };
 
   const getStatusBadgeClass = (status) => {
-    switch (status.toLowerCase()) {
+    if (!status || !status.nome) return '';
+    
+    switch (status.nome.toLowerCase()) {
       case 'paga':
+      case 'pago':
         return 'paga';
       case 'pendente':
         return 'pendente';
       case 'cancelada':
+      case 'cancelado':
         return 'cancelada';
       default:
         return '';
     }
   };
 
-  const handleViewDetails = (id) => {
-    // Implementar visualização de detalhes
-    console.log(`Ver detalhes da fatura ${id}`);
+  const handleViewDetails = (fatura) => {
+    navigate(`/dashboard/faturas/${fatura.id}`);
   };
 
-  const handlePrintInvoice = (id) => {
-    // Implementar impressão de fatura
-    console.log(`Imprimir fatura ${id}`);
+  const handlePrintInvoice = (faturaId) => {
+    console.log(`Imprimir fatura ${faturaId}`);
+    // Implementar impressão
   };
+
+  const handleDeleteFatura = async (faturaId) => {
+    if (window.confirm('Tem certeza que deseja deletar esta fatura?')) {
+      try {
+        await FaturaService.deletarFatura(faturaId);
+        setFaturas(faturas.filter(f => f.id !== faturaId));
+        console.log('Fatura deletada com sucesso');
+      } catch (error) {
+        console.error('Erro ao deletar fatura:', error);
+        setError('Erro ao deletar fatura');
+      }
+    }
+  };
+
+  // Filtrar faturas baseado no termo de pesquisa
+  const faturasFiltradas = faturas.filter(fatura => {
+    if (!searchTerm) return true;
+    
+    const termo = searchTerm.toLowerCase();
+    const nomeCliente = fatura.consulta?.utilizador?.nome?.toLowerCase() || '';
+    const nomeMedico = fatura.consulta?.medico?.nome?.toLowerCase() || '';
+    const faturaId = fatura.id?.toString() || '';
+    
+    return nomeCliente.includes(termo) || 
+           nomeMedico.includes(termo) || 
+           faturaId.includes(termo);
+  });
 
   return (
     <>
@@ -242,92 +266,106 @@ const FaturasPage = () => {
             <i className="fas fa-search"></i>
             <input 
               type="text" 
-              placeholder="Pesquisar faturas..." 
+              placeholder="Pesquisar por cliente, médico ou ID..." 
               value={searchTerm}
               onChange={handleSearch}
             />
           </SearchBar>
           
-          <AddButton>
+          <AddButton onClick={() => console.log('Criar nova fatura')}>
             <i className="fas fa-plus"></i>
             Criar Nova Fatura
           </AddButton>
         </SearchAndAddSection>
+
+        {error && (
+          <ErrorMessage>
+            {error}
+            <button 
+              onClick={fetchFaturas}
+              style={{ 
+                marginLeft: '10px', 
+                background: 'none', 
+                border: 'none', 
+                color: '#721c24',
+                textDecoration: 'underline',
+                cursor: 'pointer'
+              }}
+            >
+              Tentar novamente
+            </button>
+          </ErrorMessage>
+        )}
         
         {loading ? (
-          <p>Carregando...</p>
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <i className="fas fa-spinner fa-spin" style={{ marginRight: '10px' }}></i>
+            Carregando faturas...
+          </div>
         ) : (
-          <>
-            <Table>
-              <thead>
-                <tr>
-                  <th>Nº Fatura</th>
-                  <th>Cliente</th>
-                  <th>Data</th>
-                  <th>Valor</th>
-                  <th>Estado</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {faturas.length > 0 ? (
-                  faturas.map((fatura) => (
-                    <tr key={fatura.id}>
-                      <td>#{fatura.numero}</td>
-                      <td>{fatura.cliente?.nome || 'Cliente não disponível'}</td>
-                      <td>{new Date(fatura.dataEmissao).toLocaleDateString()}</td>
-                      <td>{formatCurrency(fatura.valorTotal)}</td>
-                      <td>
-                        <StatusBadge className={getStatusBadgeClass(fatura.estado)}>
-                          {fatura.estado}
-                        </StatusBadge>
-                      </td>
-                      <td>
-                        <ActionButton onClick={() => handleViewDetails(fatura.id)}>
-                          <i className="fas fa-eye"></i>
-                        </ActionButton>
-                        <ActionButton onClick={() => handlePrintInvoice(fatura.id)}>
-                          <i className="fas fa-print"></i>
-                        </ActionButton>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" style={{ textAlign: 'center' }}>
-                      Nenhuma fatura encontrada
+          <Table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Médico</th>
+                <th>Data</th>
+                <th>Valor Total</th>
+                <th>Status</th>
+                <th>Serviços</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {faturasFiltradas.length > 0 ? (
+                faturasFiltradas.map((fatura) => (
+                  <tr key={fatura.id}>
+                    <td>#{fatura.id}</td>
+                    <td>{fatura.consulta?.utilizador?.nome || 'N/A'}</td>
+                    <td>{fatura.consulta?.medico?.nome || 'N/A'}</td>
+                    <td>{formatDate(fatura.createdAt)}</td>
+                    <td>{formatCurrency(fatura.valor_total)}</td>
+                    <td>
+                      <StatusBadge className={getStatusBadgeClass(fatura.status)}>
+                        {fatura.status?.nome || 'N/A'}
+                      </StatusBadge>
+                    </td>
+                    <td>
+                      {fatura.servicos?.length || 0} serviço(s)
+                    </td>
+                    <td>
+                      <ActionButton 
+                        onClick={() => handleViewDetails(fatura)}
+                        title="Ver detalhes"
+                      >
+                        <i className="fas fa-eye"></i>
+                      </ActionButton>
+                      <ActionButton 
+                        onClick={() => handlePrintInvoice(fatura.id)}
+                        title="Imprimir"
+                      >
+                        <i className="fas fa-print"></i>
+                      </ActionButton>
+                      <ActionButton 
+                        onClick={() => handleDeleteFatura(fatura.id)}
+                        color="#e74c3c"
+                        hoverColor="#c0392b"
+                        title="Deletar"
+                      >
+                        <i className="fas fa-trash"></i>
+                      </ActionButton>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </Table>
-            
-            <Pagination>
-              <PageButton 
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                <i className="fas fa-chevron-left"></i>
-              </PageButton>
-              
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <PageButton 
-                  key={page}
-                  active={currentPage === page}
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page}
-                </PageButton>
-              ))}
-              
-              <PageButton 
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-              >
-                <i className="fas fa-chevron-right"></i>
-              </PageButton>
-            </Pagination>
-          </>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>
+                    {searchTerm ? 'Nenhuma fatura encontrada com os critérios de pesquisa' : 'Nenhuma fatura encontrada'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </Table>
         )}
       </Card>
     </>

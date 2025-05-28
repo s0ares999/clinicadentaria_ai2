@@ -19,6 +19,7 @@ import MedicoDashboardPage from './views/medico/MedicoDashboardPage';
 import MedicoConsultasPendentesPage from './views/medico/MedicoConsultasPendentesPage';
 import AdminMedicoPage from './views/admin/AdminMedicoPage'
 import GestaoServicos from './views/dashboard/GestaoServicos'
+import FaturaDetalhesPage from './views/dashboard/FaturasDetalhesPage';
 
 // Componente de Rota Protegida
 const ProtectedRoute = ({ children, adminRequired = false, clienteRequired = false, medicoRequired = false }) => {
@@ -82,6 +83,7 @@ function App() {
           <Route path="estatisticas" element={<EstatisticasPage />} />
           <Route path="GestaoMedico" element={<AdminMedicoPage />} />
           <Route path="GestaoServicos" element={<GestaoServicos />} />
+          <Route path="faturas/:id" element={<FaturaDetalhesPage />} />
         </Route>
         
         {/* Cliente Dashboard */}

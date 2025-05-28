@@ -3,6 +3,13 @@ import api from './api.config';
 const API_URL = "http://localhost:8000/api/faturas";
 
 const FaturaService = {
+
+  getTodasFaturas: async () => {
+    const response = await api.get(`${API_URL}`);
+    return response.data;
+  },
+
+
   getFaturasByCliente: async () => {
     const response = await api.get(`${API_URL}/minhas-faturas`);
     return response.data;

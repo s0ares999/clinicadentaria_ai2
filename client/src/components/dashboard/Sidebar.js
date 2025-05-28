@@ -84,7 +84,7 @@ const SidebarFooter = styled.div`
   border-top: 1px solid #34495e;
   position: absolute;
   bottom: 0;
-  width: 100%;
+  width: 84%;
 
   p {
     margin: 0;

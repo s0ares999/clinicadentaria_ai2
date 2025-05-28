@@ -14,6 +14,7 @@ router.post('/servicos', FaturaController.criarServico);
 router.get('/servicos', FaturaController.listarServicos);
 router.get('/contar-servicos', FaturaController.contarServicosPorNome);
 router.delete('/:id', FaturaController.deletar);
+router.put('/:id/status', FaturaController.atualizarStatus);
 router.put('/servicos/:id', FaturaController.editarServico);  
 router.delete('/servicos/:id', FaturaController.deletarServico); 
 

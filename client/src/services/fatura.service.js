@@ -20,6 +20,11 @@ const FaturaService = {
     return response.data;
   },
 
+  atualizarStatusFatura: async (faturaId, status_id) => {
+    const response = await api.put(`${API_URL}/${faturaId}/status`, { status_id });
+    return response.data;
+  },
+
   deletarFatura: async (faturaId) => {
     const response = await api.delete(`${API_URL}/${faturaId}`);
     return response.data;

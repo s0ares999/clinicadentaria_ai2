@@ -80,6 +80,32 @@ class FaturaController {
     }
   }
 
+   async atualizarStatus(req, res) {
+    try {
+      const { id } = req.params;
+      const { status_id } = req.body;
+
+      if (!status_id) {
+        return res.status(400).json({ erro: 'status_id é obrigatório' });
+      }
+
+      const fatura = await Fatura.findByPk(id);
+
+      if (!fatura) {
+        return res.status(404).json({ erro: 'Fatura não encontrada' });
+      }
+
+      fatura.status_id = status_id;
+      await fatura.save();
+
+      return res.json({ mensagem: 'Status da fatura atualizado com sucesso', fatura });
+
+    } catch (error) {
+      console.error('Erro ao atualizar status da fatura:', error);
+      return res.status(500).json({ erro: 'Erro ao atualizar status da fatura' });
+    }
+  }
+
   async listar(req, res) {
     try {
       const faturas = await Fatura.findAll({

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
+import html2pdf from 'html2pdf.js/dist/html2pdf.min.js';
 import FaturaService from '../../services/fatura.service';
 
 const FaturasContainer = styled.div`
@@ -51,6 +52,12 @@ const FaturaItem = styled.div`
   border: 1px solid #ecf0f1;
   border-radius: 8px;
   overflow: hidden;
+  
+  @media print {
+    border: 1px solid #ddd;
+    margin-bottom: 30px;
+    page-break-inside: avoid;
+  }
 `;
 
 const FaturaHeader = styled.div`
@@ -89,16 +96,19 @@ const FaturaStatus = styled.div`
   &.emitida {
     background-color: #fff8e1;
     color: #ffa000;
+    border: 1px solid #ffa000;
   }
   
   &.paga {
     background-color: #e8f5e9;
     color: #388e3c;
+    border: 1px solid #388e3c;
   }
   
   &.cancelada {
     background-color: #ffebee;
     color: #d32f2f;
+    border: 1px solid #d32f2f;
   }
 `;
 
@@ -132,19 +142,29 @@ const FaturaActions = styled.div`
   padding: 1rem;
   border-top: 1px solid #ecf0f1;
   gap: 0.5rem;
+  
+  @media print {
+    display: none;
+  }
 `;
 
 const Button = styled.button`
-  background-color: ${props => props.secondary ? '#f39c12' : '#3498db'};
+  background-color: ${props => props.secondary ? '#f39c12' : props.generating ? '#7f8c8d' : '#3498db'};
   color: white;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;
-  cursor: pointer;
+  cursor: ${props => props.generating ? 'not-allowed' : 'pointer'};
   font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   
   &:hover {
-    background-color: ${props => props.secondary ? '#d35400' : '#2980b9'};
+    background-color: ${props =>
+    props.generating ? '#7f8c8d' :
+      props.secondary ? '#d35400' : '#2980b9'
+  };
   }
   
   &:disabled {
@@ -159,10 +179,117 @@ const EmptyState = styled.div`
   color: #7f8c8d;
 `;
 
+// Componente específico para PDF de uma fatura
+const PDFFaturaContainer = styled.div`
+  background: white;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  
+  .pdf-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #3498db;
+    
+    h1 {
+      color: #2c3e50;
+      margin: 0 0 10px 0;
+      font-size: 1.8rem;
+    }
+    
+    p {
+      color: #7f8c8d;
+      margin: 0;
+    }
+  }
+  
+  .pdf-section {
+    margin-bottom: 25px;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    overflow: hidden;
+    
+    .section-header {
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-bottom: 1px solid #ecf0f1;
+      
+      h3 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 1.2rem;
+      }
+    }
+    
+    .section-content {
+      padding: 15px;
+    }
+  }
+  
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    
+    .info-item {
+      .label {
+        font-weight: 600;
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+      }
+      
+      .value {
+        color: #2c3e50;
+        font-size: 1rem;
+      }
+    }
+  }
+  
+  .services-list {
+    .service-item {
+      padding: 10px;
+      border-bottom: 1px solid #ecf0f1;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      .service-name {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+      }
+      
+      .service-details {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+      }
+    }
+  }
+  
+  .total-section {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: right;
+    margin-top: 20px;
+    
+    .total-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #27ae60;
+    }
+  }
+`;
+
 function ClienteFaturasPage() {
   const [faturas, setFaturas] = useState([]);
   const [activeTab, setActiveTab] = useState('todas');
   const [loading, setLoading] = useState(true);
+  const [generatingPDF, setGeneratingPDF] = useState({});
+  const pdfRefs = useRef({});
 
   useEffect(() => {
     carregarFaturas();
@@ -180,14 +307,174 @@ function ClienteFaturasPage() {
     }
   };
 
-  const confirmarPagamento = async (faturaId) => {
+const confirmarPagamento = async (faturaId) => {
+  try {
+    
+    const statusPagaId = 2;
+
+    await FaturaService.atualizarStatusFatura(faturaId, statusPagaId);
+    toast.success('Pagamento confirmado com sucesso!');
+
+    setFaturas(prevFaturas =>
+      prevFaturas.map(fat =>
+        fat.id === faturaId ? { ...fat, status: { nome: 'paga' } } : fat
+      )
+    );
+  } catch (error) {
+    console.error('Erro ao confirmar pagamento:', error);
+    toast.error('Não foi possível confirmar o pagamento');
+  }
+};;
+
+  const gerarPDFFatura = async (fatura) => {
+    if (!fatura) {
+      toast.error('Dados da fatura não encontrados');
+      return;
+    }
+
     try {
-      await FaturaService.marcarComoPaga(faturaId);
-      toast.success('Pagamento confirmado com sucesso!');
-      carregarFaturas();
+      setGeneratingPDF(prev => ({ ...prev, [fatura.id]: true }));
+
+      // Criar elemento temporário para o PDF
+      const pdfElement = document.createElement('div');
+      pdfElement.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 20px; background: white;">
+          <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #3498db;">
+            <h1 style="color: #2c3e50; margin: 0 0 10px 0; font-size: 1.8rem;">Fatura #${fatura.id}</h1>
+            <p style="color: #7f8c8d; margin: 0;">Gerado em ${new Date().toLocaleString('pt-PT')}</p>
+          </div>
+
+          <div style="margin-bottom: 25px; border: 1px solid #ecf0f1; border-radius: 8px; overflow: hidden;">
+            <div style="background-color: #f9f9f9; padding: 15px; border-bottom: 1px solid #ecf0f1;">
+              <h3 style="margin: 0; color: #2c3e50; font-size: 1.2rem;">Informações da Fatura</h3>
+            </div>
+            <div style="padding: 15px;">
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                <div>
+                  <div style="font-weight: 600; color: #7f8c8d; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase;">ID da Fatura</div>
+                  <div style="color: #2c3e50; font-size: 1rem;">#${fatura.id}</div>
+                </div>
+                <div>
+                  <div style="font-weight: 600; color: #7f8c8d; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase;">Status</div>
+                  <div style="color: #2c3e50; font-size: 1rem;">${fatura.status?.nome || 'N/A'}</div>
+                </div>
+                <div>
+                  <div style="font-weight: 600; color: #7f8c8d; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase;">Data de Emissão</div>
+                  <div style="color: #2c3e50; font-size: 1rem;">${formatarData(fatura.createdAt)}</div>
+                </div>
+                <div>
+                  <div style="font-weight: 600; color: #7f8c8d; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase;">Valor Total</div>
+                  <div style="color: #27ae60; font-size: 1.3rem; font-weight: 700;">${formatarValor(fatura.valor_total)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          ${fatura.consulta ? `
+          <div style="margin-bottom: 25px; border: 1px solid #ecf0f1; border-radius: 8px; overflow: hidden;">
+            <div style="background-color: #f9f9f9; padding: 15px; border-bottom: 1px solid #ecf0f1;">
+              <h3 style="margin: 0; color: #2c3e50; font-size: 1.2rem;">Informações da Consulta</h3>
+            </div>
+            <div style="padding: 15px;">
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                <div>
+                  <div style="font-weight: 600; color: #7f8c8d; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase;">Data da Consulta</div>
+                  <div style="color: #2c3e50; font-size: 1rem;">${formatarData(fatura.consulta.data_hora)} às ${new Date(fatura.consulta.data_hora).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+                <div>
+                  <div style="font-weight: 600; color: #7f8c8d; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase;">Médico</div>
+                  <div style="color: #2c3e50; font-size: 1rem;">${fatura.consulta.medico?.nome || 'Não informado'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
+          ${fatura.servicos && fatura.servicos.length > 0 ? `
+          <div style="margin-bottom: 25px; border: 1px solid #ecf0f1; border-radius: 8px; overflow: hidden;">
+            <div style="background-color: #f9f9f9; padding: 15px; border-bottom: 1px solid #ecf0f1;">
+              <h3 style="margin: 0; color: #2c3e50; font-size: 1.2rem;">Serviços Prestados</h3>
+            </div>
+            <div style="padding: 15px;">
+              ${fatura.servicos.map(servico => `
+                <div style="padding: 10px; border-bottom: 1px solid #ecf0f1;">
+                  <div style="font-weight: 600; color: #2c3e50; margin-bottom: 5px;">${servico.nome}</div>
+                  <div style="font-size: 0.9rem; color: #7f8c8d;">
+                    ${servico.FaturaServico.quantidade}x ${parseFloat(servico.FaturaServico.preco_unitario).toFixed(2)}€ = <strong>${parseFloat(servico.FaturaServico.subtotal).toFixed(2)}€</strong>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          ${fatura.observacoes ? `
+          <div style="margin-bottom: 25px; border: 1px solid #ecf0f1; border-radius: 8px; overflow: hidden;">
+            <div style="background-color: #f9f9f9; padding: 15px; border-bottom: 1px solid #ecf0f1;">
+              <h3 style="margin: 0; color: #2c3e50; font-size: 1.2rem;">Observações</h3>
+            </div>
+            <div style="padding: 15px;">
+              <p style="margin: 0; color: #5d6d7e; line-height: 1.6;">${fatura.observacoes}</p>
+            </div>
+          </div>
+          ` : ''}
+
+          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; text-align: right; margin-top: 20px;">
+            <div style="font-size: 1.5rem; font-weight: 700; color: #27ae60;">
+              Total: ${formatarValor(fatura.valor_total)}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Configurações do PDF
+      const opt = {
+        margin: [0.5, 0.5, 0.5, 0.5],
+        filename: `fatura-${fatura.id}-${new Date().toISOString().split('T')[0]}.pdf`,
+        image: {
+          type: 'jpeg',
+          quality: 0.98
+        },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          allowTaint: false,
+          backgroundColor: '#ffffff'
+        },
+        jsPDF: {
+          unit: 'in',
+          format: 'a4',
+          orientation: 'portrait',
+          compress: true
+        },
+        pagebreak: {
+          mode: ['avoid-all', 'css', 'legacy']
+        }
+      };
+
+      console.log('Iniciando geração do PDF...');
+
+      await html2pdf()
+        .set(opt)
+        .from(pdfElement)
+        .toPdf()
+        .get('pdf')
+        .then((pdf) => {
+          console.log('PDF gerado com sucesso');
+          toast.success('PDF gerado com sucesso!');
+        })
+        .save()
+        .catch((error) => {
+          console.error('Erro na geração do PDF:', error);
+          throw error;
+        });
+
     } catch (error) {
-      console.error('Erro ao confirmar pagamento:', error);
-      toast.error('Não foi possível confirmar o pagamento');
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF. Tente novamente.');
+    } finally {
+      setGeneratingPDF(prev => ({ ...prev, [fatura.id]: false }));
     }
   };
 
@@ -323,13 +610,20 @@ function ClienteFaturasPage() {
               </FaturaBody>
 
               <FaturaActions>
-                <Button onClick={() => visualizarPDF(fatura.id)}>
-                  <i className="fas fa-file-pdf"></i> Visualizar PDF
+                <Button
+                  onClick={() => gerarPDFFatura(fatura)}
+                  disabled={generatingPDF[fatura.id]}
+                  generating={generatingPDF[fatura.id]}
+                >
+                  <i className="fas fa-file-pdf"></i> Gerar PDF
                 </Button>
 
-                {fatura.status?.nome === 'Emitida' && (
-                  <Button secondary onClick={() => confirmarPagamento(fatura.id)} style={{ marginLeft: '10px' }}>
-                    Confirmar Pagamento
+                {fatura.status?.nome.toLowerCase() === 'emitida' && (
+                  <Button
+                    secondary
+                    onClick={() => confirmarPagamento(fatura.id)}
+                  >
+                    <i className="fas fa-credit-card"></i> Pagar
                   </Button>
                 )}
               </FaturaActions>
@@ -346,4 +640,4 @@ function ClienteFaturasPage() {
   );
 }
 
-export default ClienteFaturasPage; 
+export default ClienteFaturasPage;

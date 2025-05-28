@@ -55,6 +55,59 @@ const getEstatisticas = async (req, res) => {
   }
 };
 
+const getFaturamentoPorPeriodo = async (req, res) => {
+  try {
+    const { periodo } = req.query; // 'week', 'month' ou 'year'
+    const now = new Date();
+    let startDate;
+    let groupFormat;
+
+    switch (periodo) {
+      case 'week':
+        // Começo da semana (segunda-feira)
+        const day = now.getDay(); // 0 (domingo) até 6 (sábado)
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+        startDate = new Date(now.setDate(diff));
+        groupFormat = 'YYYY-MM-DD';
+        break;
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        groupFormat = 'YYYY-MM-DD';
+        break;
+      case 'year':
+        startDate = new Date(now.getFullYear(), 0, 1);
+        groupFormat = 'YYYY-MM';
+        break;
+      default:
+        return res.status(400).json({ message: 'Período inválido. Use week, month ou year.' });
+    }
+
+    const faturamento = await Fatura.findAll({
+      attributes: [
+        [Sequelize.fn('to_char', Sequelize.col('createdAt'), groupFormat), 'periodo'],
+        [Sequelize.fn('SUM', Sequelize.col('valor_total')), 'valor']
+      ],
+      where: {
+        createdAt: {
+          [Op.gte]: startDate
+        }
+      },
+      group: ['periodo'],
+      order: [[Sequelize.literal('periodo'), 'ASC']]
+    });
+
+    const resultado = faturamento.map(entry => ({
+      periodo: entry.get('periodo'),
+      valor: parseFloat(entry.get('valor'))
+    }));
+
+    res.json(resultado);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Erro ao obter evolução do faturamento.', error: error.message });
+  }
+};
+
 const getEstatisticasPorStatus = async (req, res) => {
   try {
     // Busca todos os status com a contagem de consultas associadas
@@ -93,5 +146,6 @@ const getEstatisticasPorStatus = async (req, res) => {
 
 module.exports = {
   getEstatisticas,
-  getEstatisticasPorStatus
+  getEstatisticasPorStatus,
+  getFaturamentoPorPeriodo
 };

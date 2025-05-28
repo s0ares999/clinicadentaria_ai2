@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import api from '../../services/api.config';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import FaturaService from '../../services/fatura.service'; // ajuste o caminho conforme seu projeto
 
 
@@ -241,6 +241,7 @@ const AppointmentStatusCard = styled.div`
 `;
 
 const EstatisticasPage = () => {
+  const [faturamentoData, setFaturamentoData] = useState([]);
   const [topServices, setTopServices] = useState([]);
   const [stats, setStats] = useState({
     totalClientes: 0,
@@ -261,6 +262,26 @@ const EstatisticasPage = () => {
     fetchStats();
     fetchTopServices();
   }, []);
+
+  useEffect(() => {
+    fetchFaturamento(chartPeriod);
+  }, [chartPeriod]);
+
+  const fetchFaturamento = async (period) => {
+    try {
+      const response = await api.get(`/estatisticas/faturamento?periodo=${period}`);
+      const dadosFormatados = response.data.map(item => ({
+        nome: item.periodo,
+        valor: item.valor
+      }));
+
+      console.log('Faturamento:', dadosFormatados); // 👈 adicione aqui
+      setFaturamentoData(dadosFormatados);
+    } catch (error) {
+      console.error('Erro ao buscar evolução do faturamento:', error);
+    }
+  };
+
 
   const fetchStats = async () => {
     try {
@@ -415,12 +436,21 @@ const EstatisticasPage = () => {
             </button>
           </div>
         </div>
-        <div className="chart-placeholder">
-          Gráfico de Faturamento - {chartPeriod === 'week' ? 'Semanal' : chartPeriod === 'month' ? 'Mensal' : 'Anual'}
-          <br />
-          <small>(Será implementado com biblioteca de gráficos)</small>
-        </div>
+        {faturamentoData.length === 0 ? (
+          <div className="chart-placeholder">Sem dados para o período selecionado.</div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={faturamentoData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="nome" />
+              <YAxis />
+              <Tooltip formatter={(value) => formatCurrency(value)} />
+              <Line type="monotone" dataKey="valor" stroke="#3498db" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </ChartContainer>
+
 
       <TwoColumnGrid>
         <TopServicesCard>

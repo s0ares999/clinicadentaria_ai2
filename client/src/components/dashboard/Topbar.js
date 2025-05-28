@@ -222,10 +222,6 @@ const Topbar = ({ toggleSidebar, sidebarWidth }) => {
       </SearchBar>
 
       <UserMenu>
-        <Notifications>
-          <i className="fas fa-bell"></i>
-          <span className="badge">3</span>
-        </Notifications>
 
         <UserProfile isMenuOpen={isMenuOpen} onClick={toggleMenu}>
           <div className="avatar">

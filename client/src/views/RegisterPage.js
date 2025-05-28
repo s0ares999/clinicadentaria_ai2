@@ -17,8 +17,9 @@ const MainContent = styled.main`
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 2rem;
+  padding: 3rem;
   background-color: #f8f9fa;
+  margin-top: 80px;
 `;
 
 const RegisterCard = styled.div`

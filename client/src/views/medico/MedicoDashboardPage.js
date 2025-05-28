@@ -25,6 +25,7 @@ const Sidebar = styled.div`
   height: calc(100vh - 64px);
   overflow-y: auto;
   z-index: 98;
+  margin-top: 15px;
 `;
 
 const MainContent = styled.div`

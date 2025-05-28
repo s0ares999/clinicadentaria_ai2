@@ -31,10 +31,9 @@ const Sidebar = styled.div`
   width: 250px;
   background-color: #2c3e50;
   color: #ecf0f1;
-  padding: 1.5rem 0;
-  height: calc(120vh - 10px);
+  height: auto;
   position: relative;
-  top: 0;
+  
 `;
 
 const SidebarHeader = styled.div`
@@ -105,6 +104,7 @@ const MainContent = styled.div`
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
+  margin-top: 50px;
 `;
 
 const DashboardHeader = styled.div`

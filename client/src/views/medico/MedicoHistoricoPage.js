@@ -19,13 +19,13 @@ function MedicoHistoricoPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadConsultasMedico();
+    loadConsultasConcluidasMedico();
   }, []);
 
-  const loadConsultasMedico = async () => {
+  const loadConsultasConcluidasMedico = async () => {
     try {
       setLoading(true);
-      const consultasResponse = await ConsultaService.getConsultasMedico();
+      const consultasResponse = await ConsultaService.getConsultasConcluidas();
 
       // Para cada consulta, verifica se tem fatura
       const consultasComFatura = await Promise.all(
@@ -45,8 +45,8 @@ function MedicoHistoricoPage() {
       setConsultas(consultasComFatura);
       setLoading(false);
     } catch (error) {
-      console.error('Erro ao carregar histórico de consultas:', error);
-      toast.error('Erro ao carregar histórico de consultas');
+      console.error('Erro ao carregar histórico de consultas concluídas:', error);
+      toast.error('Erro ao carregar histórico de consultas concluídas');
       setConsultas([]);
       setLoading(false);
     }
@@ -59,7 +59,7 @@ function MedicoHistoricoPage() {
       </Typography>
 
       <Button
-        onClick={loadConsultasMedico}
+        onClick={loadConsultasConcluidasMedico}
         variant="contained"
         sx={{ marginBottom: '1rem' }}
       >
@@ -81,7 +81,7 @@ function MedicoHistoricoPage() {
                 <TableCell>Data/Hora</TableCell>
                 <TableCell>Paciente</TableCell>
                 <TableCell>Observações</TableCell>
-                <TableCell>Fatura</TableCell> {/* Nova coluna */}
+                <TableCell>Fatura</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

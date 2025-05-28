@@ -1,6 +1,6 @@
 import api from './api.config';
 import AuthService from './auth.service';
-import UtilizadorService from './utilizador.service';
+
 
 class MedicoService {
   async getMedicoPerfil() {

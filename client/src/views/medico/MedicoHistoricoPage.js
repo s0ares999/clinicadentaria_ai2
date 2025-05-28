@@ -7,33 +7,42 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Button,
   Typography,
-  Box
+  Box,
+  Button
 } from '@mui/material';
 import { toast } from 'react-hot-toast';
-import MedicoService from '../../services/medico.service';
-import FaturaService from '../../services/fatura.service';
 import ConsultaService from '../../services/consulta.service';
-import api from '../../services/api.config';
 
 function MedicoHistoricoPage() {
   const [consultas, setConsultas] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadConsultasConcluidas();
+    loadConsultasMedico();
   }, []);
 
-  const loadConsultasConcluidas = async () => {
+  const loadConsultasMedico = async () => {
     try {
       setLoading(true);
-      console.log("Carregando histórico de consultas concluídas...");
-      
-      const response = await MedicoService.getConsultasConcluidas();
-      console.log("Consultas concluídas carregadas:", response);
-      
-      setConsultas(response || []);
+      const consultasResponse = await ConsultaService.getConsultasMedico();
+
+      // Para cada consulta, verifica se tem fatura
+      const consultasComFatura = await Promise.all(
+        (consultasResponse || []).map(async (consulta) => {
+          try {
+            const fatura = await ConsultaService.getFaturaFromConsulta(consulta.id);
+            return {
+              ...consulta,
+              tem_fatura: !!fatura?.id
+            };
+          } catch {
+            return { ...consulta, tem_fatura: false };
+          }
+        })
+      );
+
+      setConsultas(consultasComFatura);
       setLoading(false);
     } catch (error) {
       console.error('Erro ao carregar histórico de consultas:', error);
@@ -43,44 +52,24 @@ function MedicoHistoricoPage() {
     }
   };
 
-  const handleViewFatura = async (consulta) => {
-    try {
-      console.log("Buscando fatura para consulta ID:", consulta.id);
-      
-      // Usar o serviço de consulta para buscar a fatura
-      const fatura = await ConsultaService.getFaturaFromConsulta(consulta.id);
-      console.log("Fatura encontrada:", fatura);
-      
-      if (fatura && fatura.id) {
-        // Obter URL do PDF e abrir em nova aba
-        const pdfUrl = FaturaService.getPDFUrl(fatura.id);
-        console.log("URL do PDF:", pdfUrl);
-        window.open(pdfUrl, '_blank');
-      } else {
-        toast.error('Não foi possível localizar a fatura desta consulta');
-      }
-    } catch (error) {
-      console.error('Erro ao buscar fatura:', error);
-      toast.error('Erro ao buscar informações da fatura');
-    }
-  };
-
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
         Histórico de Consultas Concluídas
       </Typography>
-      
-      <button 
-        onClick={() => loadConsultasConcluidas()} 
-        style={{padding: '0.5rem 1rem', margin: '1rem 0'}}>
+
+      <Button
+        onClick={loadConsultasMedico}
+        variant="contained"
+        sx={{ marginBottom: '1rem' }}
+      >
         Atualizar Histórico
-      </button>
+      </Button>
 
       {loading ? (
         <p>Carregando histórico...</p>
       ) : consultas.length === 0 ? (
-        <div style={{textAlign: 'center', padding: '2rem'}}>
+        <div style={{ textAlign: 'center', padding: '2rem' }}>
           <p>Nenhuma consulta concluída encontrada.</p>
           <small>Quando você finalizar consultas, elas aparecerão aqui.</small>
         </div>
@@ -92,7 +81,7 @@ function MedicoHistoricoPage() {
                 <TableCell>Data/Hora</TableCell>
                 <TableCell>Paciente</TableCell>
                 <TableCell>Observações</TableCell>
-                <TableCell>Fatura</TableCell>
+                <TableCell>Fatura</TableCell> {/* Nova coluna */}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -105,15 +94,9 @@ function MedicoHistoricoPage() {
                   </TableCell>
                   <TableCell>
                     {consulta.tem_fatura ? (
-                      <Button
-                        color="success"
-                        variant="outlined"
-                        onClick={() => handleViewFatura(consulta)}
-                      >
-                        Ver Fatura
-                      </Button>
+                      <span style={{ color: 'green', fontWeight: 'bold' }}>Emitida</span>
                     ) : (
-                      <span style={{ color: '#777' }}>Sem fatura</span>
+                      <span style={{ color: '#777' }}>Não emitida</span>
                     )}
                   </TableCell>
                 </TableRow>
@@ -126,4 +109,4 @@ function MedicoHistoricoPage() {
   );
 }
 
-export default MedicoHistoricoPage; 
+export default MedicoHistoricoPage;

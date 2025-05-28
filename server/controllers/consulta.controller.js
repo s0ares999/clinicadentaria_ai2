@@ -515,65 +515,67 @@ const ConsultaController = {
   },
 
   // Retorna todas as consultas concluídas de um médico específico - ATUALIZADO  
-  getConsultasConcluidasByMedico: async (req, res) => {
-    try {
-      const medicoId = req.params.id;
-      
-      // Buscar o ID do status "Concluída"
-      const statusConcluida = await db.ConsultaStatus.findOne({
-        where: { nome: 'Concluída' }
-      });
-      
-      if (!statusConcluida) {
-        return res.status(404).json({ message: "Status 'Concluída' não encontrado" });
-      }
-      
-      // Buscar consultas concluídas do médico específico
-      const consultas = await Consulta.findAll({
-        where: { 
-          status_id: statusConcluida.id,
-          medico_id: medicoId // Agora filtramos pelo médico específico
-        },
-        include: [
-          {
-            model: Utilizador,
-            as: 'utilizador',
-            attributes: ['id', 'nome', 'email', 'telefone']
-          },
-          {
-            model: Utilizador,
-            as: 'medico',
-            attributes: ['id', 'nome', 'email', 'telefone']
-          },
-          {
-            model: db.ConsultaStatus,
-            as: 'status'
-          }
-        ],
-        order: [['data_hora', 'DESC']]
-      });
-      
-      // Verificar se cada consulta já possui fatura associada
-      const consultasComInfo = await Promise.all(consultas.map(async (consulta) => {
-        const fatura = await db.Fatura.findOne({
-          where: { consulta_id: consulta.id }
-        });
-        
-        return {
-          ...consulta.toJSON(),
-          tem_fatura: !!fatura
-        };
-      }));
-      
-      return res.status(200).json(consultasComInfo);
-    } catch (error) {
-      console.error("Erro ao buscar consultas concluídas do médico:", error);
-      return res.status(500).json({ 
-        message: "Erro ao buscar consultas concluídas", 
-        error: error.message 
-      });
+ getConsultasConcluidasByMedico: async (req, res) => {
+  try {
+    const medicoId = req.params.id;
+
+    // Buscar o ID do status "Concluída"
+    const statusConcluida = await db.ConsultaStatus.findOne({
+      where: { nome: 'Concluída' }
+    });
+
+    if (!statusConcluida) {
+      return res.status(404).json({ message: "Status 'Concluída' não encontrado" });
     }
-  },
+
+    // Buscar consultas concluídas do médico específico, incluindo a fatura
+    const consultas = await Consulta.findAll({
+      where: { 
+        status_id: statusConcluida.id,
+        medico_id: medicoId
+      },
+      include: [
+        {
+          model: Utilizador,
+          as: 'utilizador',
+          attributes: ['id', 'nome', 'email', 'telefone']
+        },
+        {
+          model: Utilizador,
+          as: 'medico',
+          attributes: ['id', 'nome', 'email', 'telefone']
+        },
+        {
+          model: db.ConsultaStatus,
+          as: 'status'
+        },
+        {
+          model: db.Fatura,
+          as: 'fatura', // inclui a fatura associada
+          attributes: ['id'] // só precisa do id para saber se existe
+        }
+      ],
+      order: [['data_hora', 'DESC']]
+    });
+
+    // Adiciona a propriedade tem_fatura com base na existência da fatura
+    const consultasComInfo = consultas.map(consulta => {
+      const jsonConsulta = consulta.toJSON();
+      return {
+        ...jsonConsulta,
+        tem_fatura: !!jsonConsulta.fatura
+      };
+    });
+
+    return res.status(200).json(consultasComInfo);
+  } catch (error) {
+    console.error("Erro ao buscar consultas concluídas do médico:", error);
+    return res.status(500).json({ 
+      message: "Erro ao buscar consultas concluídas", 
+      error: error.message 
+    });
+  }
+},
 
   // getFatura: Busca a fatura associada a uma consulta
   getFatura: async (req, res) => {

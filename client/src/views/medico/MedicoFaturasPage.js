@@ -176,7 +176,7 @@ const FormGroup = styled.div`
 
 function MedicoFaturasPage() {
   const [faturas, setFaturas] = useState([]);
-  const [consultasConcluidas, setConsultasConcluidas] = useState([]);
+  const [consultas, setConsultas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('todas');
   const [showModal, setShowModal] = useState(false);
@@ -195,19 +195,28 @@ function MedicoFaturasPage() {
     try {
       const [faturasResponse, consultasResponse] = await Promise.all([
         FaturaService.getFaturasByMedico(),
-        ConsultaService.getConsultasConcluidas()
+        ConsultaService.getConsultasMedico() // <-- usando método para buscar consultas do médico autenticado
       ]);
-      
-      console.log("Faturas carregadas da API:", faturasResponse);
-      
+
       setFaturas(faturasResponse || []);
-      
-      // Filtrar consultas que ainda não têm faturas
-      const consultasSemFatura = consultasResponse.filter(consulta => 
-        !consulta.tem_fatura && consulta.status?.nome === 'Concluída'
+
+      // Mapear IDs das consultas que já têm faturas
+      const consultasComFaturaIds = new Set(
+        (faturasResponse || []).map(fatura => fatura.consulta_id)
       );
-      setConsultasConcluidas(consultasSemFatura || []);
-      
+
+      // Adiciona flag indicando se consulta já tem fatura
+      const consultasComFlagFatura = (consultasResponse || []).map(consulta => ({
+        ...consulta,
+        tem_fatura: consultasComFaturaIds.has(consulta.id)
+      }));
+
+      // Filtrar consultas concluídas que não têm fatura
+      const consultasSemFatura = consultasComFlagFatura.filter(
+        consulta => !consulta.tem_fatura && consulta.status?.nome === 'Concluída'
+      );
+
+      setConsultas(consultasSemFatura);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Não foi possível carregar os dados");
@@ -227,8 +236,7 @@ function MedicoFaturasPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validar valor total
+
     let valorTotal;
     try {
       valorTotal = parseFloat(formData.valor_total);
@@ -240,35 +248,24 @@ function MedicoFaturasPage() {
       toast.error("O valor informado é inválido");
       return;
     }
-    
+
     try {
-      console.log("Enviando dados para criar fatura:", {
+      await FaturaService.criarFatura({
         consulta_id: consultaSelecionada.id,
         valor_total: valorTotal,
         observacoes: formData.observacoes,
         status_id: 1
       });
-      
-      const response = await FaturaService.criarFatura(consultaSelecionada.id, {
-        valor_total: valorTotal,
-        observacoes: formData.observacoes,
-        status_id: 1 // 1 = Emitida
-      });
-      
-      console.log("Resposta da criação de fatura:", response);
+
       toast.success("Fatura criada com sucesso");
       setShowModal(false);
       carregarDados();
-      
     } catch (error) {
       console.error("Erro ao criar fatura:", error);
-      
-      // Tentar extrair mensagem de erro mais específica da resposta da API
       let mensagemErro = "Erro ao criar fatura";
       if (error.response && error.response.data) {
         mensagemErro = error.response.data.message || mensagemErro;
       }
-      
       toast.error(mensagemErro);
     }
   };
@@ -284,11 +281,11 @@ function MedicoFaturasPage() {
 
   const getStatusClass = (status) => {
     if (!status) return '';
-    
+
     switch (status.nome?.toLowerCase()) {
       case 'emitida':
         return 'emitida';
-      case 'paga': 
+      case 'paga':
         return 'paga';
       case 'cancelada':
         return 'cancelada';
@@ -313,7 +310,7 @@ function MedicoFaturasPage() {
             <i className="fas fa-sync"></i> Atualizar
           </Button>
         </SectionTitle>
-        
+
         <TabsContainer>
           <Tab active={activeTab === 'todas'} onClick={() => setActiveTab('todas')}>
             Todas
@@ -328,23 +325,23 @@ function MedicoFaturasPage() {
             Canceladas
           </Tab>
         </TabsContainer>
-        
+
         {loading ? (
           <EmptyState>Carregando faturas...</EmptyState>
         ) : (
-          <MedicoFaturasListagemComponent 
-            faturas={filtrarFaturas()} 
-            recarregarDados={carregarDados} 
+          <MedicoFaturasListagemComponent
+            faturas={filtrarFaturas()}
+            recarregarDados={carregarDados}
           />
         )}
-        
+
         {activeTab === 'todas' && (
           <>
             <SectionTitle style={{ marginTop: '2rem' }}>
               Consultas Concluídas sem Fatura
             </SectionTitle>
-            
-            {consultasConcluidas.length > 0 ? (
+
+            {consultas.length > 0 ? (
               <TableContainer>
                 <Table>
                   <thead>
@@ -357,7 +354,7 @@ function MedicoFaturasPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {consultasConcluidas.map(consulta => (
+                    {consultas.map(consulta => (
                       <tr key={consulta.id}>
                         <td>#{consulta.id}</td>
                         <td>{formatarData(consulta.data_hora)}</td>
@@ -381,7 +378,7 @@ function MedicoFaturasPage() {
           </>
         )}
       </FaturasContainer>
-      
+
       {/* Modal para criar fatura */}
       {showModal && (
         <Dialog>
@@ -389,53 +386,32 @@ function MedicoFaturasPage() {
             <DialogTitle>Criar Fatura</DialogTitle>
             <form onSubmit={handleSubmit}>
               <FormGroup>
-                <label>Consulta</label>
-                <input 
-                  type="text" 
-                  value={`Consulta #${consultaSelecionada.id} - ${formatarData(consultaSelecionada.data_hora)}`} 
-                  disabled 
-                />
-              </FormGroup>
-              
-              <FormGroup>
-                <label>Paciente</label>
-                <input 
-                  type="text" 
-                  value={consultaSelecionada.utilizador?.nome || 'Paciente'} 
-                  disabled 
-                />
-              </FormGroup>
-              
-              <FormGroup>
-                <label>Valor (€) *</label>
-                <input 
+                <label>Valor Total (€)</label>
+                <input
                   type="number"
                   step="0.01"
                   value={formData.valor_total}
-                  onChange={e => setFormData({...formData, valor_total: e.target.value})}
+                  onChange={e => setFormData({ ...formData, valor_total: e.target.value })}
                   required
+                  min="0.01"
                 />
               </FormGroup>
-              
               <FormGroup>
                 <label>Observações</label>
-                <textarea 
-                  rows="3"
+                <textarea
+                  rows={3}
                   value={formData.observacoes}
-                  onChange={e => setFormData({...formData, observacoes: e.target.value})}
-                ></textarea>
+                  onChange={e => setFormData({ ...formData, observacoes: e.target.value })}
+                />
               </FormGroup>
-              
-              <ButtonGroup style={{ justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                <Button 
-                  type="button" 
-                  onClick={() => setShowModal(false)} 
-                  style={{ backgroundColor: '#7f8c8d' }}
+              <ButtonGroup>
+                <Button type="submit">Criar</Button>
+                <Button
+                  type="button"
+                  secondary
+                  onClick={() => setShowModal(false)}
                 >
                   Cancelar
-                </Button>
-                <Button type="submit">
-                  Emitir Fatura
                 </Button>
               </ButtonGroup>
             </form>
@@ -446,4 +422,4 @@ function MedicoFaturasPage() {
   );
 }
 
-export default MedicoFaturasPage; 
+export default MedicoFaturasPage;

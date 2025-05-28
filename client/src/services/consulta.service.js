@@ -62,10 +62,6 @@ class ConsultaService {
     }
   }
 
-  // CORRIGIDO: Rota estava errada, não existe /medico/:id
-  async getConsultasByMedico(medicoId) {
-    return api.get(`consultas/utilizador/${medicoId}?tipo=medico`);
-  }
 
   async getConsultasMedico() {
     try {

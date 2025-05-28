@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import html2pdf from 'html2pdf.js/dist/html2pdf.min.js';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import api from '../../services/api.config';
@@ -20,6 +21,10 @@ const Header = styled.div`
     align-items: flex-start;
     gap: 15px;
   }
+  
+  @media print {
+    display: none;
+  }
 `;
 
 const BackButton = styled.button`
@@ -39,6 +44,10 @@ const BackButton = styled.button`
   i {
     margin-right: 8px;
   }
+  
+  @media print {
+    display: none;
+  }
 `;
 
 const PageTitle = styled.h1`
@@ -54,6 +63,10 @@ const ActionButtons = styled.div`
   @media (max-width: 768px) {
     width: 100%;
     justify-content: stretch;
+  }
+  
+  @media print {
+    display: none;
   }
 `;
 
@@ -83,12 +96,31 @@ const ActionButton = styled.button`
   }
 `;
 
+// Container específico para PDF
+const PDFContainer = styled.div`
+  background: white;
+  
+  @media print {
+    margin: 0;
+    padding: 20px;
+    box-shadow: none;
+  }
+`;
+
 const Card = styled.div`
   background-color: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   padding: 30px;
   margin-bottom: 25px;
+  
+  @media print {
+    box-shadow: none;
+    border: 1px solid #ddd;
+    border-radius: 0;
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+  }
 `;
 
 const CardHeader = styled.div`
@@ -145,21 +177,31 @@ const StatusBadge = styled.span`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  width: 90px;
+  text-align: center;
   
   &.emitida {
     color: #3498db;
+    background-color: rgba(52, 152, 219, 0.1);
+    border: 1px solid #3498db;
   }
   
   &.paga {
     color: #2ecc71;
+    background-color: rgba(46, 204, 113, 0.1);
+    border: 1px solid #2ecc71;
   }
   
   &.pendente {
     color: #f39c12;
+    background-color: rgba(243, 156, 18, 0.1);
+    border: 1px solid #f39c12;
   }
   
   &.cancelada {
     color: #e74c3c;
+    background-color: rgba(231, 76, 60, 0.1);
+    border: 1px solid #e74c3c;
   }
 `;
 
@@ -194,6 +236,12 @@ const ServicesTable = styled.table`
     
     th, td {
       padding: 10px 8px;
+    }
+  }
+  
+  @media print {
+    tbody tr:hover {
+      background-color: transparent;
     }
   }
 `;
@@ -290,298 +338,381 @@ const ErrorContainer = styled.div`
 `;
 
 const FaturaDetalhesPage = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [fatura, setFatura] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [fatura, setFatura] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [generatingPDF, setGeneratingPDF] = useState(false);
 
-  useEffect(() => {
-    fetchFaturaDetalhes();
-  }, [id]);
+    const pdfRef = useRef();
 
-  const fetchFaturaDetalhes = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      
-      // Buscar todas as faturas e encontrar a específica
-      const response = await api.get('/faturas');
-      const faturas = response.data.faturas || [];
-      const faturaEncontrada = faturas.find(f => f.id === parseInt(id));
-      
-      if (faturaEncontrada) {
-        setFatura(faturaEncontrada);
-      } else {
-        setError('Fatura não encontrada');
-      }
-      
-    } catch (error) {
-      console.error('Erro ao buscar detalhes da fatura:', error);
-      setError('Erro ao carregar detalhes da fatura');
-    } finally {
-      setLoading(false);
+    useEffect(() => {
+        fetchFaturaDetalhes();
+    }, [id]);
+
+    const fetchFaturaDetalhes = async () => {
+        try {
+            setLoading(true);
+            setError('');
+
+            // Buscar todas as faturas e encontrar a específica
+            const response = await api.get('/faturas');
+            const faturas = response.data.faturas || [];
+            const faturaEncontrada = faturas.find(f => f.id === parseInt(id));
+
+            if (faturaEncontrada) {
+                setFatura(faturaEncontrada);
+            } else {
+                setError('Fatura não encontrada');
+            }
+
+        } catch (error) {
+            console.error('Erro ao buscar detalhes da fatura:', error);
+            setError('Erro ao carregar detalhes da fatura');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGeneratePDF = async () => {
+        if (!pdfRef.current) {
+            console.error('Referência do PDF não encontrada');
+            alert('Erro ao gerar PDF: elemento não encontrado');
+            return;
+        }
+
+        try {
+            setGeneratingPDF(true);
+
+            const element = pdfRef.current;
+
+            const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5],
+                filename: `fatura-${fatura.id}-${new Date().toISOString().split('T')[0]}.pdf`,
+                image: {
+                    type: 'jpeg',
+                    quality: 0.98
+                },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    letterRendering: true,
+                    allowTaint: false,
+                    backgroundColor: '#ffffff'
+                },
+                jsPDF: {
+                    unit: 'in',
+                    format: 'a4',
+                    orientation: 'portrait',
+                    compress: true
+                },
+                pagebreak: {
+                    mode: ['avoid-all', 'css', 'legacy']
+                }
+            };
+
+            console.log('Iniciando geração do PDF...');
+
+            await html2pdf()
+                .set(opt)
+                .from(element)
+                .toPdf()
+                .get('pdf')
+                .then((pdf) => {
+                    console.log('PDF gerado com sucesso');
+                })
+                .save()
+                .catch((error) => {
+                    console.error('Erro na geração do PDF:', error);
+                    throw error;
+                });
+
+        } catch (error) {
+            console.error('Erro ao gerar PDF:', error);
+            alert('Erro ao gerar PDF. Por favor, tente novamente.');
+        } finally {
+            setGeneratingPDF(false);
+        }
+    };
+
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('pt-PT', {
+            style: 'currency',
+            currency: 'EUR'
+        }).format(value || 0);
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Data não disponível';
+        return new Date(dateString).toLocaleDateString('pt-PT', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
+
+    const formatDateTime = (dateString) => {
+        if (!dateString) return 'Data não disponível';
+        return new Date(dateString).toLocaleString('pt-PT');
+    };
+
+    const getStatusBadgeClass = (status) => {
+        if (!status || !status.nome) return '';
+        return status.nome.toLowerCase();
+    };
+
+    const handleDelete = async () => {
+        if (window.confirm('Tem certeza que deseja deletar esta fatura? Esta ação não pode ser desfeita.')) {
+            try {
+                await api.delete(`/faturas/${id}`);
+                navigate('/faturas');
+            } catch (error) {
+                console.error('Erro ao deletar fatura:', error);
+                alert('Erro ao deletar fatura');
+            }
+        }
+    };
+
+    if (loading) {
+        return (
+            <Container>
+                <LoadingContainer>
+                    <i className="fas fa-spinner fa-spin"></i>
+                    <p>Carregando detalhes da fatura...</p>
+                </LoadingContainer>
+            </Container>
+        );
     }
-  };
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-PT', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(value || 0);
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Data não disponível';
-    return new Date(dateString).toLocaleDateString('pt-PT', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const formatDateTime = (dateString) => {
-    if (!dateString) return 'Data não disponível';
-    return new Date(dateString).toLocaleString('pt-PT');
-  };
-
-  const getStatusBadgeClass = (status) => {
-    if (!status || !status.nome) return '';
-    return status.nome.toLowerCase();
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDelete = async () => {
-    if (window.confirm('Tem certeza que deseja deletar esta fatura? Esta ação não pode ser desfeita.')) {
-      try {
-        await api.delete(`/faturas/${id}`);
-        navigate('/faturas');
-      } catch (error) {
-        console.error('Erro ao deletar fatura:', error);
-        alert('Erro ao deletar fatura');
-      }
+    if (error) {
+        return (
+            <Container>
+                <ErrorContainer>
+                    <h3>Erro</h3>
+                    <p>{error}</p>
+                    <button onClick={fetchFaturaDetalhes}>Tentar Novamente</button>
+                </ErrorContainer>
+            </Container>
+        );
     }
-  };
 
-  if (loading) {
+    if (!fatura) {
+        return (
+            <Container>
+                <ErrorContainer>
+                    <h3>Fatura não encontrada</h3>
+                    <p>A fatura solicitada não foi encontrada.</p>
+                    <button onClick={() => navigate(-1)}>Voltar às Faturas</button>
+                </ErrorContainer>
+            </Container>
+        );
+    }
+
+    const subtotal = fatura.servicos?.reduce((sum, servico) =>
+        sum + parseFloat(servico.FaturaServico?.subtotal || 0), 0) || 0;
+
     return (
-      <Container>
-        <LoadingContainer>
-          <i className="fas fa-spinner fa-spin"></i>
-          <p>Carregando detalhes da fatura...</p>
-        </LoadingContainer>
-      </Container>
+        <Container>
+            <BackButton onClick={() => navigate(-1)}>
+                <i className="fas fa-arrow-left"></i>
+                Voltar às Faturas
+            </BackButton>
+
+            <Header>
+                <PageTitle>Fatura #{fatura.id}</PageTitle>
+                <ActionButtons>
+                    <ActionButton
+                        onClick={handleGeneratePDF}
+                        disabled={generatingPDF}
+                    >
+                        <i className={generatingPDF ? "fas fa-spinner fa-spin" : "fas fa-file-pdf"}></i>
+                        {generatingPDF ? 'Gerando PDF...' : 'Gerar PDF'}
+                    </ActionButton>
+                    <ActionButton variant="danger" onClick={handleDelete}>
+                        <i className="fas fa-trash"></i>
+                        Deletar
+                    </ActionButton>
+                </ActionButtons>
+            </Header>
+
+            {/* Container específico para o PDF */}
+            <PDFContainer ref={pdfRef}>
+                {/* Cabeçalho do PDF (só aparece no PDF) */}
+                <div style={{
+                    display: 'none',
+                    '@media print': { display: 'block' },
+                    textAlign: 'center',
+                    marginBottom: '30px',
+                    paddingBottom: '20px',
+                    borderBottom: '2px solid #3498db'
+                }}>
+                    <h1 style={{ color: '#2c3e50', margin: '0 0 10px 0' }}>
+                        Fatura #{fatura.id}
+                    </h1>
+                    <p style={{ color: '#7f8c8d', margin: 0 }}>
+                        Gerado em {new Date().toLocaleString('pt-PT')}
+                    </p>
+                </div>
+
+                {/* Informações Gerais da Fatura */}
+                <Card>
+                    <CardHeader>
+                        <h2>
+                            <i className="fas fa-file-invoice-dollar"></i>
+                            Informações da Fatura
+                        </h2>
+                    </CardHeader>
+
+                    <InfoGrid>
+                        <InfoItem>
+                            <label>ID da Fatura</label>
+                            <span>#{fatura.id}</span>
+                        </InfoItem>
+                        <InfoItem>
+                            <label>Status</label>
+                            <StatusBadge className={getStatusBadgeClass(fatura.status)}>
+                                {fatura.status?.nome || 'N/A'}
+                            </StatusBadge>
+                        </InfoItem>
+                        <InfoItem>
+                            <label>Data de Emissão</label>
+                            <span>{formatDate(fatura.createdAt)}</span>
+                        </InfoItem>
+                        <InfoItem>
+                            <label>Valor Total</label>
+                            <span style={{ fontSize: '1.3rem', fontWeight: '700', color: '#27ae60' }}>
+                                {formatCurrency(fatura.valor_total)}
+                            </span>
+                        </InfoItem>
+                    </InfoGrid>
+                </Card>
+
+                {/* Informações da Consulta */}
+                <Card>
+                    <CardHeader>
+                        <h2>
+                            <i className="fas fa-calendar-check"></i>
+                            Informações da Consulta
+                        </h2>
+                    </CardHeader>
+
+                    <InfoGrid>
+                        <InfoItem>
+                            <label>ID da Consulta</label>
+                            <span>#{fatura.consulta?.id}</span>
+                        </InfoItem>
+                        <InfoItem>
+                            <label>Data da Consulta</label>
+                            <span>{formatDateTime(fatura.consulta?.data_hora)}</span>
+                        </InfoItem>
+                        <InfoItem>
+                            <label>Status da Consulta</label>
+                            <StatusBadge className={getStatusBadgeClass(fatura.consulta?.status)}>
+                                {fatura.consulta?.status?.nome || 'N/A'}
+                            </StatusBadge>
+                        </InfoItem>
+                    </InfoGrid>
+                </Card>
+
+                {/* Informações do Cliente e Médico */}
+                <Card>
+                    <CardHeader>
+                        <h2>
+                            <i className="fas fa-users"></i>
+                            Cliente e Médico
+                        </h2>
+                    </CardHeader>
+
+                    <InfoGrid>
+                        <InfoItem>
+                            <label>Cliente</label>
+                            <span>{fatura.consulta?.utilizador?.nome || 'N/A'}</span>
+                        </InfoItem>
+                        <InfoItem>
+                            <label>Email do Cliente</label>
+                            <span>{fatura.consulta?.utilizador?.email || 'N/A'}</span>
+                        </InfoItem>
+                        <InfoItem>
+                            <label>Médico</label>
+                            <span>{fatura.consulta?.medico?.nome || 'N/A'}</span>
+                        </InfoItem>
+                        <InfoItem>
+                            <label>Email do Médico</label>
+                            <span>{fatura.consulta?.medico?.email || 'N/A'}</span>
+                        </InfoItem>
+                    </InfoGrid>
+                </Card>
+
+                {/* Serviços */}
+                <Card>
+                    <CardHeader>
+                        <h2>
+                            <i className="fas fa-list-ul"></i>
+                            Serviços Prestados
+                        </h2>
+                    </CardHeader>
+
+                    {fatura.servicos && fatura.servicos.length > 0 ? (
+                        <>
+                            <ServicesTable>
+                                <thead>
+                                    <tr>
+                                        <th>Serviço</th>
+                                        <th>Descrição</th>
+                                        <th>Quantidade</th>
+                                        <th>Preço Unitário</th>
+                                        <th>Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {fatura.servicos.map((servico, index) => (
+                                        <tr key={index}>
+                                            <td style={{ fontWeight: '600' }}>{servico.nome}</td>
+                                            <td>{servico.descricao || 'Sem descrição'}</td>
+                                            <td>{servico.FaturaServico?.quantidade || 1}</td>
+                                            <td>{formatCurrency(servico.FaturaServico?.preco_unitario)}</td>
+                                            <td style={{ fontWeight: '600' }}>
+                                                {formatCurrency(servico.FaturaServico?.subtotal)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </ServicesTable>
+
+                            <TotalSection>
+                                <div className="total-row">
+                                    <span>Subtotal:</span>
+                                    <span>{formatCurrency(subtotal)}</span>
+                                </div>
+                                <div className="total-row final-total">
+                                    <span>Total:</span>
+                                    <span>{formatCurrency(fatura.valor_total)}</span>
+                                </div>
+                            </TotalSection>
+                        </>
+                    ) : (
+                        <p style={{ textAlign: 'center', color: '#7f8c8d', padding: '20px' }}>
+                            Nenhum serviço encontrado para esta fatura.
+                        </p>
+                    )}
+                </Card>
+
+                {/* Observações */}
+                {fatura.observacoes && (
+                    <Card>
+                        <ObservationsSection>
+                            <h4>
+                                <i className="fas fa-sticky-note"></i>
+                                Observações
+                            </h4>
+                            <p>{fatura.observacoes}</p>
+                        </ObservationsSection>
+                    </Card>
+                )}
+            </PDFContainer>
+        </Container>
     );
-  }
-
-  if (error) {
-    return (
-      <Container>
-        <ErrorContainer>
-          <h3>Erro</h3>
-          <p>{error}</p>
-          <button onClick={fetchFaturaDetalhes}>Tentar Novamente</button>
-        </ErrorContainer>
-      </Container>
-    );
-  }
-
-  if (!fatura) {
-    return (
-      <Container>
-        <ErrorContainer>
-          <h3>Fatura não encontrada</h3>
-          <p>A fatura solicitada não foi encontrada.</p>
-          <button onClick={() => navigate('/faturas')}>Voltar às Faturas</button>
-        </ErrorContainer>
-      </Container>
-    );
-  }
-
-  const subtotal = fatura.servicos?.reduce((sum, servico) => 
-    sum + parseFloat(servico.FaturaServico?.subtotal || 0), 0) || 0;
-
-  return (
-    <Container>
-      <BackButton onClick={() => navigate('/faturas')}>
-        <i className="fas fa-arrow-left"></i>
-        Voltar às Faturas
-      </BackButton>
-
-      <Header>
-        <PageTitle>Fatura #{fatura.id}</PageTitle>
-        <ActionButtons>
-          <ActionButton onClick={handlePrint}>
-            <i className="fas fa-print"></i>
-            Imprimir
-          </ActionButton>
-          <ActionButton variant="danger" onClick={handleDelete}>
-            <i className="fas fa-trash"></i>
-            Deletar
-          </ActionButton>
-        </ActionButtons>
-      </Header>
-
-      {/* Informações Gerais da Fatura */}
-      <Card>
-        <CardHeader>
-          <h2>
-            <i className="fas fa-file-invoice-dollar"></i>
-            Informações da Fatura
-          </h2>
-        </CardHeader>
-        
-        <InfoGrid>
-          <InfoItem>
-            <label>ID da Fatura</label>
-            <span>#{fatura.id}</span>
-          </InfoItem>
-          <InfoItem>
-            <label>Status</label>
-            <StatusBadge className={getStatusBadgeClass(fatura.status)}>
-              {fatura.status?.nome || 'N/A'}
-            </StatusBadge>
-          </InfoItem>
-          <InfoItem>
-            <label>Data de Emissão</label>
-            <span>{formatDate(fatura.createdAt)}</span>
-          </InfoItem>
-          <InfoItem>
-            <label>Valor Total</label>
-            <span style={{ fontSize: '1.3rem', fontWeight: '700', color: '#27ae60' }}>
-              {formatCurrency(fatura.valor_total)}
-            </span>
-          </InfoItem>
-        </InfoGrid>
-      </Card>
-
-      {/* Informações da Consulta */}
-      <Card>
-        <CardHeader>
-          <h2>
-            <i className="fas fa-calendar-check"></i>
-            Informações da Consulta
-          </h2>
-        </CardHeader>
-        
-        <InfoGrid>
-          <InfoItem>
-            <label>ID da Consulta</label>
-            <span>#{fatura.consulta?.id}</span>
-          </InfoItem>
-          <InfoItem>
-            <label>Data da Consulta</label>
-            <span>{formatDateTime(fatura.consulta?.data_hora)}</span>
-          </InfoItem>
-          <InfoItem>
-            <label>Status da Consulta</label>
-            <StatusBadge className={getStatusBadgeClass(fatura.consulta?.status)}>
-              {fatura.consulta?.status?.nome || 'N/A'}
-            </StatusBadge>
-          </InfoItem>
-        </InfoGrid>
-      </Card>
-
-      {/* Informações do Cliente e Médico */}
-      <Card>
-        <CardHeader>
-          <h2>
-            <i className="fas fa-users"></i>
-            Cliente e Médico
-          </h2>
-        </CardHeader>
-        
-        <InfoGrid>
-          <InfoItem>
-            <label>Cliente</label>
-            <span>{fatura.consulta?.utilizador?.nome || 'N/A'}</span>
-          </InfoItem>
-          <InfoItem>
-            <label>Email do Cliente</label>
-            <span>{fatura.consulta?.utilizador?.email || 'N/A'}</span>
-          </InfoItem>
-          <InfoItem>
-            <label>Médico</label>
-            <span>{fatura.consulta?.medico?.nome || 'N/A'}</span>
-          </InfoItem>
-          <InfoItem>
-            <label>Email do Médico</label>
-            <span>{fatura.consulta?.medico?.email || 'N/A'}</span>
-          </InfoItem>
-        </InfoGrid>
-      </Card>
-
-      {/* Serviços */}
-      <Card>
-        <CardHeader>
-          <h2>
-            <i className="fas fa-list-ul"></i>
-            Serviços Prestados
-          </h2>
-        </CardHeader>
-        
-        {fatura.servicos && fatura.servicos.length > 0 ? (
-          <>
-            <ServicesTable>
-              <thead>
-                <tr>
-                  <th>Serviço</th>
-                  <th>Descrição</th>
-                  <th>Quantidade</th>
-                  <th>Preço Unitário</th>
-                  <th>Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fatura.servicos.map((servico, index) => (
-                  <tr key={index}>
-                    <td style={{ fontWeight: '600' }}>{servico.nome}</td>
-                    <td>{servico.descricao || 'Sem descrição'}</td>
-                    <td>{servico.FaturaServico?.quantidade || 1}</td>
-                    <td>{formatCurrency(servico.FaturaServico?.preco_unitario)}</td>
-                    <td style={{ fontWeight: '600' }}>
-                      {formatCurrency(servico.FaturaServico?.subtotal)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </ServicesTable>
-            
-            <TotalSection>
-              <div className="total-row">
-                <span>Subtotal:</span>
-                <span>{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="total-row final-total">
-                <span>Total:</span>
-                <span>{formatCurrency(fatura.valor_total)}</span>
-              </div>
-            </TotalSection>
-          </>
-        ) : (
-          <p style={{ textAlign: 'center', color: '#7f8c8d', padding: '20px' }}>
-            Nenhum serviço encontrado para esta fatura.
-          </p>
-        )}
-      </Card>
-
-      {/* Observações */}
-      {fatura.observacoes && (
-        <Card>
-          <ObservationsSection>
-            <h4>
-              <i className="fas fa-sticky-note"></i>
-              Observações
-            </h4>
-            <p>{fatura.observacoes}</p>
-          </ObservationsSection>
-        </Card>
-      )}
-    </Container>
-  );
 };
 
 export default FaturaDetalhesPage;

@@ -224,10 +224,6 @@ const FaturasPage = () => {
     navigate(`/dashboard/faturas/${fatura.id}`);
   };
 
-  const handlePrintInvoice = (faturaId) => {
-    console.log(`Imprimir fatura ${faturaId}`);
-    // Implementar impressão
-  };
 
   const handleDeleteFatura = async (faturaId) => {
     if (window.confirm('Tem certeza que deseja deletar esta fatura?')) {
@@ -340,12 +336,7 @@ const FaturasPage = () => {
                       >
                         <i className="fas fa-eye"></i>
                       </ActionButton>
-                      <ActionButton 
-                        onClick={() => handlePrintInvoice(fatura.id)}
-                        title="Imprimir"
-                      >
-                        <i className="fas fa-print"></i>
-                      </ActionButton>
+                    
                       <ActionButton 
                         onClick={() => handleDeleteFatura(fatura.id)}
                         color="#e74c3c"

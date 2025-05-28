@@ -18,11 +18,31 @@ const FaturaService = {
     return response.data;
   },
 
-  // NOVA FUNÇÃO PARA BUSCAR SERVIÇOS ATIVOS
+  // FUNÇÕES PARA SERVIÇOS
   getServicosAtivos: async () => {
     const response = await api.get(`${API_URL}/servicos`);
     return response.data;
-  }
+  },
+
+  criarServico: async (dados) => {
+    const response = await api.post(`${API_URL}/servicos`, dados);
+    return response.data;
+  },
+
+  editarServico: async (id, dados) => {
+    const response = await api.put(`${API_URL}/servicos/${id}`, dados);
+    return response.data;
+  },
+
+  deletarServico: async (id) => {
+    const response = await api.delete(`${API_URL}/servicos/${id}`);
+    return response.data;
+  },
+
+  contarServicosPorNome: async () => {
+    const response = await api.get(`${API_URL}/contar-servicos`);
+    return response.data;
+  },
 };
 
 export default FaturaService;

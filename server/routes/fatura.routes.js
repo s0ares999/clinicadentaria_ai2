@@ -6,13 +6,15 @@ const authMiddleware = require('../middleware/auth.middleware'); // importar o m
 // Aplica o middleware para todas as rotas daqui pra baixo
 router.use(authMiddleware.verifyToken);
 
-// Agora essas rotas só funcionam com token válido
+// Rotas para faturas
 router.post('/', FaturaController.criar);
 router.get('/', FaturaController.listar);
 router.get('/minhas-faturas', FaturaController.listarPorUtilizador);
+router.post('/servicos', FaturaController.criarServico); 
 router.get('/servicos', FaturaController.listarServicos);
+router.get('/contar-servicos', FaturaController.contarServicosPorNome);
 router.delete('/:id', FaturaController.deletar);
-
-
+router.put('/servicos/:id', FaturaController.editarServico);  
+router.delete('/servicos/:id', FaturaController.deletarServico); 
 
 module.exports = router;

@@ -117,6 +117,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </Link>
         </MenuItem>
         <MenuItem>
+          <Link to="/dashboard/GestaoServicos" className={location.pathname.includes('/dashboard/GestaoServicos') ? 'active' : ''}>
+            <i className="fas fa-concierge-bell"></i> Gestão de Serviços
+          </Link>
+        </MenuItem>
+        <MenuItem>
           <Link to="/dashboard/agendamentos" className={location.pathname.includes('/dashboard/agendamentos') ? 'active' : ''}>
             <i className="fas fa-calendar-alt"></i> Agendamentos
           </Link>
@@ -132,6 +137,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </Link>
         </MenuItem>
       </SidebarMenu>
+
       <SidebarFooter>
         <p>&copy; {new Date().getFullYear()} Clínica Dentária</p>
       </SidebarFooter>

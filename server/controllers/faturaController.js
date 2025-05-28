@@ -1,5 +1,6 @@
 const { Fatura, FaturaServico, Servico, Consulta } = require('../models');
 const { Op } = require('sequelize');
+const sequelize = FaturaServico.sequelize; // Importa a instância do Sequelize
 
 class FaturaController {
   async criar(req, res) {
@@ -231,6 +232,103 @@ class FaturaController {
       return res.status(500).json({ erro: 'Erro interno ao buscar serviços' });
     }
   }
+
+  async deletarServico(req, res) {
+    try {
+      const { id } = req.params;
+
+      const servico = await Servico.findByPk(id);
+
+      if (!servico) {
+        return res.status(404).json({ error: 'Serviço não encontrado.' });
+      }
+
+      await servico.destroy();
+
+      return res.status(204).send(); // sem conteúdo
+    } catch (error) {
+      console.error('Erro ao deletar serviço:', error);
+      return res.status(500).json({ error: 'Erro ao deletar serviço.' });
+    }
+  }
+
+  async editarServico(req, res) {
+    try {
+      const { id } = req.params;
+      const { nome, descricao, preco, ativo } = req.body;
+
+      const servico = await Servico.findByPk(id);
+
+      if (!servico) {
+        return res.status(404).json({ error: 'Serviço não encontrado.' });
+      }
+
+      // Atualiza somente os campos enviados
+      if (nome !== undefined) servico.nome = nome;
+      if (descricao !== undefined) servico.descricao = descricao;
+      if (preco !== undefined) servico.preco = preco;
+      if (ativo !== undefined) servico.ativo = ativo;
+
+      await servico.save();
+
+      return res.json(servico);
+    } catch (error) {
+      console.error('Erro ao editar serviço:', error);
+      return res.status(500).json({ error: 'Erro ao editar serviço.' });
+    }
+  }
+
+  async criarServico(req, res) {
+    try {
+      console.log('Body recebido:', req.body);  // log para debug
+
+      const { nome, descricao, preco, ativo } = req.body;
+
+      if (!nome || preco == null) {
+        return res.status(400).json({ error: 'Nome e preço são obrigatórios.' });
+      }
+
+      const novoServico = await Servico.create({
+        nome,
+        descricao,
+        preco,
+        ativo: ativo !== undefined ? ativo : true,
+      });
+
+      return res.status(201).json(novoServico);
+    } catch (error) {
+      console.error('Erro ao criar serviço:', error);
+      return res.status(500).json({ error: 'Erro ao criar serviço.' });
+    }
+  }
+
+async contarServicosPorNome(req, res) {
+  try {
+    const resultados = await FaturaServico.findAll({
+      attributes: [
+        'servico_id',
+        [sequelize.col('servico.nome'), 'nome'],
+        [sequelize.fn('SUM', sequelize.col('quantidade')), 'totalFeito']
+      ],
+      include: [
+        {
+          model: Servico,
+          as: 'servico',
+          attributes: []
+        }
+      ],
+      group: ['servico_id', 'servico.nome'],
+      order: [[sequelize.fn('SUM', sequelize.col('quantidade')), 'DESC']]
+    });
+
+    return res.json(resultados);
+  } catch (error) {
+    console.error('Erro ao contar serviços por nome:', error);
+    return res.status(500).json({ erro: 'Erro ao contar serviços por nome.' });
+  }
+}
+
+
 }
 
 module.exports = new FaturaController();

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import api from '../../services/api.config';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import FaturaService from '../../services/fatura.service'; // ajuste o caminho conforme seu projeto
+
 
 const PageTitle = styled.h1`
   font-size: 1.75rem;
@@ -239,6 +241,7 @@ const AppointmentStatusCard = styled.div`
 `;
 
 const EstatisticasPage = () => {
+  const [topServices, setTopServices] = useState([]);
   const [stats, setStats] = useState({
     totalClientes: 0,
     totalConsultas: 0,
@@ -256,6 +259,7 @@ const EstatisticasPage = () => {
 
   useEffect(() => {
     fetchStats();
+    fetchTopServices();
   }, []);
 
   const fetchStats = async () => {
@@ -285,14 +289,23 @@ const EstatisticasPage = () => {
     }).format(value);
   };
 
-  // Dados simulados para os serviços mais populares
-  const topServices = [
-    { name: 'Limpeza Dentária', value: 42 },
-    { name: 'Consulta de Rotina', value: 38 },
-    { name: 'Tratamento de Canal', value: 23 },
-    { name: 'Branqueamento', value: 18 },
-    { name: 'Extração Dentária', value: 15 }
-  ];
+  const fetchTopServices = async () => {
+    try {
+      const data = await FaturaService.contarServicosPorNome();
+      setTopServices(data); // supondo que sua API retorna array com { nome, quantidade }
+    } catch (error) {
+      console.error('Erro ao buscar serviços mais procurados:', error);
+    }
+  };
+
+  {
+    topServices.map((service, index) => (
+      <div className="service-item" key={index}>
+        <div className="service-name">{service.nome}</div>
+        <div className="service-value">{service.quantidade} agendamentos</div>
+      </div>
+    ))
+  }
 
   const statusColors = {
     confirmada: '#2ecc71',
@@ -412,12 +425,16 @@ const EstatisticasPage = () => {
       <TwoColumnGrid>
         <TopServicesCard>
           <h2>Serviços Mais Procurados</h2>
-          {topServices.map((service, index) => (
-            <div className="service-item" key={index}>
-              <div className="service-name">{service.name}</div>
-              <div className="service-value">{service.value} agendamentos</div>
-            </div>
-          ))}
+          {topServices.length === 0 ? (
+            <p>Carregando...</p>
+          ) : (
+            topServices.map((service, index) => (
+              <div className="service-item" key={index}>
+                <div className="service-name">{service.nome}</div>
+                <div className="service-value">{service.totalFeito} agendamentos</div>
+              </div>
+            ))
+          )}
         </TopServicesCard>
 
         <AppointmentStatusCard>

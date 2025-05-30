@@ -16,16 +16,16 @@ class ConsultaService {
       if (!user || !user.accessToken) {
         throw new Error('Usuário não autenticado');
       }
-      
+
       console.log('Enviando requisição com token:', user.accessToken.substring(0, 20) + '...');
-      
+
       const config = {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${user.accessToken}`
         }
       };
-      
+
       return await api.post('consultas', consultaData, config);
     } catch (error) {
       console.error('Erro na chamada de API:', error);
@@ -35,6 +35,8 @@ class ConsultaService {
       throw error;
     }
   }
+
+
 
   async updateConsulta(id, consultaData) {
     return api.put(`consultas/${id}`, consultaData);
@@ -50,11 +52,11 @@ class ConsultaService {
       if (!user || !user.id) {
         throw new Error('Usuário não identificado');
       }
-      
+
       console.log("Buscando consultas para o usuário:", user.id);
       const response = await api.get(`consultas/utilizador/${user.id}?tipo=cliente`);
       console.log("Resposta da API:", response);
-      
+
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar consultas do cliente:', error);
@@ -62,6 +64,15 @@ class ConsultaService {
     }
   }
 
+  async getHorariosDisponiveis(data) {
+    try {
+      const response = await api.get(`consultas/horarios-disponiveis?data=${data}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar horários disponíveis:', error);
+      throw error;
+    }
+  }
 
   async getConsultasMedico() {
     try {
@@ -69,7 +80,7 @@ class ConsultaService {
       if (!user || !user.id) {
         throw new Error('Usuário não identificado');
       }
-      
+
       const response = await api.get(`consultas/utilizador/${user.id}?tipo=medico`);
       return response.data;
     } catch (error) {
@@ -102,7 +113,7 @@ class ConsultaService {
       if (!user || !user.id) {
         throw new Error('Usuário não identificado');
       }
-      
+
       // Usar a rota específica que criamos no backend
       const response = await api.get(`consultas/concluidas/medico/${user.id}`);
       return response.data;
@@ -147,10 +158,10 @@ class ConsultaService {
       const params = new URLSearchParams();
       if (data) params.append('data', data);
       if (medico_id) params.append('medico_id', medico_id);
-      
+
       const queryString = params.toString();
       const url = queryString ? `consultas/confirmadas?${queryString}` : 'consultas/confirmadas';
-      
+
       return await api.get(url);
     } catch (error) {
       console.error('Erro ao buscar consultas confirmadas:', error);
@@ -174,7 +185,7 @@ class ConsultaService {
       const params = new URLSearchParams();
       params.append('medico_id', medicoId);
       if (data) params.append('data', data);
-      
+
       const queryString = params.toString();
       return await api.get(`consultas/confirmadas?${queryString}`);
     } catch (error) {

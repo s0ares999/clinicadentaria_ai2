@@ -31,6 +31,15 @@ router.get("/confirmadas", (req, res) => {
   }
 });
 
+// Buscar horários disponíveis por data (DEVE vir antes de /:id)
+router.get("/horarios-disponiveis", (req, res) => {
+  if (typeof consultaController.getHorariosDisponiveis === 'function') {
+    consultaController.getHorariosDisponiveis(req, res);
+  } else {
+    res.status(501).json({ message: "Função getHorariosDisponiveis não implementada" });
+  }
+});
+
 // Buscar todos os status de consulta (DEVE vir antes de /:id)
 router.get("/status", (req, res) => {
   if (typeof consultaController.findAllStatus === 'function') {

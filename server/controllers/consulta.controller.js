@@ -11,90 +11,174 @@ const TipoUtilizador = db.TipoUtilizador;
 const ConsultaController = {
   // Criar nova consulta
   async create(req, res) {
-    try {
-      console.log("Dados recebidos:", req.body);
-      
-      // Validação mínima
-      if (!req.body.data_hora) {
-        return res.status(400).json({
-          success: false,
-          message: "Campo obrigatório não preenchido: data_hora é necessário!"
-        });
-      }
+  try {
+    console.log("Dados recebidos:", req.body);
 
-      // Usar o ID do usuário autenticado
-      const utilizador_id = req.userId;
-      console.log("ID do usuário do token:", utilizador_id);
-      
-      if (!utilizador_id) {
-        return res.status(401).json({
-          success: false,
-          message: "Utilizador não autenticado!"
-        });
-      }
-
-      // Verificar se o status existe
-      const statusId = 1; // Status padrão "Pendente"
-      const statusExists = await ConsultaStatus.findByPk(statusId);
-      
-      if (!statusExists) {
-        console.error(`Status de consulta com ID ${statusId} não encontrado. Inicializando status...`);
-        try {
-          // Tentar inicializar os status
-          const dbInit = require('../config/db.init');
-          await dbInit.initConsultaStatus();
-          console.log("Status de consulta inicializados com sucesso!");
-        } catch (initError) {
-          console.error("Erro ao inicializar status de consulta:", initError);
-          return res.status(500).json({
-            success: false,
-            message: "Erro interno: não foi possível criar status de consulta.",
-            error: process.env.NODE_ENV === 'development' ? initError.message : undefined
-          });
-        }
-      }
-
-      // Criar a consulta com o ID do usuário extraído do token
-      const consultaData = {
-        utilizador_id: utilizador_id,
-        data_hora: req.body.data_hora,
-        observacoes: req.body.observacoes || '',
-        status_id: statusId, // Status inicial (Pendente)
-        medico_id: null // Inicialmente sem médico atribuído
-      };
-
-      console.log("Dados para criar consulta:", consultaData);
-
-      const consulta = await Consulta.create(consultaData, {
-        fields: ['utilizador_id', 'data_hora', 'observacoes', 'status_id', 'medico_id']
-      });
-
-      return res.status(201).json({
-        success: true,
-        message: "Consulta agendada com sucesso!",
-        consulta
-      });
-    } catch (error) {
-      console.error("Erro ao criar consulta:", error);
-      
-      // Verificar se é um erro de chave estrangeira
-      if (error.name === 'SequelizeForeignKeyConstraintError') {
-        if (error.index?.includes('status_id')) {
-          return res.status(500).json({
-            success: false,
-            message: "Erro ao criar consulta: o status selecionado não existe. Por favor, contate o administrador do sistema.",
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
-          });
-        }
-      }
-      
-      return res.status(500).json({
+    // Validação mínima
+    if (!req.body.data_hora) {
+      return res.status(400).json({
         success: false,
-        message: "Erro ao criar consulta: " + error.message,
-        error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        message: "Campo obrigatório não preenchido: data_hora é necessário!"
       });
     }
-  },
+
+    // Usar o ID do usuário autenticado
+    const utilizador_id = req.userId;
+    console.log("ID do usuário do token:", utilizador_id);
+
+    if (!utilizador_id) {
+      return res.status(401).json({
+        success: false,
+        message: "Utilizador não autenticado!"
+      });
+    }
+
+    // Verificar se o status existe
+    const statusId = 1; // Status padrão "Pendente"
+    const statusExists = await ConsultaStatus.findByPk(statusId);
+
+    if (!statusExists) {
+      console.error(`Status de consulta com ID ${statusId} não encontrado. Inicializando status...`);
+      try {
+        // Tentar inicializar os status
+        const dbInit = require('../config/db.init');
+        await dbInit.initConsultaStatus();
+        console.log("Status de consulta inicializados com sucesso!");
+      } catch (initError) {
+        console.error("Erro ao inicializar status de consulta:", initError);
+        return res.status(500).json({
+          success: false,
+          message: "Erro interno: não foi possível criar status de consulta.",
+          error: process.env.NODE_ENV === 'development' ? initError.message : undefined
+        });
+      }
+    }
+
+    // Verificar se já existe uma consulta no mesmo horário
+    const consultaExistente = await Consulta.findOne({
+      where: {
+        data_hora: req.body.data_hora
+      }
+    });
+
+    if (consultaExistente) {
+      return res.status(409).json({
+        success: false,
+        message: "Já existe uma consulta agendada para esse horário. Por favor, escolha outro horário."
+      });
+    }
+
+    // Criar a consulta com o ID do usuário extraído do token
+    const consultaData = {
+      utilizador_id: utilizador_id,
+      data_hora: req.body.data_hora,
+      observacoes: req.body.observacoes || '',
+      status_id: statusId, // Status inicial (Pendente)
+      medico_id: null // Inicialmente sem médico atribuído
+    };
+
+    console.log("Dados para criar consulta:", consultaData);
+
+    const consulta = await Consulta.create(consultaData, {
+      fields: ['utilizador_id', 'data_hora', 'observacoes', 'status_id', 'medico_id']
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Consulta agendada com sucesso!",
+      consulta
+    });
+  } catch (error) {
+    console.error("Erro ao criar consulta:", error);
+
+    // Verificar se é um erro de chave estrangeira
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      if (error.index?.includes('status_id')) {
+        return res.status(500).json({
+          success: false,
+          message: "Erro ao criar consulta: o status selecionado não existe. Por favor, contate o administrador do sistema.",
+          error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+      }
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Erro ao criar consulta: " + error.message,
+      error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+},
+
+async getHorariosDisponiveis(req, res) {
+  try {
+    const { data } = req.query;
+    
+    if (!data) {
+      return res.status(400).json({
+        message: "Data é obrigatória"
+      });
+    }
+
+    // Horários padrão do sistema
+    const horariosBase = [
+      '08:00', '09:00', '10:00', '11:00', 
+      '14:00', '15:00', '16:00', '17:00'
+    ];
+
+    // Buscar consultas já agendadas para a data
+    const consultasAgendadas = await Consulta.findAll({
+      where: {
+        data_hora: {
+          [Op.gte]: new Date(`${data}T00:00:00.000Z`),
+          [Op.lt]: new Date(`${data}T23:59:59.999Z`)
+        },
+        status_id: {
+          [Op.in]: [1, 2] // Pendente ou Confirmada
+        }
+      },
+      attributes: ['data_hora']
+    });
+
+    // Extrair apenas as horas das consultas agendadas
+    const horariosOcupados = consultasAgendadas.map(consulta => {
+      const dataHora = new Date(consulta.data_hora);
+      return dataHora.toTimeString().substring(0, 5); // HH:MM
+    });
+
+    // Filtrar horários disponíveis
+    const horariosDisponiveis = horariosBase.filter(horario => 
+      !horariosOcupados.includes(horario)
+    );
+
+    // Verificar se a data é hoje e filtrar horários passados
+    const hoje = new Date();
+    const dataConsulta = new Date(data);
+    
+    let horariosFinais = horariosDisponiveis;
+    
+    if (dataConsulta.toDateString() === hoje.toDateString()) {
+      const horaAtual = hoje.getHours();
+      const minutoAtual = hoje.getMinutes();
+      
+      horariosFinais = horariosDisponiveis.filter(horario => {
+        const [hora, minuto] = horario.split(':').map(Number);
+        return hora > horaAtual || (hora === horaAtual && minuto > minutoAtual);
+      });
+    }
+
+    return res.status(200).json({
+      data: data,
+      horariosDisponiveis: horariosFinais,
+      horariosOcupados: horariosOcupados
+    });
+  } catch (error) {
+    console.error("Erro ao buscar horários disponíveis:", error);
+    return res.status(500).json({
+      message: error.message || "Erro ao buscar horários disponíveis"
+    });
+  }
+},
 
   // Buscar todas as consultas
   async findAll(req, res) {

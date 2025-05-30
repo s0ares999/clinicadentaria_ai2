@@ -104,11 +104,45 @@ const Button = styled.button`
   }
 `;
 
+const LoadingText = styled.div`
+  color: #7f8c8d;
+  font-style: italic;
+  padding: 0.5rem;
+`;
+
+const InfoText = styled.div`
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+`;
+
+const AvailabilityInfo = styled.div`
+  background-color: #e8f4fd;
+  border: 1px solid #bee5eb;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-top: 1rem;
+  
+  h4 {
+    margin: 0 0 0.5rem 0;
+    color: #0c5460;
+  }
+  
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #0c5460;
+  }
+`;
+
 function ClienteNovoAgendamentoPage() {
   const [dataAgendamento, setDataAgendamento] = useState('');
   const [horaSelecionada, setHoraSelecionada] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [horariosDisponiveis, setHorariosDisponiveis] = useState([]);
+  const [loadingHorarios, setLoadingHorarios] = useState(false);
+  const [dadosDisponibilidade, setDadosDisponibilidade] = useState(null);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -126,6 +160,39 @@ function ClienteNovoAgendamentoPage() {
       token: user.accessToken ? "presente" : "ausente"
     });
   }, [navigate]);
+
+  // Carregar horários disponíveis quando a data mudar
+  useEffect(() => {
+    const carregarHorarios = async () => {
+      if (!dataAgendamento) {
+        setHorariosDisponiveis([]);
+        setDadosDisponibilidade(null);
+        return;
+      }
+
+      setLoadingHorarios(true);
+      setHoraSelecionada(''); // Limpar hora selecionada
+
+      try {
+        const dados = await ConsultaService.getHorariosDisponiveis(dataAgendamento);
+        setHorariosDisponiveis(dados.horariosDisponiveis);
+        setDadosDisponibilidade(dados);
+        
+        if (dados.horariosDisponiveis.length === 0) {
+          toast.info('Não há horários disponíveis para esta data');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar horários:', error);
+        toast.error('Erro ao carregar horários disponíveis');
+        setHorariosDisponiveis([]);
+        setDadosDisponibilidade(null);
+      } finally {
+        setLoadingHorarios(false);
+      }
+    };
+
+    carregarHorarios();
+  }, [dataAgendamento]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -159,7 +226,24 @@ function ClienteNovoAgendamentoPage() {
       
       const response = await ConsultaService.createConsulta(consultaData);
       toast.success('Consulta agendada com sucesso!');
-      navigate('/cliente-dashboard/agendamentos');
+      
+      // Recarregar horários disponíveis após agendar
+      if (dataAgendamento) {
+        try {
+          const dados = await ConsultaService.getHorariosDisponiveis(dataAgendamento);
+          setHorariosDisponiveis(dados.horariosDisponiveis);
+          setDadosDisponibilidade(dados);
+          setHoraSelecionada(''); // Limpar seleção
+        } catch (error) {
+          console.error('Erro ao recarregar horários:', error);
+        }
+      }
+      
+      // Navegar após um breve delay
+      setTimeout(() => {
+        navigate('/cliente-dashboard/agendamentos');
+      }, 2000);
+      
     } catch (error) {
       console.error('Erro completo:', error);
       if (error.response) {
@@ -195,25 +279,42 @@ function ClienteNovoAgendamentoPage() {
               min={new Date().toISOString().split('T')[0]}
               required
             />
+            <InfoText>
+              Selecione uma data para ver os horários disponíveis
+            </InfoText>
           </FormGroup>
 
           <FormGroup>
-            <Label>Horário Preferido*</Label>
-            <Select
-              value={horaSelecionada}
-              onChange={(e) => setHoraSelecionada(e.target.value)}
-              required
-            >
-              <option value="">Selecione um horário</option>
-              <option value="08:00">08:00</option>
-              <option value="09:00">09:00</option>
-              <option value="10:00">10:00</option>
-              <option value="11:00">11:00</option>
-              <option value="14:00">14:00</option>
-              <option value="15:00">15:00</option>
-              <option value="16:00">16:00</option>
-              <option value="17:00">17:00</option>
-            </Select>
+            <Label>Horário Disponível*</Label>
+            {loadingHorarios ? (
+              <LoadingText>Carregando horários...</LoadingText>
+            ) : (
+              <Select
+                value={horaSelecionada}
+                onChange={(e) => setHoraSelecionada(e.target.value)}
+                required
+                disabled={!dataAgendamento || horariosDisponiveis.length === 0}
+              >
+                <option value="">
+                  {!dataAgendamento 
+                    ? "Selecione uma data primeiro"
+                    : horariosDisponiveis.length === 0 
+                      ? "Nenhum horário disponível"
+                      : "Selecione um horário"
+                  }
+                </option>
+                {horariosDisponiveis.map(horario => (
+                  <option key={horario} value={horario}>
+                    {horario}
+                  </option>
+                ))}
+              </Select>
+            )}
+            {dadosDisponibilidade && (
+              <InfoText>
+                {horariosDisponiveis.length} horário(s) disponível(is) de 8 possíveis
+              </InfoText>
+            )}
           </FormGroup>
 
           <FormGroup style={{ gridColumn: '1 / -1' }}>
@@ -227,7 +328,19 @@ function ClienteNovoAgendamentoPage() {
             />
           </FormGroup>
 
-          <Button type="submit" disabled={submitting}>
+          {dadosDisponibilidade && dadosDisponibilidade.horariosOcupados.length > 0 && (
+            <AvailabilityInfo style={{ gridColumn: '1 / -1' }}>
+              <h4>Informações sobre Disponibilidade</h4>
+              <p>
+                Horários já ocupados: {dadosDisponibilidade.horariosOcupados.join(', ')}
+              </p>
+            </AvailabilityInfo>
+          )}
+
+          <Button 
+            type="submit" 
+            disabled={submitting || !dataAgendamento || !horaSelecionada}
+          >
             {submitting ? 'Agendando...' : 'Solicitar Consulta'}
           </Button>
         </Form>

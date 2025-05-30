@@ -1,4 +1,5 @@
 import api from './api.config';
+import AuthService from './auth.service';
 
 const API_URL = "http://localhost:8000/api/faturas";
 
@@ -9,10 +10,26 @@ const FaturaService = {
     return response.data;
   },
 
-
   getFaturasByCliente: async () => {
     const response = await api.get(`${API_URL}/minhas-faturas`);
     return response.data;
+  },
+
+  // NOVO: Método para buscar faturas do médico autenticado
+  getFaturasByMedico: async () => {
+    try {
+      const user = AuthService.getCurrentUser();
+      if (!user || !user.id) {
+        throw new Error('Usuário não identificado');
+      }
+
+      console.log("Buscando faturas para o médico:", user.id);
+      const response = await api.get(`${API_URL}/medico/${user.id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar faturas do médico:', error);
+      throw error;
+    }
   },
 
   criarFatura: async (dados) => {

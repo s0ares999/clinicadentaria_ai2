@@ -174,16 +174,6 @@ const FormGroup = styled.div`
   }
 `;
 
-const DebugInfo = styled.div`
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  font-family: monospace;
-  font-size: 0.8rem;
-`;
-
 function MedicoFaturasPage() {
   const [faturas, setFaturas] = useState([]);
   const [consultas, setConsultas] = useState([]);
@@ -191,7 +181,6 @@ function MedicoFaturasPage() {
   const [activeTab, setActiveTab] = useState('todas');
   const [showModal, setShowModal] = useState(false);
   const [consultaSelecionada, setConsultaSelecionada] = useState(null);
-  const [debugInfo, setDebugInfo] = useState('');
   const [formData, setFormData] = useState({
     valor_total: '',
     observacoes: ''
@@ -203,35 +192,11 @@ function MedicoFaturasPage() {
 
   const carregarDados = async () => {
     setLoading(true);
-    setDebugInfo('Iniciando carregamento dos dados...');
-    
     try {
-      console.log('🔍 Iniciando busca de faturas e consultas...');
-      
-      // Buscar faturas do médico
-      setDebugInfo(prev => prev + '\nBuscando faturas do médico...');
-      let faturasResponse = [];
-      try {
-        faturasResponse = await FaturaService.getFaturasByMedico();
-        console.log('✅ Faturas encontradas:', faturasResponse);
-        setDebugInfo(prev => prev + `\n✅ ${faturasResponse?.length || 0} faturas encontradas`);
-      } catch (faturaError) {
-        console.error('❌ Erro ao buscar faturas:', faturaError);
-        setDebugInfo(prev => prev + `\n❌ Erro ao buscar faturas: ${faturaError.message}`);
-        // Continuar mesmo se der erro nas faturas
-      }
-
-      // Buscar consultas do médico
-      setDebugInfo(prev => prev + '\nBuscando consultas do médico...');
-      let consultasResponse = [];
-      try {
-        consultasResponse = await ConsultaService.getConsultasMedico();
-        console.log('✅ Consultas encontradas:', consultasResponse);
-        setDebugInfo(prev => prev + `\n✅ ${consultasResponse?.length || 0} consultas encontradas`);
-      } catch (consultaError) {
-        console.error('❌ Erro ao buscar consultas:', consultaError);
-        setDebugInfo(prev => prev + `\n❌ Erro ao buscar consultas: ${consultaError.message}`);
-      }
+      const [faturasResponse, consultasResponse] = await Promise.all([
+        FaturaService.getFaturasByMedico(),
+        ConsultaService.getConsultasMedico() // <-- usando método para buscar consultas do médico autenticado
+      ]);
 
       setFaturas(faturasResponse || []);
 
@@ -239,8 +204,6 @@ function MedicoFaturasPage() {
       const consultasComFaturaIds = new Set(
         (faturasResponse || []).map(fatura => fatura.consulta_id)
       );
-
-      console.log('📝 Consultas com fatura (IDs):', Array.from(consultasComFaturaIds));
 
       // Adiciona flag indicando se consulta já tem fatura
       const consultasComFlagFatura = (consultasResponse || []).map(consulta => ({
@@ -253,18 +216,12 @@ function MedicoFaturasPage() {
         consulta => !consulta.tem_fatura && consulta.status?.nome === 'Concluída'
       );
 
-      console.log('🔍 Consultas sem fatura:', consultasSemFatura);
-      setDebugInfo(prev => prev + `\n📋 ${consultasSemFatura?.length || 0} consultas sem fatura`);
-
       setConsultas(consultasSemFatura);
-
     } catch (error) {
-      console.error("❌ Erro geral ao carregar dados:", error);
-      setDebugInfo(prev => prev + `\n❌ Erro geral: ${error.message}`);
+      console.error("Erro ao carregar dados:", error);
       toast.error("Não foi possível carregar os dados");
     } finally {
       setLoading(false);
-      setDebugInfo(prev => prev + '\n🏁 Carregamento finalizado');
     }
   };
 
@@ -354,44 +311,34 @@ function MedicoFaturasPage() {
           </Button>
         </SectionTitle>
 
-        {/* Debug Info - remova em produção */}
-        <DebugInfo>
-          <strong>Debug Info:</strong>
-          <pre>{debugInfo}</pre>
-        </DebugInfo>
-
         <TabsContainer>
           <Tab active={activeTab === 'todas'} onClick={() => setActiveTab('todas')}>
-            Todas ({faturas.length})
+            Todas
           </Tab>
           <Tab active={activeTab === 'emitida'} onClick={() => setActiveTab('emitida')}>
-            Pendentes ({faturas.filter(f => f.status?.nome.toLowerCase() === 'emitida').length})
+            Pendentes
           </Tab>
           <Tab active={activeTab === 'paga'} onClick={() => setActiveTab('paga')}>
-            Pagas ({faturas.filter(f => f.status?.nome.toLowerCase() === 'paga').length})
+            Pagas
           </Tab>
           <Tab active={activeTab === 'cancelada'} onClick={() => setActiveTab('cancelada')}>
-            Canceladas ({faturas.filter(f => f.status?.nome.toLowerCase() === 'cancelada').length})
+            Canceladas
           </Tab>
         </TabsContainer>
 
         {loading ? (
           <EmptyState>Carregando faturas...</EmptyState>
-        ) : faturas.length > 0 ? (
+        ) : (
           <MedicoFaturasListagemComponent
             faturas={filtrarFaturas()}
             recarregarDados={carregarDados}
           />
-        ) : (
-          <EmptyState>
-            Nenhuma fatura encontrada.
-          </EmptyState>
         )}
 
         {activeTab === 'todas' && (
           <>
             <SectionTitle style={{ marginTop: '2rem' }}>
-              Consultas Concluídas sem Fatura ({consultas.length})
+              Consultas Concluídas sem Fatura
             </SectionTitle>
 
             {consultas.length > 0 ? (
@@ -402,7 +349,6 @@ function MedicoFaturasPage() {
                       <th>ID</th>
                       <th>Data</th>
                       <th>Paciente</th>
-                      <th>Status</th>
                       <th>Observações</th>
                       <th>Ações</th>
                     </tr>
@@ -413,11 +359,6 @@ function MedicoFaturasPage() {
                         <td>#{consulta.id}</td>
                         <td>{formatarData(consulta.data_hora)}</td>
                         <td>{consulta.utilizador?.nome || 'Paciente'}</td>
-                        <td>
-                          <StatusBadge className={getStatusClass(consulta.status)}>
-                            {consulta.status?.nome || 'Indefinido'}
-                          </StatusBadge>
-                        </td>
                         <td>{consulta.observacoes || '-'}</td>
                         <td>
                           <Button onClick={() => handleCriarFatura(consulta)}>
@@ -444,14 +385,6 @@ function MedicoFaturasPage() {
           <DialogContent>
             <DialogTitle>Criar Fatura</DialogTitle>
             <form onSubmit={handleSubmit}>
-              <FormGroup>
-                <label>Consulta</label>
-                <input
-                  type="text"
-                  value={`#${consultaSelecionada?.id} - ${consultaSelecionada?.utilizador?.nome || 'Paciente'}`}
-                  disabled
-                />
-              </FormGroup>
               <FormGroup>
                 <label>Valor Total (€)</label>
                 <input

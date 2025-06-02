@@ -90,13 +90,18 @@ function ConsultasComponent() {
   }, []);
 
   // Função para separar consultas por status
-  const getConsultasByStatus = (status) => {
-    return consultas.filter(consulta => consulta.status?.nome === status);
+  const getConsultasByStatus = (status, sortDesc = false) => {
+    const filtered = consultas.filter(consulta => consulta.status?.nome === status);
+    if (sortDesc) {
+      return filtered.sort((a, b) => new Date(b.data_hora) - new Date(a.data_hora));
+    }
+    return filtered;
   };
+
 
   const consultasPendentes = getConsultasByStatus('Pendente');
   const consultasConfirmadas = getConsultasByStatus('Confirmada');
-  const consultasConcluidas = getConsultasByStatus('Concluída');
+  const consultasConcluidas = getConsultasByStatus('Concluída', true);
 
   // Função para calcular total da fatura
   const calcularTotal = () => {
@@ -441,26 +446,26 @@ function ConsultasComponent() {
         <Box sx={{ width: '100%' }}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
-              <Tab 
+              <Tab
                 label={
                   <Badge badgeContent={consultasPendentes.length} color="warning">
                     Consultas Pendentes
                   </Badge>
-                } 
+                }
               />
-              <Tab 
+              <Tab
                 label={
                   <Badge badgeContent={consultasConfirmadas.length} color="info">
-                    Consultas Confirmadas
+                    Minhas Consultas
                   </Badge>
-                } 
+                }
               />
-              <Tab 
+              <Tab
                 label={
                   <Badge badgeContent={consultasConcluidas.length} color="success">
-                    Consultas Concluídas
+                    Consultas Finalizadas
                   </Badge>
-                } 
+                }
               />
             </Tabs>
           </Box>

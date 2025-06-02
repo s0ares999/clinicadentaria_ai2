@@ -179,6 +179,8 @@ class ConsultaService {
     }
   }
 
+  
+
   // NOVO: Método para buscar consultas confirmadas de um médico específico
   async getConsultasConfirmadasByMedico(medicoId, data = null) {
     try {

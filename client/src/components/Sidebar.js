@@ -41,6 +41,7 @@ const Sidebar = () => {
       >
         <i className="fas fa-history"></i>
         Histórico de Consultas
+        
       </SidebarItem>
       
       {/* Outros itens do menu */}

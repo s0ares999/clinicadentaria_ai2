@@ -5,6 +5,7 @@ import MedicoPerfilComponent from './components/MedicoPerfilComponent';
 import ConsultasComponent from './components/ConsultasComponent';
 import MedicoFaturasPage from './MedicoFaturasPage';
 import MedicoHistoricoPage from './MedicoHistoricoPage';
+import MarcarConsultaComponent from './components/MarcarConsultaComponent';
 import AuthService from '../../services/auth.service';
 import Navbar from '../../components/Navbar';
 
@@ -42,40 +43,6 @@ const MainContent = styled.div`
   }
 `;
 
-const ProfileHeader = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 2rem;
-  margin-bottom: 2rem;
-`;
-
-const Avatar = styled.div`
-  width: 100px;
-  height: 100px;
-  background-color: #3498db;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 2.5rem;
-  font-weight: bold;
-`;
-
-const ProfileInfo = styled.div`
-  flex: 1;
-
-  h2 {
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
-  }
-
-  .info-item {
-    margin: 0.5rem 0;
-    color: #7f8c8d;
-  }
-`;
-
 const BreadcrumbNav = styled.nav`
   margin-top: 1rem;
   margin-bottom: 1rem;
@@ -89,15 +56,6 @@ const BreadcrumbNav = styled.nav`
       text-decoration: underline;
     }
   }
-`;
-
-const UserType = styled.div`
-  background-color: #3498db;
-  padding: 1rem 2rem;
-  margin-bottom: 2rem;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
 const NavItem = styled.div`
@@ -153,18 +111,11 @@ function MedicoDashboardPage() {
         return <MedicoHistoricoPage />;
       case 'faturas':
         return <MedicoFaturasPage />;
+      case 'marcarConsulta':
+        return <MarcarConsultaComponent />;
       default:
         return <MedicoPerfilComponent />;
     }
-  };
-
-  const getInitials = (name) => {
-    return name
-      ?.split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2) || 'MD';
   };
 
   if (loading) {
@@ -200,6 +151,14 @@ function MedicoDashboardPage() {
           </NavItem>
 
           <NavItem 
+            className={activeTab === 'marcarConsulta' ? 'active' : ''} 
+            onClick={() => setActiveTab('marcarConsulta')}
+          >
+            <i className="fas fa-plus-circle"></i>
+            Marcar Consulta
+          </NavItem>
+
+          <NavItem 
             className={activeTab === 'historico' ? 'active' : ''} 
             onClick={() => setActiveTab('historico')}
           >
@@ -226,6 +185,7 @@ function MedicoDashboardPage() {
             <Link to="/">Início</Link> / Área do Médico / {
               activeTab === 'perfil' ? 'Meu Perfil' :
               activeTab === 'consultas' ? 'Consultas' :
+              activeTab === 'marcarConsulta' ? 'Marcar Consulta' :
               activeTab === 'historico' ? 'Histórico de Consultas' :
               activeTab === 'faturas' ? 'Gestão de Faturas' :
               ''
@@ -235,6 +195,7 @@ function MedicoDashboardPage() {
           <h2>{
             activeTab === 'perfil' ? 'Meu Perfil' :
             activeTab === 'consultas' ? 'Consultas' :
+            activeTab === 'marcarConsulta' ? 'Marcar Consulta' :
             activeTab === 'historico' ? 'Histórico de Consultas' :
             activeTab === 'faturas' ? 'Gestão de Faturas' :
             ''
@@ -247,4 +208,4 @@ function MedicoDashboardPage() {
   );
 }
 
-export default MedicoDashboardPage; 
+export default MedicoDashboardPage;

@@ -21,9 +21,11 @@ import {
   Badge,
   Card,
   CardContent,
-  Divider
+  Divider,
+  ToggleButton,
+  ToggleButtonGroup
 } from '@mui/material';
-import { AddCircle, RemoveCircle, Pending, CheckCircle, Done } from '@mui/icons-material';
+import { AddCircle, RemoveCircle, Pending, CheckCircle, Done, Today, ViewList } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
 import ConsultaService from '../../../services/consulta.service';
 import FaturaService from '../../../services/fatura.service';
@@ -57,6 +59,7 @@ function ConsultasComponent() {
   const [faturaDialogOpen, setFaturaDialogOpen] = useState(false);
   const [servicosDisponiveis, setServicosDisponiveis] = useState([]);
   const [tabValue, setTabValue] = useState(0);
+  const [showTodayOnly, setShowTodayOnly] = useState(false);
   const [faturaData, setFaturaData] = useState({
     observacoes: '',
     servicos: [
@@ -89,6 +92,16 @@ function ConsultasComponent() {
     loadServicos();
   }, []);
 
+  // Função para verificar se uma data é hoje
+  const isToday = (dateString) => {
+    const today = new Date();
+    const consultaDate = new Date(dateString);
+    
+    return today.getDate() === consultaDate.getDate() &&
+           today.getMonth() === consultaDate.getMonth() &&
+           today.getFullYear() === consultaDate.getFullYear();
+  };
+
   // Função para separar consultas por status
   const getConsultasByStatus = (status, sortDesc = false) => {
     const filtered = consultas.filter(consulta => consulta.status?.nome === status);
@@ -98,10 +111,21 @@ function ConsultasComponent() {
     return filtered;
   };
 
+  // Função para filtrar consultas confirmadas (com opção de mostrar só as de hoje)
+  const getConsultasConfirmadas = () => {
+    const confirmadas = getConsultasByStatus('Confirmada');
+    if (showTodayOnly) {
+      return confirmadas.filter(consulta => isToday(consulta.data_hora));
+    }
+    return confirmadas;
+  };
 
   const consultasPendentes = getConsultasByStatus('Pendente');
-  const consultasConfirmadas = getConsultasByStatus('Confirmada');
+  const consultasConfirmadas = getConsultasConfirmadas();
   const consultasConcluidas = getConsultasByStatus('Concluída', true);
+
+  // Contar consultas de hoje para mostrar no badge
+  const consultasConfirmadasHoje = getConsultasByStatus('Confirmada').filter(consulta => isToday(consulta.data_hora));
 
   // Função para calcular total da fatura
   const calcularTotal = () => {
@@ -418,8 +442,20 @@ function ConsultasComponent() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <CheckCircle color="info" />
               <Box>
-                <Typography variant="h6">{consultasConfirmadas.length}</Typography>
+                <Typography variant="h6">{getConsultasByStatus('Confirmada').length}</Typography>
                 <Typography variant="body2" color="text.secondary">Confirmadas</Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ minWidth: 150 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Today color="primary" />
+              <Box>
+                <Typography variant="h6">{consultasConfirmadasHoje.length}</Typography>
+                <Typography variant="body2" color="text.secondary">Hoje</Typography>
               </Box>
             </Box>
           </CardContent>
@@ -455,7 +491,7 @@ function ConsultasComponent() {
               />
               <Tab
                 label={
-                  <Badge badgeContent={consultasConfirmadas.length} color="info">
+                  <Badge badgeContent={getConsultasByStatus('Confirmada').length} color="info">
                     Minhas Consultas
                   </Badge>
                 }
@@ -482,12 +518,35 @@ function ConsultasComponent() {
           </TabPanel>
 
           <TabPanel value={tabValue} index={1}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CheckCircle color="info" />
-              Consultas Confirmadas
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CheckCircle color="info" />
+                Consultas Confirmadas
+              </Typography>
+              
+              <ToggleButtonGroup
+                value={showTodayOnly ? 'today' : 'all'}
+                exclusive
+                onChange={(e, newValue) => setShowTodayOnly(newValue === 'today')}
+                aria-label="filtro consultas"
+                size="small"
+              >
+                <ToggleButton value="all" aria-label="todas consultas">
+                  <ViewList sx={{ mr: 1 }} />
+                  Todas ({getConsultasByStatus('Confirmada').length})
+                </ToggleButton>
+                <ToggleButton value="today" aria-label="consultas de hoje">
+                  <Today sx={{ mr: 1 }} />
+                  Hoje ({consultasConfirmadasHoje.length})
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+            
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Consultas aprovadas que podem ser finalizadas após o atendimento.
+              {showTodayOnly 
+                ? `Consultas confirmadas para hoje (${new Date().toLocaleDateString('pt-PT')}).`
+                : 'Todas as consultas aprovadas que podem ser finalizadas após o atendimento.'
+              }
             </Typography>
             {renderConsultasTable(consultasConfirmadas)}
           </TabPanel>

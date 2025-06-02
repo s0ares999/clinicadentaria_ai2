@@ -15,12 +15,36 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  IconButton
+  IconButton,
+  Tabs,
+  Tab,
+  Badge,
+  Card,
+  CardContent,
+  Divider
 } from '@mui/material';
-import { AddCircle, RemoveCircle } from '@mui/icons-material';
+import { AddCircle, RemoveCircle, Pending, CheckCircle, Done } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
 import ConsultaService from '../../../services/consulta.service';
 import FaturaService from '../../../services/fatura.service';
+
+function TabPanel({ children, value, index, ...other }) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`consultas-tabpanel-${index}`}
+      aria-labelledby={`consultas-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
 
 function ConsultasComponent() {
   const [consultas, setConsultas] = useState([]);
@@ -32,6 +56,7 @@ function ConsultasComponent() {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [faturaDialogOpen, setFaturaDialogOpen] = useState(false);
   const [servicosDisponiveis, setServicosDisponiveis] = useState([]);
+  const [tabValue, setTabValue] = useState(0);
   const [faturaData, setFaturaData] = useState({
     observacoes: '',
     servicos: [
@@ -51,7 +76,6 @@ function ConsultasComponent() {
   }, []);
 
   useEffect(() => {
-    // Agora pega os serviços ativos da rota /faturas/servicos via FaturaService
     const loadServicos = async () => {
       try {
         const servicos = await FaturaService.getServicosAtivos();
@@ -65,7 +89,14 @@ function ConsultasComponent() {
     loadServicos();
   }, []);
 
+  // Função para separar consultas por status
+  const getConsultasByStatus = (status) => {
+    return consultas.filter(consulta => consulta.status?.nome === status);
+  };
 
+  const consultasPendentes = getConsultasByStatus('Pendente');
+  const consultasConfirmadas = getConsultasByStatus('Confirmada');
+  const consultasConcluidas = getConsultasByStatus('Concluída');
 
   // Função para calcular total da fatura
   const calcularTotal = () => {
@@ -76,13 +107,11 @@ function ConsultasComponent() {
     }, 0).toFixed(2);
   };
 
-  // Quando o usuário escolher um serviço no dropdown:
   const handleServicoChange = (index, campo, valor) => {
     const servicos = [...faturaData.servicos];
 
     if (campo === 'servico_id') {
       servicos[index][campo] = valor;
-
       const servicoSelecionado = servicosDisponiveis.find(s => s.id === parseInt(valor, 10));
       servicos[index].preco_unitario = servicoSelecionado ? servicoSelecionado.preco : 0;
     } else {
@@ -105,37 +134,36 @@ function ConsultasComponent() {
     setFaturaData({ ...faturaData, servicos });
   };
 
-const loadConsultas = async () => {
-  try {
-    setLoading(true);
-    const consultasResponse = await ConsultaService.getConsultasMedico();
+  const loadConsultas = async () => {
+    try {
+      setLoading(true);
+      const consultasResponse = await ConsultaService.getConsultasMedico();
 
-    // Para cada consulta, verificar se tem fatura
-    const consultasComFatura = await Promise.all(
-      consultasResponse.map(async (consulta) => {
-        try {
-          const fatura = await ConsultaService.getFaturaFromConsulta(consulta.id);
-          return {
-            ...consulta,
-            tem_fatura: !!fatura?.id,
-          };
-        } catch {
-          return {
-            ...consulta,
-            tem_fatura: false,
-          };
-        }
-      })
-    );
+      const consultasComFatura = await Promise.all(
+        consultasResponse.map(async (consulta) => {
+          try {
+            const fatura = await ConsultaService.getFaturaFromConsulta(consulta.id);
+            return {
+              ...consulta,
+              tem_fatura: !!fatura?.id,
+            };
+          } catch {
+            return {
+              ...consulta,
+              tem_fatura: false,
+            };
+          }
+        })
+      );
 
-    setConsultas(consultasComFatura);
-    setLoading(false);
-  } catch (error) {
-    toast.error('Erro ao carregar consultas');
-    setConsultas([]);
-    setLoading(false);
-  }
-};
+      setConsultas(consultasComFatura);
+      setLoading(false);
+    } catch (error) {
+      toast.error('Erro ao carregar consultas');
+      setConsultas([]);
+      setLoading(false);
+    }
+  };
 
   const handleAprovar = async (consultaId) => {
     try {
@@ -210,15 +238,13 @@ const loadConsultas = async () => {
       const payload = {
         consulta_id: selectedConsulta.id,
         observacoes: faturaData.observacoes,
-        status_id: 1, // Emitida
+        status_id: 1,
         servicos: faturaData.servicos.map(s => ({
           servico_id: parseInt(s.servico_id, 10),
           quantidade: parseInt(s.quantidade, 10),
           preco_unitario: parseFloat(s.preco_unitario)
         }))
       };
-
-      console.log('Payload para criação da fatura:', payload);  // <-- Aqui o log
 
       await FaturaService.criarFatura(payload);
       toast.success('Fatura criada com sucesso!');
@@ -236,63 +262,44 @@ const loadConsultas = async () => {
     }
   };
 
-
-  const handleViewFatura = async (consulta) => {
-    try {
-      const fatura = await ConsultaService.getFaturaFromConsulta(consulta.id);
-      if (fatura && fatura.id) {
-        const pdfUrl = FaturaService.getPDFUrl(fatura.id);
-        window.open(pdfUrl, '_blank');
-      } else {
-        toast.error('Não foi possível localizar a fatura desta consulta');
-      }
-    } catch {
-      toast.error('Erro ao buscar informações da fatura');
-    }
-  };
-
-  return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        Gestão de Consultas
-      </Typography>
-
-      <Button
-        onClick={() => loadConsultas()}
-        variant="outlined"
-        sx={{ mb: 2 }}
-      >
-        Recarregar Consultas
-      </Button>
-
-      {loading ? (
-        <Typography>Carregando consultas...</Typography>
-      ) : !consultas || consultas.length === 0 ? (
+  const renderConsultasTable = (consultasList, showActions = true) => {
+    if (!consultasList || consultasList.length === 0) {
+      return (
         <Box sx={{ textAlign: 'center', p: 4 }}>
-          <Typography>Nenhuma consulta encontrada.</Typography>
-          <Typography variant="caption" color="text.secondary">
-            Se isso parecer incorreto, verifique se há algum problema com a conexão.
+          <Typography variant="body1" color="text.secondary">
+            Nenhuma consulta encontrada nesta categoria.
           </Typography>
         </Box>
-      ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Data/Hora</TableCell>
-                <TableCell>Paciente</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Observações</TableCell>
-                <TableCell>Ações</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {consultas?.map((consulta) => (
-                <TableRow key={consulta.id}>
-                  <TableCell>{new Date(consulta.data_hora).toLocaleString('pt-PT')}</TableCell>
-                  <TableCell>{consulta.utilizador?.nome || 'Paciente não identificado'}</TableCell>
-                  <TableCell>{consulta.status?.nome || 'Status desconhecido'}</TableCell>
-                  <TableCell>{consulta.observacoes || 'Sem observações'}</TableCell>
+      );
+    }
+
+    return (
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Data/Hora</TableCell>
+              <TableCell>Paciente</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Observações</TableCell>
+              {showActions && <TableCell>Ações</TableCell>}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {consultasList.map((consulta) => (
+              <TableRow key={consulta.id}>
+                <TableCell>{new Date(consulta.data_hora).toLocaleString('pt-PT')}</TableCell>
+                <TableCell>{consulta.utilizador?.nome || 'Paciente não identificado'}</TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {consulta.status?.nome === 'Pendente' && <Pending color="warning" />}
+                    {consulta.status?.nome === 'Confirmada' && <CheckCircle color="info" />}
+                    {consulta.status?.nome === 'Concluída' && <Done color="success" />}
+                    {consulta.status?.nome || 'Status desconhecido'}
+                  </Box>
+                </TableCell>
+                <TableCell>{consulta.observacoes || 'Sem observações'}</TableCell>
+                {showActions && (
                   <TableCell>
                     {consulta.status?.nome === 'Pendente' && (
                       <>
@@ -342,7 +349,7 @@ const loadConsultas = async () => {
                       <Typography
                         variant="body2"
                         color="success.main"
-                        sx={{ fontWeight: 'bold', display: 'inline-block', mr: 1 }}
+                        sx={{ fontWeight: 'bold' }}
                       >
                         Fatura já emitida
                       </Typography>
@@ -363,11 +370,134 @@ const loadConsultas = async () => {
                       </Button>
                     )}
                   </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  };
+
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          Gestão de Consultas
+        </Typography>
+        <Button
+          onClick={() => loadConsultas()}
+          variant="outlined"
+          disabled={loading}
+        >
+          {loading ? 'Carregando...' : 'Recarregar Consultas'}
+        </Button>
+      </Box>
+
+      {/* Cards com resumo */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+        <Card sx={{ minWidth: 150 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Pending color="warning" />
+              <Box>
+                <Typography variant="h6">{consultasPendentes.length}</Typography>
+                <Typography variant="body2" color="text.secondary">Pendentes</Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ minWidth: 150 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CheckCircle color="info" />
+              <Box>
+                <Typography variant="h6">{consultasConfirmadas.length}</Typography>
+                <Typography variant="body2" color="text.secondary">Confirmadas</Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ minWidth: 150 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Done color="success" />
+              <Box>
+                <Typography variant="h6">{consultasConcluidas.length}</Typography>
+                <Typography variant="body2" color="text.secondary">Concluídas</Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+
+      {loading ? (
+        <Box sx={{ textAlign: 'center', p: 4 }}>
+          <Typography>Carregando consultas...</Typography>
+        </Box>
+      ) : (
+        <Box sx={{ width: '100%' }}>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+              <Tab 
+                label={
+                  <Badge badgeContent={consultasPendentes.length} color="warning">
+                    Consultas Pendentes
+                  </Badge>
+                } 
+              />
+              <Tab 
+                label={
+                  <Badge badgeContent={consultasConfirmadas.length} color="info">
+                    Consultas Confirmadas
+                  </Badge>
+                } 
+              />
+              <Tab 
+                label={
+                  <Badge badgeContent={consultasConcluidas.length} color="success">
+                    Consultas Concluídas
+                  </Badge>
+                } 
+              />
+            </Tabs>
+          </Box>
+
+          <TabPanel value={tabValue} index={0}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Pending color="warning" />
+              Consultas Pendentes de Aprovação
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Estas consultas aguardam sua aprovação ou recusa.
+            </Typography>
+            {renderConsultasTable(consultasPendentes)}
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={1}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CheckCircle color="info" />
+              Consultas Confirmadas
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Consultas aprovadas que podem ser finalizadas após o atendimento.
+            </Typography>
+            {renderConsultasTable(consultasConfirmadas)}
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={2}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Done color="success" />
+              Consultas Concluídas
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Consultas finalizadas. Você pode criar faturas para as que ainda não possuem.
+            </Typography>
+            {renderConsultasTable(consultasConcluidas)}
+          </TabPanel>
+        </Box>
       )}
 
       {/* Dialog para finalizar consulta */}
@@ -476,7 +606,7 @@ const loadConsultas = async () => {
                 onChange={(e) => handleServicoChange(index, 'preco_unitario', e.target.value)}
                 sx={{ width: '30%' }}
                 inputProps={{ min: 0, step: 0.01 }}
-                disabled // para que o usuário não altere manualmente, já vem do serviço
+                disabled
               />
 
               <IconButton onClick={() => removerServico(index)} color="error">

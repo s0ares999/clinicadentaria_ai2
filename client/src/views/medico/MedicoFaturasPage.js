@@ -44,8 +44,7 @@ function MedicoFaturasPage() {
   const [loading, setLoading] = useState(false);
   const [filtros, setFiltros] = useState({
     paciente: '',
-    dataInicio: '',
-    dataFim: ''
+    data: ''
   });
   
   const [faturaData, setFaturaData] = useState({
@@ -122,16 +121,11 @@ function MedicoFaturasPage() {
       );
     }
 
-    if (filtros.dataInicio) {
-      filtered = filtered.filter(consulta =>
-        new Date(consulta.data_hora) >= new Date(filtros.dataInicio)
-      );
-    }
-
-    if (filtros.dataFim) {
-      filtered = filtered.filter(consulta =>
-        new Date(consulta.data_hora) <= new Date(filtros.dataFim + 'T23:59:59')
-      );
+    if (filtros.data) {
+      filtered = filtered.filter(consulta => {
+        const dataConsulta = new Date(consulta.data_hora).toISOString().split('T')[0];
+        return dataConsulta === filtros.data;
+      });
     }
 
     setConsultasFiltradas(filtered);
@@ -140,8 +134,7 @@ function MedicoFaturasPage() {
   const limparFiltros = () => {
     setFiltros({
       paciente: '',
-      dataInicio: '',
-      dataFim: ''
+      data: ''
     });
   };
 
@@ -330,7 +323,7 @@ function MedicoFaturasPage() {
         </Typography>
         
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={5}>
             <TextField
               fullWidth
               label="Nome do Paciente"
@@ -340,36 +333,26 @@ function MedicoFaturasPage() {
             />
           </Grid>
           
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} md={4}>
             <TextField
               fullWidth
-              label="Data Início"
+              label="Data da Consulta"
               type="date"
-              value={filtros.dataInicio}
-              onChange={(e) => setFiltros({ ...filtros, dataInicio: e.target.value })}
+              value={filtros.data}
+              onChange={(e) => setFiltros({ ...filtros, data: e.target.value })}
               InputLabelProps={{ shrink: true }}
+              helperText="Filtrar consultas de um dia específico"
             />
           </Grid>
           
           <Grid item xs={12} md={3}>
-            <TextField
-              fullWidth
-              label="Data Fim"
-              type="date"
-              value={filtros.dataFim}
-              onChange={(e) => setFiltros({ ...filtros, dataFim: e.target.value })}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={2}>
             <Button
               fullWidth
               variant="outlined"
               onClick={limparFiltros}
               startIcon={<Clear />}
             >
-              Limpar
+              Limpar Filtros
             </Button>
           </Grid>
         </Grid>
@@ -409,7 +392,10 @@ function MedicoFaturasPage() {
                     <TableRow>
                       <TableCell colSpan={5} align="center">
                         <Typography color="text.secondary">
-                          Todas as consultas concluídas já possuem fatura
+                          {filtros.paciente || filtros.data 
+                            ? 'Nenhuma consulta encontrada com os filtros aplicados'
+                            : 'Todas as consultas concluídas já possuem fatura'
+                          }
                         </Typography>
                       </TableCell>
                     </TableRow>

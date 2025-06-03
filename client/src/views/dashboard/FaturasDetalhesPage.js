@@ -1,8 +1,8 @@
-import html2pdf from 'html2pdf.js/dist/html2pdf.min.js';
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import api from '../../services/api.config';
+import PDFGeneratorButton from '../../components/PDFGeneratorButton'
 
 const Container = styled.div`
   max-width: 1200px;
@@ -343,7 +343,6 @@ const FaturaDetalhesPage = () => {
     const [fatura, setFatura] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [generatingPDF, setGeneratingPDF] = useState(false);
 
     const pdfRef = useRef();
 
@@ -375,65 +374,19 @@ const FaturaDetalhesPage = () => {
         }
     };
 
-    const handleGeneratePDF = async () => {
-        if (!pdfRef.current) {
-            console.error('Referência do PDF não encontrada');
-            alert('Erro ao gerar PDF: elemento não encontrado');
-            return;
-        }
+    // Callbacks para o PDF
+    const handlePDFStart = () => {
+        console.log('Iniciando geração do PDF da fatura...');
+    };
 
-        try {
-            setGeneratingPDF(true);
+    const handlePDFSuccess = (pdf) => {
+        console.log('PDF da fatura gerado com sucesso!');
+        // Aqui você pode adicionar notificações de sucesso, analytics, etc.
+    };
 
-            const element = pdfRef.current;
-
-            const opt = {
-                margin: [0.5, 0.5, 0.5, 0.5],
-                filename: `fatura-${fatura.id}-${new Date().toISOString().split('T')[0]}.pdf`,
-                image: {
-                    type: 'jpeg',
-                    quality: 0.98
-                },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    letterRendering: true,
-                    allowTaint: false,
-                    backgroundColor: '#ffffff'
-                },
-                jsPDF: {
-                    unit: 'in',
-                    format: 'a4',
-                    orientation: 'portrait',
-                    compress: true
-                },
-                pagebreak: {
-                    mode: ['avoid-all', 'css', 'legacy']
-                }
-            };
-
-            console.log('Iniciando geração do PDF...');
-
-            await html2pdf()
-                .set(opt)
-                .from(element)
-                .toPdf()
-                .get('pdf')
-                .then((pdf) => {
-                    console.log('PDF gerado com sucesso');
-                })
-                .save()
-                .catch((error) => {
-                    console.error('Erro na geração do PDF:', error);
-                    throw error;
-                });
-
-        } catch (error) {
-            console.error('Erro ao gerar PDF:', error);
-            alert('Erro ao gerar PDF. Por favor, tente novamente.');
-        } finally {
-            setGeneratingPDF(false);
-        }
+    const handlePDFError = (error) => {
+        console.error('Erro ao gerar PDF da fatura:', error);
+        alert('Erro ao gerar PDF da fatura. Por favor, tente novamente.');
     };
 
     const formatCurrency = (value) => {
@@ -522,13 +475,15 @@ const FaturaDetalhesPage = () => {
             <Header>
                 <PageTitle>Fatura #{fatura.id}</PageTitle>
                 <ActionButtons>
-                    <ActionButton
-                        onClick={handleGeneratePDF}
-                        disabled={generatingPDF}
-                    >
-                        <i className={generatingPDF ? "fas fa-spinner fa-spin" : "fas fa-file-pdf"}></i>
-                        {generatingPDF ? 'Gerando PDF...' : 'Gerar PDF'}
-                    </ActionButton>
+                    <PDFGeneratorButton
+                        elementRef={pdfRef}
+                        filename={`fatura-${fatura.id}-${new Date().toISOString().split('T')[0]}.pdf`}
+                        buttonText="Gerar PDF"
+                        loadingText="Gerando PDF..."
+                        onStart={handlePDFStart}
+                        onSuccess={handlePDFSuccess}
+                        onError={handlePDFError}
+                    />
                     <ActionButton variant="danger" onClick={handleDelete}>
                         <i className="fas fa-trash"></i>
                         Deletar

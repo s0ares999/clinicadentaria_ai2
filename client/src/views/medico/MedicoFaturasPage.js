@@ -1,424 +1,651 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import { toast } from 'react-toastify';
-import FaturaService from '../../services/fatura.service';
+import {
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  Typography,
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton,
+  Card,
+  CardContent,
+  Chip,
+  Grid,
+  Divider
+} from '@mui/material';
+import { 
+  AddCircle, 
+  RemoveCircle, 
+  Receipt, 
+  CheckCircle, 
+  Search,
+  FilterList,
+  Clear
+} from '@mui/icons-material';
+import { toast } from 'react-hot-toast';
 import ConsultaService from '../../services/consulta.service';
-import MedicoFaturasListagemComponent from './MedicoFaturasListagemComponent';
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  margin-top: 3rem;
-`;
-
-const FaturasContainer = styled.div`
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  padding: 2rem;
-`;
-
-const SectionTitle = styled.div`
-  font-size: 1.25rem;
-  color: #2c3e50;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #ecf0f1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const TabsContainer = styled.div`
-  display: flex;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #ecf0f1;
-`;
-
-const Tab = styled.button`
-  padding: 0.75rem 1.5rem;
-  background-color: transparent;
-  color: ${props => props.active ? '#3498db' : '#7f8c8d'};
-  border: none;
-  border-bottom: ${props => props.active ? '2px solid #3498db' : 'none'};
-  font-weight: ${props => props.active ? '600' : '400'};
-  cursor: pointer;
-`;
-
-const TableContainer = styled.div`
-  width: 100%;
-  overflow-x: auto;
-`;
-
-const Table = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  
-  th {
-    text-align: left;
-    padding: 1rem;
-    color: #34495e;
-    font-weight: 600;
-    background-color: #f8f9fa;
-  }
-  
-  td {
-    padding: 1rem;
-    border-top: 1px solid #ecf0f1;
-  }
-  
-  tr:hover {
-    background-color: #f8f9fa;
-  }
-`;
-
-const StatusBadge = styled.span`
-  padding: 0.3rem 0.6rem;
-  border-radius: 50px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  
-  &.emitida {
-    background-color: #fff8e1;
-    color: #ffa000;
-  }
-  
-  &.paga {
-    background-color: #e8f5e9;
-    color: #388e3c;
-  }
-  
-  &.cancelada {
-    background-color: #ffebee;
-    color: #d32f2f;
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 0.5rem;
-`;
-
-const Button = styled.button`
-  background-color: ${props => props.secondary ? '#f39c12' : props.danger ? '#e74c3c' : '#3498db'};
-  color: white;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  
-  &:hover {
-    background-color: ${props => props.secondary ? '#d35400' : props.danger ? '#c0392b' : '#2980b9'};
-  }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const EmptyState = styled.div`
-  text-align: center;
-  padding: 3rem 1rem;
-  color: #7f8c8d;
-`;
-
-const Dialog = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-`;
-
-const DialogContent = styled.div`
-  background-color: white;
-  border-radius: 8px;
-  padding: 2rem;
-  width: 100%;
-  max-width: 500px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-`;
-
-const DialogTitle = styled.h3`
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  color: #2c3e50;
-  border-bottom: 1px solid #ecf0f1;
-  padding-bottom: 0.5rem;
-`;
-
-const FormGroup = styled.div`
-  margin-bottom: 1.5rem;
-  
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: #2c3e50;
-  }
-  
-  input, select, textarea {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.9rem;
-  }
-`;
+import FaturaService from '../../services/fatura.service';
 
 function MedicoFaturasPage() {
-  const [faturas, setFaturas] = useState([]);
   const [consultas, setConsultas] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('todas');
-  const [showModal, setShowModal] = useState(false);
-  const [consultaSelecionada, setConsultaSelecionada] = useState(null);
-  const [formData, setFormData] = useState({
-    valor_total: '',
-    observacoes: ''
+  const [consultasFiltradas, setConsultasFiltradas] = useState([]);
+  const [selectedConsulta, setSelectedConsulta] = useState(null);
+  const [faturaDialogOpen, setFaturaDialogOpen] = useState(false);
+  const [servicosDisponiveis, setServicosDisponiveis] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [filtros, setFiltros] = useState({
+    paciente: '',
+    dataInicio: '',
+    dataFim: ''
+  });
+  
+  const [faturaData, setFaturaData] = useState({
+    observacoes: '',
+    servicos: [
+      { servico_id: '', quantidade: 1, preco_unitario: 0 }
+    ]
   });
 
   useEffect(() => {
-    carregarDados();
+    loadConsultasConcluidas();
+    loadServicos();
   }, []);
 
-  const carregarDados = async () => {
-    setLoading(true);
+  useEffect(() => {
+    aplicarFiltros();
+  }, [consultas, filtros]);
+
+  const loadConsultasConcluidas = async () => {
     try {
-      const [faturasResponse, consultasResponse] = await Promise.all([
-        FaturaService.getFaturasByMedico(),
-        ConsultaService.getConsultasMedico() // <-- usando método para buscar consultas do médico autenticado
-      ]);
-
-      setFaturas(faturasResponse || []);
-
-      // Mapear IDs das consultas que já têm faturas
-      const consultasComFaturaIds = new Set(
-        (faturasResponse || []).map(fatura => fatura.consulta_id)
+      setLoading(true);
+      const consultasResponse = await ConsultaService.getConsultasMedico();
+      
+      // Filtrar apenas consultas concluídas
+      const consultasConcluidas = consultasResponse.filter(
+        consulta => consulta.status?.nome === 'Concluída'
       );
 
-      // Adiciona flag indicando se consulta já tem fatura
-      const consultasComFlagFatura = (consultasResponse || []).map(consulta => ({
-        ...consulta,
-        tem_fatura: consultasComFaturaIds.has(consulta.id)
-      }));
-
-      // Filtrar consultas concluídas que não têm fatura
-      const consultasSemFatura = consultasComFlagFatura.filter(
-        consulta => !consulta.tem_fatura && consulta.status?.nome === 'Concluída'
+      // Verificar quais já têm fatura
+      const consultasComFatura = await Promise.all(
+        consultasConcluidas.map(async (consulta) => {
+          try {
+            const fatura = await ConsultaService.getFaturaFromConsulta(consulta.id);
+            return {
+              ...consulta,
+              tem_fatura: !!fatura?.id,
+              fatura_id: fatura?.id || null
+            };
+          } catch {
+            return {
+              ...consulta,
+              tem_fatura: false,
+              fatura_id: null
+            };
+          }
+        })
       );
 
-      setConsultas(consultasSemFatura);
+      setConsultas(consultasComFatura);
+      setLoading(false);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
-      toast.error("Não foi possível carregar os dados");
-    } finally {
+      toast.error('Erro ao carregar consultas concluídas');
+      setConsultas([]);
       setLoading(false);
     }
   };
 
-  const handleCriarFatura = (consulta) => {
-    setConsultaSelecionada(consulta);
-    setFormData({
-      valor_total: '50.00', // Valor padrão
-      observacoes: `Consulta realizada em ${formatarData(consulta.data_hora)}`
-    });
-    setShowModal(true);
+  const loadServicos = async () => {
+    try {
+      const servicos = await FaturaService.getServicosAtivos();
+      setServicosDisponiveis(servicos);
+    } catch (error) {
+      toast.error('Erro ao carregar serviços');
+      setServicosDisponiveis([]);
+    }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const aplicarFiltros = () => {
+    let filtered = [...consultas];
 
-    let valorTotal;
+    if (filtros.paciente) {
+      filtered = filtered.filter(consulta =>
+        consulta.utilizador?.nome?.toLowerCase().includes(filtros.paciente.toLowerCase())
+      );
+    }
+
+    if (filtros.dataInicio) {
+      filtered = filtered.filter(consulta =>
+        new Date(consulta.data_hora) >= new Date(filtros.dataInicio)
+      );
+    }
+
+    if (filtros.dataFim) {
+      filtered = filtered.filter(consulta =>
+        new Date(consulta.data_hora) <= new Date(filtros.dataFim + 'T23:59:59')
+      );
+    }
+
+    setConsultasFiltradas(filtered);
+  };
+
+  const limparFiltros = () => {
+    setFiltros({
+      paciente: '',
+      dataInicio: '',
+      dataFim: ''
+    });
+  };
+
+  const calcularTotal = () => {
+    return faturaData.servicos.reduce((acc, servico) => {
+      const qtd = parseFloat(servico.quantidade) || 0;
+      const preco = parseFloat(servico.preco_unitario) || 0;
+      return acc + (qtd * preco);
+    }, 0).toFixed(2);
+  };
+
+  const handleServicoChange = (index, campo, valor) => {
+    const servicos = [...faturaData.servicos];
+
+    if (campo === 'servico_id') {
+      servicos[index][campo] = valor;
+      const servicoSelecionado = servicosDisponiveis.find(s => s.id === parseInt(valor, 10));
+      servicos[index].preco_unitario = servicoSelecionado ? servicoSelecionado.preco : 0;
+    } else {
+      servicos[index][campo] = valor;
+    }
+
+    setFaturaData({ ...faturaData, servicos });
+  };
+
+  const adicionarServico = () => {
+    setFaturaData({
+      ...faturaData,
+      servicos: [...faturaData.servicos, { servico_id: '', quantidade: 1, preco_unitario: 0 }]
+    });
+  };
+
+  const removerServico = (index) => {
+    if (faturaData.servicos.length > 1) {
+      const servicos = [...faturaData.servicos];
+      servicos.splice(index, 1);
+      setFaturaData({ ...faturaData, servicos });
+    }
+  };
+
+  const handleOpenFaturaDialog = (consulta) => {
+    setSelectedConsulta(consulta);
+    setFaturaData({
+      observacoes: `Consulta realizada em ${new Date(consulta.data_hora).toLocaleDateString('pt-PT')} - ${consulta.utilizador?.nome}`,
+      servicos: [{ servico_id: '', quantidade: 1, preco_unitario: 0 }]
+    });
+    setFaturaDialogOpen(true);
+  };
+
+  const handleCriarFatura = async () => {
     try {
-      valorTotal = parseFloat(formData.valor_total);
-      if (isNaN(valorTotal) || valorTotal <= 0) {
-        toast.error("O valor da fatura deve ser maior que zero");
+      if (!selectedConsulta) {
+        toast.error('Consulta não selecionada');
         return;
       }
-    } catch (error) {
-      toast.error("O valor informado é inválido");
-      return;
-    }
 
-    try {
-      await FaturaService.criarFatura({
-        consulta_id: consultaSelecionada.id,
-        valor_total: valorTotal,
-        observacoes: formData.observacoes,
-        status_id: 1
-      });
-
-      toast.success("Fatura criada com sucesso");
-      setShowModal(false);
-      carregarDados();
-    } catch (error) {
-      console.error("Erro ao criar fatura:", error);
-      let mensagemErro = "Erro ao criar fatura";
-      if (error.response && error.response.data) {
-        mensagemErro = error.response.data.message || mensagemErro;
+      // Validar se pelo menos um serviço foi selecionado
+      const servicosValidos = faturaData.servicos.filter(s => s.servico_id && s.quantidade > 0);
+      if (servicosValidos.length === 0) {
+        toast.error('Selecione pelo menos um serviço');
+        return;
       }
-      toast.error(mensagemErro);
+
+      const payload = {
+        consulta_id: selectedConsulta.id,
+        observacoes: faturaData.observacoes,
+        status_id: 1,
+        servicos: servicosValidos.map(s => ({
+          servico_id: parseInt(s.servico_id, 10),
+          quantidade: parseInt(s.quantidade, 10),
+          preco_unitario: parseFloat(s.preco_unitario)
+        }))
+      };
+
+      await FaturaService.criarFatura(payload);
+      toast.success('Fatura criada com sucesso!');
+      setFaturaDialogOpen(false);
+      setFaturaData({ 
+        observacoes: '', 
+        servicos: [{ servico_id: '', quantidade: 1, preco_unitario: 0 }] 
+      });
+      loadConsultasConcluidas();
+    } catch (error) {
+      console.error('Erro ao criar fatura:', error);
+      if (error.response && error.response.data) {
+        toast.error(`Erro: ${JSON.stringify(error.response.data)}`);
+      } else {
+        toast.error('Erro ao criar fatura');
+      }
     }
   };
 
-  const formatarData = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-PT');
-  };
-
-  const formatarValor = (valor) => {
-    return `${parseFloat(valor).toFixed(2)} €`;
-  };
-
-  const getStatusClass = (status) => {
-    if (!status) return '';
-
-    switch (status.nome?.toLowerCase()) {
-      case 'emitida':
-        return 'emitida';
-      case 'paga':
-        return 'paga';
-      case 'cancelada':
-        return 'cancelada';
-      default:
-        return '';
-    }
-  };
-
-  const filtrarFaturas = () => {
-    if (activeTab === 'todas') {
-      return faturas;
-    }
-    return faturas.filter(fatura => fatura.status?.nome.toLowerCase() === activeTab);
-  };
+  const consultasSemFatura = consultasFiltradas.filter(c => !c.tem_fatura);
+  const consultasComFatura = consultasFiltradas.filter(c => c.tem_fatura);
 
   return (
-    <Container>
-      <FaturasContainer>
-        <SectionTitle>
-          Gestão de Faturas
-          <Button onClick={carregarDados}>
-            <i className="fas fa-sync"></i> Atualizar
-          </Button>
-        </SectionTitle>
+    <Box>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Receipt color="primary" />
+          Criar Faturas
+        </Typography>
+        <Button
+          onClick={loadConsultasConcluidas}
+          variant="outlined"
+          disabled={loading}
+          startIcon={<Search />}
+        >
+          {loading ? 'Carregando...' : 'Recarregar'}
+        </Button>
+      </Box>
 
-        <TabsContainer>
-          <Tab active={activeTab === 'todas'} onClick={() => setActiveTab('todas')}>
-            Todas
-          </Tab>
-          <Tab active={activeTab === 'emitida'} onClick={() => setActiveTab('emitida')}>
-            Pendentes
-          </Tab>
-          <Tab active={activeTab === 'paga'} onClick={() => setActiveTab('paga')}>
-            Pagas
-          </Tab>
-          <Tab active={activeTab === 'cancelada'} onClick={() => setActiveTab('cancelada')}>
-            Canceladas
-          </Tab>
-        </TabsContainer>
+      {/* Cards de Resumo */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Receipt color="warning" />
+                <Box>
+                  <Typography variant="h6">{consultasSemFatura.length}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Sem Fatura
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-        {loading ? (
-          <EmptyState>Carregando faturas...</EmptyState>
-        ) : (
-          <MedicoFaturasListagemComponent
-            faturas={filtrarFaturas()}
-            recarregarDados={carregarDados}
-          />
-        )}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CheckCircle color="success" />
+                <Box>
+                  <Typography variant="h6">{consultasComFatura.length}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Com Fatura
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-        {activeTab === 'todas' && (
-          <>
-            <SectionTitle style={{ marginTop: '2rem' }}>
-              Consultas Concluídas sem Fatura
-            </SectionTitle>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <FilterList color="info" />
+                <Box>
+                  <Typography variant="h6">{consultasFiltradas.length}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Filtradas
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-            {consultas.length > 0 ? (
-              <TableContainer>
-                <Table>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Data</th>
-                      <th>Paciente</th>
-                      <th>Observações</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {consultas.map(consulta => (
-                      <tr key={consulta.id}>
-                        <td>#{consulta.id}</td>
-                        <td>{formatarData(consulta.data_hora)}</td>
-                        <td>{consulta.utilizador?.nome || 'Paciente'}</td>
-                        <td>{consulta.observacoes || '-'}</td>
-                        <td>
-                          <Button onClick={() => handleCriarFatura(consulta)}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Receipt color="primary" />
+                <Box>
+                  <Typography variant="h6">{consultas.length}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Concluídas
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Filtros */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <FilterList />
+          Filtros
+        </Typography>
+        
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Nome do Paciente"
+              value={filtros.paciente}
+              onChange={(e) => setFiltros({ ...filtros, paciente: e.target.value })}
+              placeholder="Digite o nome do paciente"
+            />
+          </Grid>
+          
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Data Início"
+              type="date"
+              value={filtros.dataInicio}
+              onChange={(e) => setFiltros({ ...filtros, dataInicio: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Data Fim"
+              type="date"
+              value={filtros.dataFim}
+              onChange={(e) => setFiltros({ ...filtros, dataFim: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          
+          <Grid item xs={12} md={2}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={limparFiltros}
+              startIcon={<Clear />}
+            >
+              Limpar
+            </Button>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {loading ? (
+        <Box sx={{ textAlign: 'center', p: 4 }}>
+          <Typography>Carregando consultas...</Typography>
+        </Box>
+      ) : (
+        <>
+          {/* Consultas sem Fatura */}
+          <Paper sx={{ mb: 3 }}>
+            <Box sx={{ p: 2, bgcolor: 'warning.light', color: 'warning.contrastText' }}>
+              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Receipt />
+                Consultas Aguardando Fatura ({consultasSemFatura.length})
+              </Typography>
+              <Typography variant="body2">
+                Consultas concluídas que ainda não possuem fatura criada
+              </Typography>
+            </Box>
+            
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Data/Hora</TableCell>
+                    <TableCell>Paciente</TableCell>
+                    <TableCell>Observações da Consulta</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Ações</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {consultasSemFatura.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        <Typography color="text.secondary">
+                          Todas as consultas concluídas já possuem fatura
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    consultasSemFatura.map((consulta) => (
+                      <TableRow key={consulta.id}>
+                        <TableCell>
+                          {new Date(consulta.data_hora).toLocaleString('pt-PT')}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="bold">
+                            {consulta.utilizador?.nome || 'Paciente não identificado'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            ID: {consulta.utilizador?.id}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {consulta.observacoes || 'Sem observações'}
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label="Concluída" 
+                            color="success" 
+                            size="small"
+                            icon={<CheckCircle />}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            size="small"
+                            onClick={() => handleOpenFaturaDialog(consulta)}
+                            startIcon={<Receipt />}
+                          >
                             Criar Fatura
                           </Button>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+
+          {/* Consultas com Fatura */}
+          {consultasComFatura.length > 0 && (
+            <Paper>
+              <Box sx={{ p: 2, bgcolor: 'success.light', color: 'success.contrastText' }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CheckCircle />
+                  Consultas com Fatura Criada ({consultasComFatura.length})
+                </Typography>
+                <Typography variant="body2">
+                  Consultas que já possuem fatura emitida
+                </Typography>
+              </Box>
+              
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Data/Hora</TableCell>
+                      <TableCell>Paciente</TableCell>
+                      <TableCell>Observações da Consulta</TableCell>
+                      <TableCell>Status da Fatura</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {consultasComFatura.map((consulta) => (
+                      <TableRow key={consulta.id}>
+                        <TableCell>
+                          {new Date(consulta.data_hora).toLocaleString('pt-PT')}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="bold">
+                            {consulta.utilizador?.nome || 'Paciente não identificado'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            ID: {consulta.utilizador?.id}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {consulta.observacoes || 'Sem observações'}
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label="Fatura Criada" 
+                            color="success" 
+                            size="small"
+                            icon={<CheckCircle />}
+                          />
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
+                  </TableBody>
                 </Table>
               </TableContainer>
-            ) : (
-              <EmptyState>
-                Não há consultas concluídas sem fatura.
-              </EmptyState>
-            )}
-          </>
-        )}
-      </FaturasContainer>
-
-      {/* Modal para criar fatura */}
-      {showModal && (
-        <Dialog>
-          <DialogContent>
-            <DialogTitle>Criar Fatura</DialogTitle>
-            <form onSubmit={handleSubmit}>
-              <FormGroup>
-                <label>Valor Total (€)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.valor_total}
-                  onChange={e => setFormData({ ...formData, valor_total: e.target.value })}
-                  required
-                  min="0.01"
-                />
-              </FormGroup>
-              <FormGroup>
-                <label>Observações</label>
-                <textarea
-                  rows={3}
-                  value={formData.observacoes}
-                  onChange={e => setFormData({ ...formData, observacoes: e.target.value })}
-                />
-              </FormGroup>
-              <ButtonGroup>
-                <Button type="submit">Criar</Button>
-                <Button
-                  type="button"
-                  secondary
-                  onClick={() => setShowModal(false)}
-                >
-                  Cancelar
-                </Button>
-              </ButtonGroup>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </Paper>
+          )}
+        </>
       )}
-    </Container>
+
+      {/* Dialog para criar fatura */}
+      <Dialog 
+        open={faturaDialogOpen} 
+        onClose={() => setFaturaDialogOpen(false)} 
+        maxWidth="md" 
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Receipt color="primary" />
+            Criar Fatura - {selectedConsulta?.utilizador?.nome}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Data da consulta: {selectedConsulta && new Date(selectedConsulta.data_hora).toLocaleString('pt-PT')}
+          </Typography>
+        </DialogTitle>
+        
+        <DialogContent>
+          <TextField
+            label="Observações da Fatura"
+            fullWidth
+            multiline
+            rows={3}
+            margin="normal"
+            value={faturaData.observacoes}
+            onChange={(e) => setFaturaData({ ...faturaData, observacoes: e.target.value })}
+            placeholder="Digite observações para a fatura..."
+          />
+
+          <Divider sx={{ my: 2 }} />
+
+          <Typography variant="h6" gutterBottom>
+            Serviços
+          </Typography>
+
+          {faturaData.servicos.map((servico, index) => (
+            <Paper key={index} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} md={5}>
+                  <TextField
+                    select
+                    label="Serviço"
+                    fullWidth
+                    value={servico.servico_id}
+                    onChange={(e) => handleServicoChange(index, 'servico_id', e.target.value)}
+                    SelectProps={{ native: true }}
+                  >
+                    <option value="">Selecione um serviço</option>
+                    {servicosDisponiveis.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.nome} - €{s.preco}
+                      </option>
+                    ))}
+                  </TextField>
+                </Grid>
+
+                <Grid item xs={6} md={2}>
+                  <TextField
+                    label="Quantidade"
+                    type="number"
+                    fullWidth
+                    value={servico.quantidade}
+                    onChange={(e) => handleServicoChange(index, 'quantidade', e.target.value)}
+                    inputProps={{ min: 1 }}
+                  />
+                </Grid>
+
+                <Grid item xs={6} md={3}>
+                  <TextField
+                    label="Preço Unitário (€)"
+                    type="number"
+                    fullWidth
+                    value={servico.preco_unitario}
+                    onChange={(e) => handleServicoChange(index, 'preco_unitario', e.target.value)}
+                    inputProps={{ min: 0, step: 0.01 }}
+                    disabled
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={2}>
+                  <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                    <IconButton 
+                      onClick={() => removerServico(index)} 
+                      color="error"
+                      disabled={faturaData.servicos.length === 1}
+                    >
+                      <RemoveCircle />
+                    </IconButton>
+                  </Box>
+                </Grid>
+              </Grid>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Subtotal: €{((parseFloat(servico.quantidade) || 0) * (parseFloat(servico.preco_unitario) || 0)).toFixed(2)}
+              </Typography>
+            </Paper>
+          ))}
+
+          <Button
+            startIcon={<AddCircle />}
+            onClick={adicionarServico}
+            variant="outlined"
+            sx={{ mb: 2 }}
+          >
+            Adicionar Serviço
+          </Button>
+
+          <Divider sx={{ my: 2 }} />
+
+          <Box sx={{ textAlign: 'right' }}>
+            <Typography variant="h5" color="primary">
+              Valor Total: €{calcularTotal()}
+            </Typography>
+          </Box>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setFaturaDialogOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleCriarFatura}
+            variant="contained"
+            color="primary"
+            startIcon={<Receipt />}
+          >
+            Criar Fatura
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
 

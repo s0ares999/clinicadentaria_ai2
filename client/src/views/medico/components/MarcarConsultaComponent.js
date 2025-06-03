@@ -154,6 +154,26 @@ const UserInfoBox = styled.div`
   }
 `;
 
+const ErrorMessage = styled.div`
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #721c24;
+  font-size: 0.9rem;
+`;
+
+const SuccessMessage = styled.div`
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #155724;
+  font-size: 0.9rem;
+`;
+
 function MarcarConsultaComponent() {
   const [clienteEmail, setClienteEmail] = useState('');
   const [dataAgendamento, setDataAgendamento] = useState('');
@@ -164,17 +184,21 @@ function MarcarConsultaComponent() {
   const [loadingHorarios, setLoadingHorarios] = useState(false);
   const [dadosDisponibilidade, setDadosDisponibilidade] = useState(null);
   const [medicoLogado, setMedicoLogado] = useState(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     const user = AuthService.getCurrentUser();
     
     if (!user || !user.accessToken) {
       console.error("Médico não autenticado");
+      setError('Você precisa estar logado para marcar consultas');
       toast.error('Você precisa estar logado para marcar consultas');
       return;
     }
     
     if (user.tipo !== 'medico') {
+      setError('Acesso negado. Apenas médicos podem marcar consultas.');
       toast.error('Acesso negado. Apenas médicos podem marcar consultas.');
       return;
     }
@@ -199,6 +223,7 @@ function MarcarConsultaComponent() {
 
       setLoadingHorarios(true);
       setHoraSelecionada(''); // Limpar hora selecionada
+      setError(''); // Limpar erros anteriores
 
       try {
         const dados = await ConsultaService.getHorariosDisponiveis(dataAgendamento);
@@ -210,6 +235,7 @@ function MarcarConsultaComponent() {
         }
       } catch (error) {
         console.error('Erro ao carregar horários:', error);
+        setError('Erro ao carregar horários disponíveis');
         toast.error('Erro ao carregar horários disponíveis');
         setHorariosDisponiveis([]);
         setDadosDisponibilidade(null);
@@ -221,21 +247,51 @@ function MarcarConsultaComponent() {
     carregarHorarios();
   }, [dataAgendamento, medicoLogado]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!clienteEmail || !dataAgendamento || !horaSelecionada) {
-      toast.error('Por favor, preencha todos os campos obrigatórios');
-      return;
+  const validateForm = () => {
+    if (!clienteEmail) {
+      setError('Email do cliente é obrigatório');
+      return false;
     }
 
     if (!clienteEmail.includes('@')) {
-      toast.error('Por favor, insira um email válido para o cliente');
+      setError('Por favor, insira um email válido para o cliente');
+      return false;
+    }
+
+    if (!dataAgendamento) {
+      setError('Data da consulta é obrigatória');
+      return false;
+    }
+
+    if (!horaSelecionada) {
+      setError('Horário da consulta é obrigatório');
+      return false;
+    }
+
+    // Validar se a data não é no passado
+    const hoje = new Date();
+    const dataConsulta = new Date(dataAgendamento);
+    
+    if (dataConsulta < hoje.setHours(0, 0, 0, 0)) {
+      setError('Não é possível marcar consultas para datas passadas');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    
+    if (!validateForm()) {
       return;
     }
     
     if (!medicoLogado || !medicoLogado.accessToken) {
       console.error("Médico não autenticado ou token não encontrado");
+      setError("Você precisa estar logado para marcar uma consulta");
       toast.error("Você precisa estar logado para marcar uma consulta");
       return;
     }
@@ -259,6 +315,8 @@ function MarcarConsultaComponent() {
       const response = ConsultaService.createConsultaByMedico 
         ? await ConsultaService.createConsultaByMedico(consultaData)
         : await ConsultaService.createConsulta(consultaData);
+      
+      setSuccess('Consulta marcada com sucesso para o cliente!');
       toast.success('Consulta marcada com sucesso para o cliente!');
       
       // Limpar formulário
@@ -267,7 +325,7 @@ function MarcarConsultaComponent() {
       setHoraSelecionada('');
       setObservacoes('');
       
-      // Recarregar horários disponíveis
+      // Recarregar horários disponíveis se ainda tem data selecionada
       if (dataAgendamento) {
         try {
           const dados = await ConsultaService.getHorariosDisponiveis(dataAgendamento);
@@ -280,28 +338,43 @@ function MarcarConsultaComponent() {
       
     } catch (error) {
       console.error('Erro completo:', error);
+      let errorMessage = 'Erro ao marcar consulta';
+      
       if (error.response) {
         console.error('Status:', error.response.status);
         console.error('Dados do erro:', error.response.data);
         
-        // Tratamento específico para erro 401
+        // Tratamento específico para diferentes tipos de erro
         if (error.response.status === 401) {
-          toast.error('Sua sessão expirou. Por favor, faça login novamente.');
+          errorMessage = 'Sua sessão expirou. Por favor, faça login novamente.';
           AuthService.logout();
-          return;
-        }
-
-        // Tratamento para cliente não encontrado
-        if (error.response.status === 404 && error.response.data?.message?.includes('Cliente')) {
-          toast.error('Cliente não encontrado. Verifique o email informado.');
-          return;
+        } else if (error.response.status === 404 && error.response.data?.message?.includes('Cliente')) {
+          errorMessage = 'Cliente não encontrado. Verifique o email informado.';
+        } else if (error.response.status === 400) {
+          errorMessage = error.response.data?.message || 'Dados inválidos para a consulta';
+        } else if (error.response.status === 403) {
+          errorMessage = 'Você não tem permissão para realizar esta ação';
+        } else {
+          errorMessage = error.response.data?.message || errorMessage;
         }
       }
       
-      toast.error(error.response?.data?.message || 'Erro ao marcar consulta');
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleClearForm = () => {
+    setClienteEmail('');
+    setDataAgendamento('');
+    setHoraSelecionada('');
+    setObservacoes('');
+    setError('');
+    setSuccess('');
+    setHorariosDisponiveis([]);
+    setDadosDisponibilidade(null);
   };
 
   if (!medicoLogado) {
@@ -325,6 +398,18 @@ function MarcarConsultaComponent() {
           <p><strong>Dr(a). {medicoLogado.nome}</strong> - {medicoLogado.email}</p>
         </UserInfoBox>
 
+        {error && (
+          <ErrorMessage>
+            <strong>Erro:</strong> {error}
+          </ErrorMessage>
+        )}
+
+        {success && (
+          <SuccessMessage>
+            <strong>Sucesso:</strong> {success}
+          </SuccessMessage>
+        )}
+
         <Form onSubmit={handleSubmit}>
           <FormGroup>
             <Label>Email do Cliente*</Label>
@@ -334,6 +419,7 @@ function MarcarConsultaComponent() {
               onChange={(e) => setClienteEmail(e.target.value)}
               placeholder="cliente@email.com"
               required
+              disabled={submitting}
             />
             <InfoText>
               Informe o email do cliente para quem a consulta será marcada
@@ -348,6 +434,7 @@ function MarcarConsultaComponent() {
               onChange={(e) => setDataAgendamento(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
               required
+              disabled={submitting}
             />
             <InfoText>
               Selecione uma data para ver os horários disponíveis
@@ -363,7 +450,7 @@ function MarcarConsultaComponent() {
                 value={horaSelecionada}
                 onChange={(e) => setHoraSelecionada(e.target.value)}
                 required
-                disabled={!dataAgendamento || horariosDisponiveis.length === 0}
+                disabled={!dataAgendamento || horariosDisponiveis.length === 0 || submitting}
               >
                 <option value="">
                   {!dataAgendamento 
@@ -395,10 +482,11 @@ function MarcarConsultaComponent() {
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
               placeholder="Adicione observações importantes sobre a consulta (motivo, sintomas, etc.)..."
+              disabled={submitting}
             />
           </FormGroup>
 
-          {dadosDisponibilidade && dadosDisponibilidade.horariosOcupados.length > 0 && (
+          {dadosDisponibilidade && dadosDisponibilidade.horariosOcupados && dadosDisponibilidade.horariosOcupados.length > 0 && (
             <AvailabilityInfo style={{ gridColumn: '1 / -1' }}>
               <h4>Informações sobre Disponibilidade</h4>
               <p>
@@ -407,12 +495,30 @@ function MarcarConsultaComponent() {
             </AvailabilityInfo>
           )}
 
-          <Button 
-            type="submit" 
-            disabled={submitting || !clienteEmail || !dataAgendamento || !horaSelecionada}
-          >
-            {submitting ? 'Marcando Consulta...' : 'Marcar Consulta'}
-          </Button>
+          <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+            <Button 
+              type="submit" 
+              disabled={submitting || !clienteEmail || !dataAgendamento || !horaSelecionada}
+              style={{ flex: 1 }}
+            >
+              {submitting ? 'Marcando Consulta...' : 'Marcar Consulta'}
+            </Button>
+            
+            <Button 
+              type="button" 
+              onClick={handleClearForm}
+              disabled={submitting}
+              style={{ 
+                flex: 0.3,
+                backgroundColor: '#6c757d',
+                '&:hover': {
+                  backgroundColor: '#5a6268'
+                }
+              }}
+            >
+              Limpar
+            </Button>
+          </div>
         </Form>
       </ScheduleContainer>
     </Container>

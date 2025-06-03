@@ -10,6 +10,40 @@ class ConsultaService {
     return api.get(`consultas/${id}`);
   }
 
+  async createConsultaByMedico(consultaData) {
+  try {
+    const user = AuthService.getCurrentUser();
+    if (!user || !user.accessToken) {
+      throw new Error('Médico não autenticado');
+    }
+
+    if (user.tipo !== 'medico') {
+      throw new Error('Apenas médicos podem usar esta função');
+    }
+
+    console.log('Médico marcando consulta:', {
+      medico: user.nome,
+      cliente_email: consultaData.cliente_email,
+      data_hora: consultaData.data_hora
+    });
+
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.accessToken}`
+      }
+    };
+
+    return await api.post('consultas', consultaData, config);
+  } catch (error) {
+    console.error('Erro na chamada de API (médico):', error);
+    if (error.response) {
+      console.error('Resposta de erro:', error.response.data);
+    }
+    throw error;
+  }
+}
+
   async createConsulta(consultaData) {
     try {
       const user = AuthService.getCurrentUser();

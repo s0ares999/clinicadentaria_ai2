@@ -10,7 +10,7 @@ const TipoUtilizador = db.TipoUtilizador;
 
 const ConsultaController = {
   // Criar nova consulta
-  async create(req, res) {
+async create(req, res) {
   try {
     console.log("Dados recebidos:", req.body);
 
@@ -22,9 +22,60 @@ const ConsultaController = {
       });
     }
 
-    // Usar o ID do usuário autenticado
-    const utilizador_id = req.userId;
-    console.log("ID do usuário do token:", utilizador_id);
+    // Verificar se é um médico marcando para um cliente
+    let utilizador_id = req.userId; // ID do usuário logado (padrão)
+    let medico_id = null;
+    let status_id = 1; // Status padrão "Pendente"
+
+    // Se foi fornecido um email de cliente, significa que é um médico marcando
+    if (req.body.cliente_email) {
+      console.log("Médico marcando consulta para cliente:", req.body.cliente_email);
+      
+      // Verificar se o usuário logado é médico
+      const medicoLogado = await Utilizador.findByPk(req.userId, {
+        include: [{
+          model: TipoUtilizador,
+          as: 'tipoUtilizador'
+        }]
+      });
+
+      if (!medicoLogado || medicoLogado.tipoUtilizador?.nome.toLowerCase() !== 'medico') {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas médicos podem marcar consultas para clientes!"
+        });
+      }
+
+      // Buscar o cliente pelo email
+      const cliente = await Utilizador.findOne({
+        where: { email: req.body.cliente_email },
+        include: [{
+          model: TipoUtilizador,
+          as: 'tipoUtilizador'
+        }]
+      });
+
+      if (!cliente) {
+        return res.status(404).json({
+          success: false,
+          message: "Cliente não encontrado com este email!"
+        });
+      }
+
+      if (cliente.tipoUtilizador?.nome.toLowerCase() !== 'cliente') {
+        return res.status(400).json({
+          success: false,
+          message: "O email fornecido não pertence a um cliente!"
+        });
+      }
+
+      // Configurar dados para consulta marcada pelo médico
+      utilizador_id = cliente.id; // ID do cliente
+      medico_id = req.userId; // ID do médico logado
+      status_id = req.body.status_id || 2; // Status "Confirmada" quando médico marca
+      
+      console.log(`Médico ${medico_id} marcando consulta para cliente ${utilizador_id}`);
+    }
 
     if (!utilizador_id) {
       return res.status(401).json({
@@ -34,11 +85,10 @@ const ConsultaController = {
     }
 
     // Verificar se o status existe
-    const statusId = 1; // Status padrão "Pendente"
-    const statusExists = await ConsultaStatus.findByPk(statusId);
+    const statusExists = await ConsultaStatus.findByPk(status_id);
 
     if (!statusExists) {
-      console.error(`Status de consulta com ID ${statusId} não encontrado. Inicializando status...`);
+      console.error(`Status de consulta com ID ${status_id} não encontrado. Inicializando status...`);
       try {
         // Tentar inicializar os status
         const dbInit = require('../config/db.init');
@@ -68,13 +118,13 @@ const ConsultaController = {
       });
     }
 
-    // Criar a consulta com o ID do usuário extraído do token
+    // Criar a consulta
     const consultaData = {
-      utilizador_id: utilizador_id,
+      utilizador_id: utilizador_id, // ID do cliente (se marcado pelo médico) ou do usuário logado
       data_hora: req.body.data_hora,
       observacoes: req.body.observacoes || '',
-      status_id: statusId, // Status inicial (Pendente)
-      medico_id: null // Inicialmente sem médico atribuído
+      status_id: status_id,
+      medico_id: medico_id // null se cliente marcando, ID do médico se médico marcando
     };
 
     console.log("Dados para criar consulta:", consultaData);
@@ -83,10 +133,32 @@ const ConsultaController = {
       fields: ['utilizador_id', 'data_hora', 'observacoes', 'status_id', 'medico_id']
     });
 
+    // Buscar a consulta criada com todos os dados
+    const consultaCriada = await Consulta.findByPk(consulta.id, {
+      include: [
+        {
+          model: Utilizador,
+          as: 'utilizador',
+          attributes: ['id', 'nome', 'email', 'telefone']
+        },
+        {
+          model: Utilizador,
+          as: 'medico',
+          attributes: ['id', 'nome', 'email', 'telefone']
+        },
+        {
+          model: ConsultaStatus,
+          as: 'status'
+        }
+      ]
+    });
+
     return res.status(201).json({
       success: true,
-      message: "Consulta agendada com sucesso!",
-      consulta
+      message: req.body.cliente_email 
+        ? "Consulta marcada com sucesso para o cliente!" 
+        : "Consulta agendada com sucesso!",
+      consulta: consultaCriada
     });
   } catch (error) {
     console.error("Erro ao criar consulta:", error);

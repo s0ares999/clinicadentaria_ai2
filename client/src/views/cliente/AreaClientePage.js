@@ -228,7 +228,8 @@ const EmptyState = styled.div`
   }
 `;
 
-const API_URL = 'http://localhost:8000/api';
+// Trocar hardcode por variável de ambiente
+const API_URL = process.env.REACT_APP_API_URL;
 
 const AreaClientePage = () => {
   const [agendamentos, setAgendamentos] = useState([]);

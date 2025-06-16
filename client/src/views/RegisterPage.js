@@ -211,7 +211,7 @@ function RegisterPage() {
     if (role === 'medico') {
       const fetchEspecialidades = async () => {
         try {
-          const response = await axios.get('http://localhost:8000/api/especialidades');
+          const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/especialidades`);
           // Verificar se a resposta tem a estrutura correta
           if (response.data && response.data.data) {
             setEspecialidades(response.data.data);

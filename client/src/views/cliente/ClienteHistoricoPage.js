@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import api from '../../services/api.config';
 import ConsultaService from '../../services/consulta.service';
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = process.env.REACT_APP_API_URL;
 
 const Container = styled.div`
   display: flex;

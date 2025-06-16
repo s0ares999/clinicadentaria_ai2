@@ -20,7 +20,12 @@ console.log("Configurando rotas...");
 
 // Configurar CORS para permitir solicitações do frontend
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:8000', 'http://localhost:8080'],
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:8000',
+    'http://localhost:8080',
+    'https://clinica-dentaria-frontend.onrender.com' // Adicione aqui o URL do frontend no Render
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token'],
   credentials: true
@@ -219,6 +224,12 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Iniciar servidor
 const startServer = async () => {
+  // Sincroniza os modelos com o banco de dados (cria as tabelas se não existirem)
+  await db.sequelize.sync(); // ou { alter: true } se quiser atualizar tabelas existentes
+
+  // Inicializa os dados básicos
+  await dbInit.initializeBasicData();
+
   const dbInitialized = await initializeDatabase();
   
   if (!dbInitialized) {

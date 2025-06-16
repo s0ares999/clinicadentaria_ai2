@@ -2,7 +2,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const Sequelize = require('sequelize');
+const { Sequelize } = require('sequelize');
+require('dotenv').config();
 const basename = path.basename(__filename);
 const config = require('../config/db.config.js');
 const db = {};
@@ -12,19 +13,17 @@ console.log("====== INICIALIZANDO CONEXÃO SEQUELIZE ======");
 // Criar instância do Sequelize com as configurações
 let sequelize;
 // Remover verificação de use_env_variable que não existe
-sequelize = new Sequelize(
-  config.DB,
-  config.USER,
-  config.PASSWORD,
-  {
-    host: config.HOST,
-    port: config.PORT,
-    dialect: config.dialect,
-    logging: config.logging,
-    pool: config.pool,
-    dialectOptions: config.dialectOptions
+sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: 'postgres',
+  protocol: 'postgres',
+  logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
   }
-);
+});
 
 // Testar a conexão e mostrar mensagem
 sequelize.authenticate()

@@ -2,7 +2,7 @@ import api from './api.config';
 
 // Adicione a constante API_URL
 const API_URL = process.env.REACT_APP_API_URL || 
-  (window.location.hostname === 'localhost' ? 'http://localhost:8000/api/' : '/api/');
+  (window.location.hostname === 'localhost' ? 'https://clinica-dentaria-api.onrender.com/api' : '/api/');
 
 class AuthService {
   async login(email, password) {

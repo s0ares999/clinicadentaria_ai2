@@ -1,6 +1,8 @@
 // Carregar variáveis de ambiente
 require('dotenv').config();
 
+const { Sequelize } = require('sequelize');
+
 // Arquivo de configuração do banco de dados
 module.exports = {
   HOST: process.env.DB_HOST || "localhost",
@@ -33,4 +35,17 @@ console.log("Configurações de BD carregadas:", {
   DB: process.env.DB_NAME || "clinica_dentaria",
   PORT: process.env.DB_PORT || 5432
 });
-  
+
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: 'postgres',
+  protocol: 'postgres',
+  logging: false, // ou true para debug
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false // Render exige SSL
+    }
+  }
+});
+
+module.exports = { sequelize, Sequelize };

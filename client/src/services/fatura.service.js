@@ -1,6 +1,6 @@
 import api from './api.config';
 
-const API_URL = "http://localhost:8000/api/faturas";
+const API_URL = "https://clinica-dentaria-api.onrender.com/api/faturas";
 
 const FaturaService = {
 

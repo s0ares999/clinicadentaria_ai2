@@ -24,7 +24,8 @@ app.use(cors({
     'http://localhost:3000',
     'http://localhost:8000',
     'http://localhost:8080',
-    'https://clinica-dentaria-frontend.onrender.com' // Adicione aqui o URL do frontend no Render
+    'https://clinica-dentaria-frontend.onrender.com',
+    'https://clinica-dentaria-front.onrender.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token'],

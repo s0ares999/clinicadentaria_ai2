@@ -390,10 +390,12 @@ const FaturaDetalhesPage = () => {
     };
 
     const formatCurrency = (value) => {
-        return new Intl.NumberFormat('pt-PT', {
-            style: 'currency',
-            currency: 'EUR'
-        }).format(value || 0);
+      return new Intl.NumberFormat('pt-PT', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(value || 0);
     };
 
     const formatDate = (dateString) => {

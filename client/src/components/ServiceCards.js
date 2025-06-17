@@ -32,6 +32,10 @@ const ServicesGrid = styled.div`
 `;
 
 const ServiceCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 370px;
   opacity: ${props => (props.isVisible ? 1 : 0)};
   transform: translateY(${props => (props.isVisible ? 0 : 30)}px);
   transition: opacity 1s ease, transform 1s ease;

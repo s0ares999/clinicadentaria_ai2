@@ -564,7 +564,7 @@ function ConsultasComponent() {
         </Box>
       )}
 
-      {/* Dialog para finalizar consulta */}
+      {/* Finalizar consulta */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Finalizar Consulta</DialogTitle>
         <DialogContent>
@@ -592,7 +592,7 @@ function ConsultasComponent() {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog para alterar status */}
+      {/* Alterar o status das consultas*/}
       <Dialog open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Alterar Status da Consulta</DialogTitle>
         <DialogContent>
@@ -620,7 +620,7 @@ function ConsultasComponent() {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog para criar fatura */}
+      {/* Criar fatura */}
       <Dialog open={faturaDialogOpen} onClose={() => setFaturaDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Criar Fatura</DialogTitle>
         <DialogContent>
@@ -689,7 +689,7 @@ function ConsultasComponent() {
           </Button>
 
           <Typography variant="h6">
-            Valor Total: R$ {calcularTotal()}
+            Valor Total: € {calcularTotal()}
           </Typography>
         </DialogContent>
 

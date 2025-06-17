@@ -8,7 +8,6 @@ import LoginPage from './views/LoginPage';
 import RegisterPage from './views/RegisterPage';
 import DashboardPage from './views/DashboardPage';
 import ClientDashboardPage from './views/cliente/ClientDashboardPage';
-import ClientesPage from './views/admin/dashboard/ClientesPage';
 import FaturasPage from './views/admin/dashboard/FaturasPage';
 import AgendamentosPage from './views/admin/dashboard/AgendamentosPage';
 import EstatisticasPage from './views/admin/dashboard/EstatisticasPage';
@@ -76,7 +75,6 @@ function App() {
           } 
         >
           <Route index element={<EstatisticasPage />} />
-          <Route path="clientes" element={<ClientesPage />} />
           <Route path="faturas" element={<FaturasPage />} />
           <Route path="agendamentos" element={<AgendamentosPage />} />
           <Route path="estatisticas" element={<EstatisticasPage />} />

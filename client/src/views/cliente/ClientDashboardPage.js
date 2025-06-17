@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-import AuthService from '../services/auth.service';
-import ClienteService from '../services/cliente.service';
+import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
+import AuthService from '../../services/auth.service';
+import ClienteService from '../../services/cliente.service';
 import { toast } from 'react-toastify';
 
 // Componentes para o Dashboard do Cliente
-import ClientePerfilPage from './cliente/ClientePerfilPage';
-import ClienteAgendamentosPage from './cliente/ClienteAgendamentosPage';
-import ClienteHistoricoPage from './cliente/ClienteHistoricoPage';
-import ClienteNovoAgendamentoPage from './cliente/ClienteNovoAgendamentoPage';
-import ClienteFaturasPage from './cliente/ClienteFaturasPage';
+import ClientePerfilPage from './ClientePerfilPage';
+import ClienteAgendamentosPage from './ClienteAgendamentosPage';
+import ClienteHistoricoPage from './ClienteHistoricoPage';
+import ClienteNovoAgendamentoPage from './ClienteNovoAgendamentoPage';
+import ClienteFaturasPage from './ClienteFaturasPage';
 
 const PageContainer = styled.div`
   min-height: 100vh;

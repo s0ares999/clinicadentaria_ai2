@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import api from '../../services/api.config';
+import api from '../../../services/api.config';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import FaturaService from '../../services/fatura.service'; // ajuste o caminho conforme seu projeto
+import FaturaService from '../../../services/fatura.service'; // ajuste o caminho conforme seu projeto
 
 
 const PageTitle = styled.h1`

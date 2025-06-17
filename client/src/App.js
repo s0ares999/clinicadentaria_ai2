@@ -7,19 +7,19 @@ import ContactosPage from './views/ContactosPage';
 import LoginPage from './views/LoginPage';
 import RegisterPage from './views/RegisterPage';
 import DashboardPage from './views/DashboardPage';
-import ClientDashboardPage from './views/ClientDashboardPage';
-import ClientesPage from './views/dashboard/ClientesPage';
-import FaturasPage from './views/dashboard/FaturasPage';
-import AgendamentosPage from './views/dashboard/AgendamentosPage';
-import EstatisticasPage from './views/dashboard/EstatisticasPage';
+import ClientDashboardPage from './views/cliente/ClientDashboardPage';
+import ClientesPage from './views/admin/dashboard/ClientesPage';
+import FaturasPage from './views/admin/dashboard/FaturasPage';
+import AgendamentosPage from './views/admin/dashboard/AgendamentosPage';
+import EstatisticasPage from './views/admin/dashboard/EstatisticasPage';
 import AuthService from './services/auth.service';
 import ServiceDetailPage from './components/ServiceDetailPage';
 import MedicoDashboardPage from './views/medico/MedicoDashboardPage';
 import MedicoConsultasPendentesPage from './views/medico/MedicoConsultasPendentesPage';
 import AdminMedicoPage from './views/admin/AdminMedicoPage'
 import AdminClientePage from './views/admin/AdminClientePage'
-import GestaoServicos from './views/dashboard/GestaoServicos'
-import FaturaDetalhesPage from './views/dashboard/FaturasDetalhesPage';
+import GestaoServicos from './views/admin/dashboard/GestaoServicos'
+import FaturaDetalhesPage from './views/admin/dashboard/FaturasDetalhesPage';
 
 // Componente de Rota Protegida
 const ProtectedRoute = ({ children, adminRequired = false, clienteRequired = false, medicoRequired = false }) => {

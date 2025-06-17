@@ -98,7 +98,7 @@ function MedicoDashboardPage() {
 
   const handleLogout = () => {
     AuthService.logout();
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   const renderContent = () => {

@@ -3,8 +3,8 @@ import styled from 'styled-components';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate, useLocation } from 'react-router-dom';
-import AuthService from '../../services/auth.service';
-import api from '../../services/api.config';
+import AuthService from '../../../services/auth.service';
+import api from '../../../services/api.config';
 
 const API_URL = process.env.REACT_APP_API_URL;
 

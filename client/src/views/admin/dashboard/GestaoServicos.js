@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import FaturaService from '../../services/fatura.service'; // ajusta o caminho conforme sua estrutura
+import FaturaService from '../../../services/fatura.service'; // ajusta o caminho conforme sua estrutura
 
 const PageTitle = styled.h1`
   font-size: 1.75rem;

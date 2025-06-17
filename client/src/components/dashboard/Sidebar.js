@@ -115,6 +115,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <i className="fas fa-users"></i> Gestão de Medicos
           </Link>
         </MenuItem>
+         <MenuItem>
+          <Link to="/dashboard/GestaoClientes" className={location.pathname.includes('/dashboard/GestaoClientes') ? 'active' : ''}>
+            <i className="fas fa-users"></i> Gestão de Clientes
+          </Link>
+        </MenuItem>
         <MenuItem>
           <Link to="/dashboard/GestaoServicos" className={location.pathname.includes('/dashboard/GestaoServicos') ? 'active' : ''}>
             <i className="fas fa-concierge-bell"></i> Gestão de Serviços

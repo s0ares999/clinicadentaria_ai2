@@ -228,16 +228,6 @@ const Topbar = ({ toggleSidebar, sidebarWidth }) => {
           </div>
           <div className="dropdown-menu">
             <ul>
-              <li>
-                <a href="#profile">
-                  <i className="fas fa-user"></i> Perfil
-                </a>
-              </li>
-              <li>
-                <a href="#settings">
-                  <i className="fas fa-cog"></i> Configurações
-                </a>
-              </li>
               <li className="divider"></li>
               <li className="logout">
                 <button onClick={handleLogout}>

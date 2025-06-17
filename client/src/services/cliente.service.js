@@ -1,4 +1,5 @@
 import api from './api.config';
+import UtilizadorService from './utilizador.service';
 
 class ClienteService {
   async getClienteProfile() {
@@ -32,6 +33,21 @@ class ClienteService {
       console.error('Erro ao buscar consultas:', error);
       throw error;
     }
+  }
+
+  async getAllClientes() {
+    // Admin: get all clients
+    return UtilizadorService.getAllClientes();
+  }
+
+  async updateCliente(id, data) {
+    // Admin: update client by id
+    return UtilizadorService.updateUtilizador(id, data);
+  }
+
+  async deleteCliente(id) {
+    // Admin: delete client by id
+    return UtilizadorService.deleteUtilizador(id);
   }
 }
 

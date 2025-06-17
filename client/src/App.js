@@ -18,6 +18,7 @@ import ServiceDetailPage from './components/ServiceDetailPage';
 import MedicoDashboardPage from './views/medico/MedicoDashboardPage';
 import MedicoConsultasPendentesPage from './views/medico/MedicoConsultasPendentesPage';
 import AdminMedicoPage from './views/admin/AdminMedicoPage'
+import AdminClientePage from './views/admin/AdminClientePage'
 import GestaoServicos from './views/dashboard/GestaoServicos'
 import FaturaDetalhesPage from './views/dashboard/FaturasDetalhesPage';
 
@@ -82,6 +83,7 @@ function App() {
           <Route path="agendamentos" element={<AgendamentosPage />} />
           <Route path="estatisticas" element={<EstatisticasPage />} />
           <Route path="GestaoMedico" element={<AdminMedicoPage />} />
+          <Route path="GestaoClientes" element={<AdminClientePage />} />
           <Route path="GestaoServicos" element={<GestaoServicos />} />
           <Route path="faturas/:id" element={<FaturaDetalhesPage />} />
         </Route>

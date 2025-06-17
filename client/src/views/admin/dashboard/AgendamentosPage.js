@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import api from '../../services/api.config';
+import api from '../../../services/api.config';
 import { toast } from 'react-toastify';
 import ConsultaService from '../../services/consulta.service';
 

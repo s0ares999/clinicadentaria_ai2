@@ -206,7 +206,7 @@ const Topbar = ({ toggleSidebar, sidebarWidth }) => {
 
   const handleLogout = () => {
     AuthService.logout();
-    navigate('/login');
+    navigate('/');
     window.location.reload();
   };
 

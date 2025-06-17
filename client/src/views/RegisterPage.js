@@ -207,7 +207,7 @@ function RegisterPage() {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Carregar especialidades se o usuário selecionar o papel de médico
+    // Carregar especialidades se o usuário selecionar o papel de médicog
     if (role === 'medico') {
       const fetchEspecialidades = async () => {
         try {
@@ -481,22 +481,6 @@ function RegisterPage() {
             )}
             
             {/* Campos específicos para admin */}
-            {role === 'admin' && (
-              <FormGroup>
-                <Label htmlFor="nivelAcesso">Nível de Acesso</Label>
-                <Select
-                  id="nivelAcesso"
-                  value={nivelAcesso}
-                  onChange={(e) => setNivelAcesso(e.target.value)}
-                  required
-                >
-                  <option value="geral">Geral</option>
-                  <option value="total">Total</option>
-                  <option value="restrito">Restrito</option>
-                </Select>
-              </FormGroup>
-            )}
-            
             <Button type="submit" disabled={loading}>
               {loading ? 'A processar...' : 'Registar'}
             </Button>

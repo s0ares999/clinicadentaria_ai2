@@ -2,7 +2,7 @@
   "name": "clinica-dentaria-client",
   "version": "0.1.0",
   "private": true,
-  "proxy": "https://clinica-dentaria-api.onrender.com/api",
+  "proxy": "https://clinicadentaria-ai2.onrender.com/api",
   "dependencies": {
     "@chakra-ui/react": "^3.13.0",
     "@emotion/react": "^11.14.0",

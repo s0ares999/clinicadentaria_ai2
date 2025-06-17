@@ -216,11 +216,6 @@ const Topbar = ({ toggleSidebar, sidebarWidth }) => {
         <i className="fas fa-bars"></i>
       </MenuToggle>
 
-      <SearchBar>
-        <i className="fas fa-search"></i>
-        <input type="text" placeholder="Pesquisar..." />
-      </SearchBar>
-
       <UserMenu>
 
         <UserProfile isMenuOpen={isMenuOpen} onClick={toggleMenu}>

@@ -100,7 +100,6 @@ const initializeBasicData = async () => {
     servicos: false,
     tipoUtilizador: false,
     consultaStatus: false,
-    disponibilidadeStatus: false,
     faturaStatus: false,
     pagamentoStatus: false
   };
@@ -110,7 +109,6 @@ const initializeBasicData = async () => {
     resultados.servicos = await initServicos();
     resultados.tipoUtilizador = await initTipoUtilizador();
     resultados.consultaStatus = await initConsultaStatus();
-    resultados.disponibilidadeStatus = await initDisponibilidadeStatus();
     resultados.faturaStatus = await initFaturaStatus();
     resultados.pagamentoStatus = await initPagamentoStatus();
     
@@ -191,35 +189,6 @@ const initConsultaStatus = async () => {
 };
 
 /**
- * Inicializa os status de disponibilidade (se não existirem)
- */
-const initDisponibilidadeStatus = async () => {
-  try {
-    console.log("🔄 Inicializando status de disponibilidade...");
-    const DisponibilidadeStatus = db.DisponibilidadeStatus;
-    if (!DisponibilidadeStatus) {
-      console.error("❌ Modelo DisponibilidadeStatus não encontrado!");
-      return false;
-    }
-    const count = await DisponibilidadeStatus.count();
-    if (count > 0) {
-      console.log(`✓ Tabela DisponibilidadeStatus já possui ${count} registros.`);
-      return true;
-    }
-    const statusPadrao = [
-      { id: 1, nome: 'ativo' },
-      { id: 2, nome: 'inativo' },
-      { id: 3, nome: 'ocupado' }
-    ];
-    await DisponibilidadeStatus.bulkCreate(statusPadrao);
-    return true;
-  } catch (error) {
-    console.error("❌ Erro ao inicializar status de disponibilidade:", error);
-    return false;
-  }
-};
-
-/**
  * Inicializa os status de fatura (se não existirem)
  */
 const initFaturaStatus = async () => {
@@ -287,7 +256,6 @@ module.exports = {
   initializeBasicData,
   initTipoUtilizador,
   initConsultaStatus,
-  initDisponibilidadeStatus,
   initFaturaStatus,
   initPagamentoStatus
 };

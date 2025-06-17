@@ -1,5 +1,5 @@
 const db = require('../models'); // ajuste o caminho conforme seu projeto
-const { Cliente, Consulta, Fatura, Disponibilidade, ConsultaStatus, Sequelize } = db;
+const { Cliente, Consulta, Fatura, ConsultaStatus, Sequelize } = db;
 const { Op } = Sequelize;
 
 const getEstatisticas = async (req, res) => {
@@ -19,15 +19,6 @@ const getEstatisticas = async (req, res) => {
       }
     });
 
-    // Contar total de disponibilidades no mês atual e status "livre" (status_id=1)
-    const totalDisponibilidades = await Disponibilidade.count({
-      where: {
-        status_id: 1,
-        data: {
-          [Op.between]: [startOfMonth, endOfMonth]
-        }
-      }
-    });
 
     // Contar consultas no mês atual
     const totalConsultasNoMes = await Consulta.count({
@@ -39,9 +30,7 @@ const getEstatisticas = async (req, res) => {
     });
 
     // Calcula taxa ocupação (evita divisão por zero)
-    const taxaOcupacao = totalDisponibilidades > 0
-      ? Math.round((totalConsultasNoMes / totalDisponibilidades) * 100)
-      : 0;
+    const taxaOcupacao = 0;
 
     res.json({
       totalClientes,

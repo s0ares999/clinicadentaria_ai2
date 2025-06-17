@@ -140,42 +140,6 @@ const Loading = styled.div`
   color: #7f8c8d;
 `;
 
-const ProfileSection = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 2rem;
-`;
-
-const ProfileAvatar = styled.div`
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background-color: #3498db;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  margin-right: 1rem;
-  font-size: 1.5rem;
-`;
-
-const ProfileDetails = styled.div`
-  h2 {
-    font-size: 1.5rem;
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
-  }
-`;
-
-const InfoItem = styled.div`
-  margin-bottom: 0.5rem;
-
-  strong {
-    font-weight: 600;
-  }
-`;
-
 const formatDate = (dateString) => {
   if (!dateString) return "Não disponível";
   
@@ -363,36 +327,6 @@ function ClientDashboardPage() {
             <Loading>Carregando dados...</Loading>
           ) : (
             <>
-              <ProfileSection>
-                <ProfileAvatar>
-                  {getInitials(clienteData?.nome || "")}
-                </ProfileAvatar>
-                <ProfileDetails>
-                  <h2>Bem-vindo, {clienteData?.nome || "Cliente"}</h2>
-                  <InfoItem>
-                    <strong>Email:</strong> {clienteData?.email || "Não disponível"}
-                  </InfoItem>
-                  <InfoItem>
-                    <strong>Telefone:</strong> {clienteData?.telefone || "Não disponível"}
-                  </InfoItem>
-                  {clienteData?.dataNascimento && (
-                    <InfoItem>
-                      <strong>Data de Nascimento:</strong> {formatDate(clienteData.dataNascimento)}
-                    </InfoItem>
-                  )}
-                  {clienteData?.morada && (
-                    <InfoItem>
-                      <strong>Morada:</strong> {clienteData.morada}
-                    </InfoItem>
-                  )}
-                  {clienteData?.nif && (
-                    <InfoItem>
-                      <strong>NIF:</strong> {clienteData.nif}
-                    </InfoItem>
-                  )}
-                </ProfileDetails>
-              </ProfileSection>
-              
               <Routes>
                 <Route index element={<ClientePerfilPage clienteData={clienteData} />} />
                 <Route path="agendamentos" element={<ClienteAgendamentosPage />} />

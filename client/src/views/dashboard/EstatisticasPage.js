@@ -13,7 +13,7 @@ const PageTitle = styled.h1`
 
 const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr); // agora 3 colunas
   gap: 20px;
   margin-bottom: 20px;
   
@@ -395,19 +395,6 @@ const EstatisticasPage = () => {
           <div className="stat-value">{formatCurrency(stats.totalFaturamento)}</div>
           <div className="stat-change positive">
             <i className="fas fa-arrow-up"></i> 15% desde o mês passado
-          </div>
-        </StatCard>
-
-        <StatCard iconBg="#9b59b6">
-          <div className="stat-header">
-            <div className="stat-title">TAXA DE OCUPAÇÃO</div>
-            <div className="stat-icon">
-              <i className="fas fa-chart-pie"></i>
-            </div>
-          </div>
-          <div className="stat-value">{stats.taxaOcupacao}%</div>
-          <div className="stat-change negative">
-            <i className="fas fa-arrow-down"></i> 3% desde o mês passado
           </div>
         </StatCard>
       </StatsGrid>

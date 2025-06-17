@@ -4,7 +4,6 @@ import { Toaster } from 'react-hot-toast';
 import HomePage from './views/HomePage';
 import SobrePage from './views/SobrePage';
 import ContactosPage from './views/ContactosPage';
-import ClientesPublicPage from './views/ClientesPublicPage';
 import LoginPage from './views/LoginPage';
 import RegisterPage from './views/RegisterPage';
 import DashboardPage from './views/DashboardPage';
@@ -63,7 +62,6 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/sobre" element={<SobrePage />} />
         <Route path="/contactos" element={<ContactosPage />} />
-        <Route path="/clientes" element={<ClientesPublicPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/servicos/:title" element={<ServiceDetailPage/>} />

@@ -327,6 +327,7 @@ function ClientDashboardPage() {
             <Loading>Carregando dados...</Loading>
           ) : (
             <>
+
               <Routes>
                 <Route index element={<ClientePerfilPage clienteData={clienteData} />} />
                 <Route path="agendamentos" element={<ClienteAgendamentosPage />} />

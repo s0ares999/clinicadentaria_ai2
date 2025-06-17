@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://clinica-dentaria-api.onrender.com/api/especialidades/';
+const API_URL = 'https://clinicadentaria-ai2.onrender.com/api/especialidades/';
 
 class EspecialidadeService {
   async getAllEspecialidades() {

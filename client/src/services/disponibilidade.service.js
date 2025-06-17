@@ -1,7 +1,7 @@
 import axios from 'axios';
 import authHeader from './auth-header';
 
-const API_URL = 'https://clinica-dentaria-api.onrender.com/api/disponibilidades/';
+const API_URL = 'https://clinicadentaria-ai2.onrender.com/api/disponibilidades/';
 
 class DisponibilidadeService {
   async getDisponibilidades() {

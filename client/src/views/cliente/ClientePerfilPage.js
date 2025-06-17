@@ -11,6 +11,47 @@ const ProfileContainer = styled.div`
   padding: 1rem;
 `;
 
+const ProfileCard = styled.div`
+  background: #fff;
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+`;
+
+const ProfileAvatar = styled.div`
+  width: 100px;
+  height: 100px;
+  background-color: #3498db;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2.5rem;
+  font-weight: bold;
+  flex-shrink: 0;
+`;
+
+const ProfileInfo = styled.div`
+  flex: 1;
+  h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    color: #2c3e50;
+  }
+  p {
+    margin: 0.25rem 0;
+    color: #7f8c8d;
+  }
+  .email {
+    margin-bottom: 0.5rem;
+  }
+`;
+
 const ProfileSection = styled.div`
   margin-bottom: 2rem;
 `;
@@ -175,12 +216,29 @@ const ClientePerfilPage = () => {
     });
   };
 
+  const getInitials = (name) => {
+    if (!name) return 'CL';
+    const names = name.trim().split(' ');
+    if (names.length === 1) return names[0].substring(0, 2).toUpperCase();
+    return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+  };
+
   if (loading) {
     return <div>Carregando dados do perfil...</div>;
   }
 
   return (
     <ProfileContainer>
+      <ProfileCard>
+        <ProfileAvatar>{getInitials(formData.nome)}</ProfileAvatar>
+        <ProfileInfo>
+          <h3>Bem-vindo, {formData.nome}</h3>
+          <p className="email">Email: {formData.email}</p>
+          <p>Telefone: {formData.telefone}</p>
+          <p><b>Morada:</b> {formData.morada}</p>
+          <p><b>NIF:</b> {formData.nif}</p>
+        </ProfileInfo>
+      </ProfileCard>
       <ProfileSection>
         <SectionTitle>Informações Pessoais</SectionTitle>
         <Form onSubmit={handleSubmit}>

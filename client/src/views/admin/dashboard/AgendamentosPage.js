@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import api from '../../../services/api.config';
 import { toast } from 'react-toastify';
-import ConsultaService from '../../services/consulta.service';
+import ConsultaService from '../../../services/consulta.service';
 
 const Container = styled.div`
   padding: 2rem;

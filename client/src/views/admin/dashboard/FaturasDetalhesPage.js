@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import api from '../../../services/api.config';
-import PDFGeneratorButton from '../../components/PDFGeneratorButton'
+import PDFGeneratorButton from '../../../components/PDFGeneratorButton'
 
 const Container = styled.div`
   max-width: 1200px;

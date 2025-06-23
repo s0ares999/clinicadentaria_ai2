@@ -254,7 +254,7 @@ function ClienteNovoAgendamentoPage() {
         if (error.response.status === 401) {
           toast.error('Sua sessão expirou. Por favor, faça login novamente.');
           AuthService.logout(); // Limpa dados da sessão
-          setTimeout(() => navigate('/login'), 2000); // Redireciona após 2 segundos
+          setTimeout(() => navigate('/'), 2000); // Redireciona após 2 segundos
           return;
         }
       }

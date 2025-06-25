@@ -20,20 +20,41 @@ const ProfileHeader = styled.div`
   margin-bottom: 1rem;
 `;
 
+const ProfileCard = styled.div`
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+    font-size: 0.95rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
 const ProfileAvatar = styled.div`
-  width: 100px;
-  height: 100px;
-  background-color: #3498db;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
+  background: #3498db;
+  color: #fff;
+  font-size: 2.5rem;
+  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 2.5rem;
-  position: relative;
-  background-image: ${props => props.imageUrl ? `url(${props.imageUrl})` : 'none'};
-  background-size: cover;
-  background-position: center;
+  margin-right: 2rem;
+  margin-bottom: 0;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const AvatarOverlay = styled.div`
@@ -66,21 +87,17 @@ const HiddenFileInput = styled.input`
 `;
 
 const ProfileInfo = styled.div`
-  flex: 1;
-  
+  width: 100%;
+  text-align: left;
+
   h3 {
     margin: 0 0 0.5rem 0;
     font-size: 1.5rem;
     color: #2c3e50;
   }
-  
   p {
     margin: 0.25rem 0;
     color: #7f8c8d;
-  }
-  
-  .email {
-    margin-bottom: 0.75rem;
   }
 `;
 
@@ -291,13 +308,9 @@ function MedicoPerfilComponent() {
   // URL completa da imagem do servidor
   const getProfileImageUrl = () => {
     if (!formData.foto_perfil) return null;
-    
-    // Se já for uma URL completa, retornar
     if (formData.foto_perfil.startsWith('http')) {
       return formData.foto_perfil;
     }
-    
-    // Obter a URL base do backend e concatenar com o caminho da imagem
     const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
     return `${baseUrl}${formData.foto_perfil}`;
   };
@@ -308,15 +321,7 @@ function MedicoPerfilComponent() {
         <ProfileHeader>
           <ProfileAvatar imageUrl={getProfileImageUrl()}>
             {!formData.foto_perfil && getInitials(formData.nome)}
-            <AvatarOverlay onClick={handleAvatarClick}>
-              <i className="fas fa-camera"></i>
-            </AvatarOverlay>
-            <HiddenFileInput 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange}
-              accept="image/*"
-            />
+            {/* AvatarOverlay removido */}
           </ProfileAvatar>
           <ProfileInfo>
             <h3>Bem-vindo, Dr(a). {formData.nome}</h3>
@@ -391,4 +396,4 @@ function MedicoPerfilComponent() {
   );
 }
 
-export default MedicoPerfilComponent; 
+export default MedicoPerfilComponent;

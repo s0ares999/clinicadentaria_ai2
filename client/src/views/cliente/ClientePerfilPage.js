@@ -13,31 +13,45 @@ const ProfileContainer = styled.div`
 
 const ProfileCard = styled.div`
   background: #fff;
-  border-radius: 10px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   padding: 2rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  display: flex;
-  align-items: center;
-  gap: 2rem;
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+    font-size: 0.95rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 const ProfileAvatar = styled.div`
-  width: 100px;
-  height: 100px;
-  background-color: #3498db;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
+  background: #3498db;
+  color: #fff;
+  font-size: 2.5rem;
+  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 2.5rem;
-  font-weight: bold;
-  flex-shrink: 0;
+  margin-right: 2rem;
+  margin-bottom: 0;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const ProfileInfo = styled.div`
-  flex: 1;
+  width: 100%;
+  text-align: left;
+
   h3 {
     margin: 0 0 0.5rem 0;
     font-size: 1.5rem;

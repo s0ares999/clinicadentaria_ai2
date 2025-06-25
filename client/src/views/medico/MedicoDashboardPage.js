@@ -22,19 +22,33 @@ const Sidebar = styled.div`
   color: white;
   position: fixed;
   left: 0;
-  top: 64px;
+  top: 75px;
   height: calc(100vh - 64px);
   overflow-y: auto;
   z-index: 98;
-  margin-top: 15px;
+
+  @media (max-width: 768px) {
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+    left: 0;
+    top: 75px;
+    height: 100vh;         // <-- cobre toda a altura
+    margin-top: 0;         // <-- remove margem extra
+  }
 `;
 
 const MainContent = styled.div`
   flex: 1;
-  padding: 2rem;
   margin-left: 250px;
-  min-height: calc(100vh - 64px);
-  background-color: #f5f6fa;
+  padding: 2rem 2rem 2rem 2rem;
+  max-width: 900px;
+
+  @media (max-width: 768px) {
+    margin-left: 70px;
+    padding: 1rem 0.5rem 2rem 0.5rem;
+    max-width: 100%;
+  }
 
   h2 {
     margin-top: 2rem;
@@ -78,6 +92,21 @@ const NavItem = styled.div`
   i {
     width: 20px;
     text-align: center;
+  }
+
+  @media (max-width: 768px) {
+    padding: 1.2rem 0.5rem;
+    gap: 0;
+    justify-content: center;
+    i {
+      margin-right: 0;
+      width: 100%;
+      font-size: 1.3rem;
+    }
+    // Esconde o texto
+    & > span, & > div {
+      display: none !important;
+    }
   }
 `;
 
@@ -139,7 +168,7 @@ function MedicoDashboardPage() {
             onClick={() => setActiveTab('perfil')}
           >
             <i className="fas fa-user"></i>
-            Meu Perfil
+            <span>Meu Perfil</span>
           </NavItem>
 
           <NavItem 
@@ -147,7 +176,7 @@ function MedicoDashboardPage() {
             onClick={() => setActiveTab('consultas')}
           >
             <i className="fas fa-calendar-check"></i>
-            Consultas
+            <span>Consultas</span>
           </NavItem>
 
           <NavItem 
@@ -155,7 +184,7 @@ function MedicoDashboardPage() {
             onClick={() => setActiveTab('marcarConsulta')}
           >
             <i className="fas fa-plus-circle"></i>
-            Marcar Consulta
+            <span>Marcar Consulta</span>
           </NavItem>
 
           <NavItem 
@@ -163,7 +192,7 @@ function MedicoDashboardPage() {
             onClick={() => setActiveTab('historico')}
           >
             <i className="fas fa-history"></i>
-            Histórico de Consultas
+            <span>Histórico de Consultas</span>
           </NavItem>
 
           <NavItem 
@@ -171,12 +200,12 @@ function MedicoDashboardPage() {
             onClick={() => setActiveTab('faturas')}
           >
             <i className="fas fa-file-invoice-dollar"></i>
-            Gestão de Faturas
+            <span>Gestão de Faturas</span>
           </NavItem>
 
           <NavItem onClick={handleLogout}>
             <i className="fas fa-sign-out-alt"></i>
-            Sair
+           <span>Sair</span>
           </NavItem>
         </Sidebar>
 

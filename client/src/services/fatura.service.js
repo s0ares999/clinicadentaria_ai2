@@ -1,6 +1,8 @@
 import api from './api.config';
 
-const API_URL = "https://clinicadentaria-ai2.onrender.com/api/faturas";
+const API_URL = process.env.REACT_APP_API_URL
+  ? `${process.env.REACT_APP_API_URL}/faturas`
+  : 'http://localhost:8000/api/faturas';
 
 const FaturaService = {
 

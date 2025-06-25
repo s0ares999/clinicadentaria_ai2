@@ -1,5 +1,6 @@
 const db = require('../models');
 const Especialidade = db.Especialidade;
+const bcrypt = require('bcryptjs');
 
 /**
  * Inicializa as especialidades padrão (se não existirem)
@@ -247,8 +248,88 @@ const initPagamentoStatus = async () => {
   }
 };
 
-// Executa a inicialização ao importar este módulo (ou chame manualmente)
-initializeBasicData().catch(err => console.error("Erro geral na inicialização:", err));
+/**
+ * Inicializa utilizadores de exemplo (se não existirem)
+ */
+const initUtilizadoresSeed = async () => {
+  try {
+    console.log("🔄 Inicializando utilizadores de seed...");
+    const Utilizador = db.Utilizador;
+    const TipoUtilizador = db.TipoUtilizador;
+    if (!Utilizador || !TipoUtilizador) {
+      console.error("❌ Modelo Utilizador ou TipoUtilizador não encontrado!");
+      return false;
+    }
+
+    // Verifica se já existem utilizadores com estes emails
+    const emails = ['cliente@gmail.com', 'medico@gmail.com', 'admin@gmail.com'];
+    const existentes = await Utilizador.findAll({ where: { email: emails } });
+    if (existentes.length === emails.length) {
+      console.log("✓ Utilizadores de seed já existem.");
+      return true;
+    }
+
+    // Busca os tipos
+    const clienteTipo = await TipoUtilizador.findOne({ where: { nome: 'cliente' } });
+    const medicoTipo = await TipoUtilizador.findOne({ where: { nome: 'medico' } });
+    const adminTipo = await TipoUtilizador.findOne({ where: { nome: 'admin' } });
+
+    if (!clienteTipo || !medicoTipo || !adminTipo) {
+      console.error("❌ Tipos de utilizador não encontrados!");
+      return false;
+    }
+
+    const passwordHash = await bcrypt.hash('123456', 10);
+
+    const utilizadoresSeed = [
+      {
+        nome: 'Cliente Exemplo',
+        email: 'cliente@gmail.com',
+        password: passwordHash,
+        tipoUtilizadorId: clienteTipo.id,
+        ativo: true
+      },
+      {
+        nome: 'Medico Exemplo',
+        email: 'medico@gmail.com',
+        password: passwordHash,
+        tipoUtilizadorId: medicoTipo.id,
+        ativo: true
+      },
+      {
+        nome: 'Admin Exemplo',
+        email: 'admin@gmail.com',
+        password: passwordHash,
+        tipoUtilizadorId: adminTipo.id,
+        ativo: true
+      }
+    ];
+
+    // Só cria os que não existem
+    for (const user of utilizadoresSeed) {
+      const exists = await Utilizador.findOne({ where: { email: user.email } });
+      if (!exists) {
+        await Utilizador.create(user);
+        console.log(`✓ Utilizador ${user.email} criado.`);
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error("❌ Erro ao inicializar utilizadores de seed:", error);
+    return false;
+  }
+};
+
+/**
+ * Executa a inicialização ao importar este módulo (ou chame manualmente)
+ */
+const initAll = async () => {
+  await initializeBasicData();
+  await initUtilizadoresSeed();
+};
+
+initAll().catch(err => console.error("Erro geral na inicialização:", err));
 
 module.exports = {
   initEspecialidade,
@@ -257,5 +338,6 @@ module.exports = {
   initTipoUtilizador,
   initConsultaStatus,
   initFaturaStatus,
-  initPagamentoStatus
+  initPagamentoStatus,
+  initUtilizadoresSeed
 };

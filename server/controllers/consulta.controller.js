@@ -3,7 +3,6 @@ const Consulta = db.Consulta;
 const ConsultaStatus = db.ConsultaStatus;
 const Utilizador = db.Utilizador;
 const Medico = db.Medico;
-const Disponibilidade = db.Disponibilidade;
 const Pagamento = db.Pagamento;
 const { Op } = require('sequelize');
 const TipoUtilizador = db.TipoUtilizador;

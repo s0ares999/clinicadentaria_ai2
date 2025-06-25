@@ -33,18 +33,34 @@ const Sidebar = styled.div`
   color: #ecf0f1;
   height: auto;
   position: relative;
-  
+  transition: width 0.3s;
+
+  @media (max-width: 768px) {
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+    overflow-x: hidden;
+    margin-top: 90px;
+  }
 `;
 
 const SidebarHeader = styled.div`
-  padding: 0 1.5rem 1.5rem;
+  padding: 1.5rem;
   border-bottom: 1px solid #34495e;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const UserInfo = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 1rem;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const UserAvatar = styled.div`
@@ -72,7 +88,12 @@ const UserRole = styled.div`
 const SidebarMenu = styled.ul`
   list-style: none;
   padding: 0;
-  margin: 1.5rem 0;
+  margin: 1.5rem 0 0 0;
+
+  @media (max-width: 768px) {
+    margin: 0.5rem 0 0 0;
+    padding: 0;
+  }
 `;
 
 const MenuItem = styled.li`
@@ -97,6 +118,19 @@ const MenuItem = styled.li`
     margin-right: 0.75rem;
     width: 20px;
     text-align: center;
+    font-size: 1.3rem;
+  }
+
+  @media (max-width: 768px) {
+    padding: 1.2rem 0.5rem;
+    a span:not(.icon) {
+      display: none !important;
+    }
+    .icon {
+      margin-right: 0;
+      width: 100%;
+      justify-content: center;
+    }
   }
 `;
 
@@ -266,37 +300,37 @@ function ClientDashboardPage() {
             <MenuItem active={getActivePath() === 'perfil'}>
               <Link to="/cliente-dashboard">
                 <span className="icon"><i className="fas fa-user"></i></span>
-                Meu Perfil
+                <span>Meu Perfil</span>
               </Link>
             </MenuItem>
             <MenuItem active={getActivePath() === 'agendamentos'}>
               <Link to="/cliente-dashboard/agendamentos">
                 <span className="icon"><i className="fas fa-calendar-alt"></i></span>
-                Meus Agendamentos
+                <span>Meus Agendamentos</span>
               </Link>
             </MenuItem>
             <MenuItem active={getActivePath() === 'novo-agendamento'}>
               <Link to="/cliente-dashboard/agendamentos/novo-agendamento">
                 <span className="icon"><i className="fas fa-plus"></i></span>
-                Novo Agendamento
+                <span>Novo Agendamento</span>
               </Link>
             </MenuItem>
             <MenuItem active={getActivePath() === 'historico'}>
               <Link to="/cliente-dashboard/historico">
                 <span className="icon"><i className="fas fa-history"></i></span>
-                Histórico de Consultas
+                <span>Histórico de Consultas</span>
               </Link>
             </MenuItem>
             <MenuItem active={getActivePath() === 'faturas'}>
               <Link to="/cliente-dashboard/faturas">
                 <span className="icon"><i className="fas fa-file-invoice-dollar"></i></span>
-                Minhas Faturas
+                <span>Minhas Faturas</span>
               </Link>
             </MenuItem>
             <MenuItem>
               <Link to="/" onClick={() => AuthService.logout()}>
                 <span className="icon"><i className="fas fa-sign-out-alt"></i></span>
-                Sair
+                <span>Sair</span>
               </Link>
             </MenuItem>
           </SidebarMenu>

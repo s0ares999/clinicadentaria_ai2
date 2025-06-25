@@ -355,7 +355,6 @@ exports.signup = async (req, res) => {
     const utilizador = await Utilizador.create({
       email,
       senha: bcrypt.hashSync(senhaFinal, 8),
-      username: username || nome,
       nome,
       telefone,
       tipo_utilizador_id: tipoUtilizador.id

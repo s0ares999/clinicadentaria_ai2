@@ -285,23 +285,20 @@ const initUtilizadoresSeed = async () => {
       {
         nome: 'Cliente Exemplo',
         email: 'cliente@gmail.com',
-        password: passwordHash,
-        tipoUtilizadorId: clienteTipo.id,
-        ativo: true
+        senha: passwordHash,
+        tipo_utilizador_id: clienteTipo.id
       },
       {
         nome: 'Medico Exemplo',
         email: 'medico@gmail.com',
-        password: passwordHash,
-        tipoUtilizadorId: medicoTipo.id,
-        ativo: true
+        senha: passwordHash,
+        tipo_utilizador_id: medicoTipo.id
       },
       {
         nome: 'Admin Exemplo',
         email: 'admin@gmail.com',
-        password: passwordHash,
-        tipoUtilizadorId: adminTipo.id,
-        ativo: true
+        senha: passwordHash,
+        tipo_utilizador_id: adminTipo.id
       }
     ];
 
@@ -322,14 +319,18 @@ const initUtilizadoresSeed = async () => {
 };
 
 /**
- * Executa a inicialização ao importar este módulo (ou chame manualmente)
+ * Executa a inicialização completa dos dados básicos e utilizadores
  */
 const initAll = async () => {
-  await initializeBasicData();
-  await initUtilizadoresSeed();
+  try {
+    await initializeBasicData();
+    await initUtilizadoresSeed();
+    console.log("✅ Inicialização completa realizada com sucesso!");
+  } catch (error) {
+    console.error("❌ Erro na inicialização completa:", error);
+    throw error;
+  }
 };
-
-initAll().catch(err => console.error("Erro geral na inicialização:", err));
 
 module.exports = {
   initEspecialidade,
@@ -339,5 +340,6 @@ module.exports = {
   initConsultaStatus,
   initFaturaStatus,
   initPagamentoStatus,
-  initUtilizadoresSeed
+  initUtilizadoresSeed,
+  initAll
 };

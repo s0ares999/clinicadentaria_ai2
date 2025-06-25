@@ -49,13 +49,17 @@ module.exports = (sequelize, Sequelize) => {
     // Associação com o utilizador (cliente)
     Consulta.belongsTo(models.Utilizador, {
       foreignKey: 'utilizador_id',
-      as: 'utilizador'
+      as: 'utilizador',
+      onDelete: 'NO ACTION',
+      onUpdate: 'CASCADE'
     });
 
     // Associação com o médico
     Consulta.belongsTo(models.Utilizador, {
       foreignKey: 'medico_id',
-      as: 'medico'
+      as: 'medico',
+      onDelete: 'SET NULL',
+      onUpdate: 'CASCADE'
     });
     
     Consulta.belongsTo(models.ConsultaStatus, {

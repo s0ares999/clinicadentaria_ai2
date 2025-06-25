@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import html2pdf from 'html2pdf.js/dist/html2pdf.min.js';
+import html2pdf from 'html2pdf.js';
 
 const StyledButton = styled.button`
   background-color: #3498db;

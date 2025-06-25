@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
-import html2pdf from 'html2pdf.js/dist/html2pdf.min.js';
+import html2pdf from 'html2pdf.js';
 import FaturaService from '../../services/fatura.service';
 
 const FaturasContainer = styled.div`

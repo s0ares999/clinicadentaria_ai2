@@ -19,6 +19,8 @@ import AdminMedicoPage from './views/admin/AdminMedicoPage'
 import AdminClientePage from './views/admin/AdminClientePage'
 import GestaoServicos from './views/admin/dashboard/GestaoServicos'
 import FaturaDetalhesPage from './views/admin/dashboard/FaturasDetalhesPage';
+import CreditosPage from './views/CreditosPage';
+
 
 // Componente de Rota Protegida
 const ProtectedRoute = ({ children, adminRequired = false, clienteRequired = false, medicoRequired = false }) => {
@@ -61,6 +63,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/sobre" element={<SobrePage />} />
         <Route path="/contactos" element={<ContactosPage />} />
+        <Route path="/creditos" element={<CreditosPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/servicos/:title" element={<ServiceDetailPage/>} />
@@ -105,6 +108,7 @@ function App() {
         >
           <Route path="consultas-pendentes" element={<MedicoConsultasPendentesPage />} />
         </Route>
+        
         
         {/* Rota para páginas não encontradas */}
         <Route path="*" element={<Navigate to="/" />} />

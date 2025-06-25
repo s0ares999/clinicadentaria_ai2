@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== BOOTSTRAP OVERRIDES ===== */
+/* Prevenir conflitos com styled-components e Material-UI */
+
+/* Manter estilos customizados com maior especificidade */
+[class*="MuiButton"] {
+  /* Material-UI tem prioridade sobre Bootstrap */
+  margin: unset !important;
+  padding: unset !important;
+}
+
+[class*="MuiTextField"] {
+  /* Material-UI tem prioridade sobre Bootstrap */
+  margin: unset !important;
+  padding: unset !important;
+}
+
+[class*="MuiCard"] {
+  /* Material-UI tem prioridade sobre Bootstrap */
+  margin: unset !important;
+  padding: unset !important;
+}
+
+/* Componentes styled-components têm prioridade */
+[class*="styled-"] {
+  margin: unset !important;
+  padding: unset !important;
+}
+
+/* Bootstrap utilities com namespace para evitar conflitos */
+.bootstrap-container {
+  /* Use .bootstrap-container para aplicar estilos Bootstrap específicos */
+  position: relative;
+}
+
+/* ===== FIM BOOTSTRAP OVERRIDES ===== */
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

@@ -28,7 +28,7 @@ Um sistema completo de gestão para clínicas dentárias que permite o agendamen
 - ⚛️ React.js
 - 🧭 React Router para navegação
 - 💅 Styled Components para estilização
-- 🎨 Material UI e Chakra UI para componentes
+- 🎨 Bootstrap, Material UI e Chakra UI para componentes
 - 🔄 Axios para requisições HTTP
 - 🔑 JWT para autenticação
 
@@ -60,17 +60,16 @@ Um sistema completo de gestão para clínicas dentárias que permite o agendamen
    - Copie o arquivo `.env.example` para `.env`
    - Preencha as variáveis com suas configurações
 
-5. Inicialize o banco de dados:
+5. Criar a base de dados no pgAdmin:
    ```
-   node createTables.js
-   node seed-postgres-fixed.js
+   -nome da base de dados "clinica_dentaria"
    ```
 
 6. Inicie o servidor:
    ```
    npm start
    ```
-   O servidor será iniciado na porta 8000 por padrão.
+   O servidor vai ser iniciado na porta 8000 por padrão.
 
 ### 🖥️ Configuração do Frontend
 1. Navegue até a pasta do cliente:
@@ -106,33 +105,19 @@ Um sistema completo de gestão para clínicas dentárias que permite o agendamen
 - `/public` - Arquivos estáticos
 - `/src/assets` - Imagens e outros recursos
 - `/src/components` - Componentes reutilizáveis
-- `/src/context` - Contextos React
 - `/src/services` - Serviços para comunicação com a API
 - `/src/views` - Componentes de página
-- `/src/utils` - Funções utilitárias
 
-## 👥 Usuários de Teste
+## 👥 Utilizadores de Teste
 
 ### 👤 Cliente
-- 📧 Email: cliente@exemplo.com
+- 📧 Email: cliente@gmail.com
 - 🔑 Senha: 123456
 
 ### 👨‍⚕️ Médico
-- 📧 Email: medico@exemplo.com
+- 📧 Email: medico@gmail.com
 - 🔑 Senha: 123456
 
 ### 👑 Administrador
-- 📧 Email: admin@exemplo.com
+- 📧 Email: admin@gmail.com
 - 🔑 Senha: 123456
-
-## 🤝 Contribuição
-
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature: `git checkout -b feature/nova-feature`
-3. Commit suas mudanças: `git commit -m 'Adiciona nova feature'`
-4. Push para a branch: `git push origin feature/nova-feature`
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.

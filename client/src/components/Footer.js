@@ -123,10 +123,11 @@ function Footer() {
         <FooterSection>
           <h3>Links Úteis</h3>
           <ul>
-            <li><a href="#">Início</a></li>
-            <li><a href="#">Quem Somos</a></li>
-            <li><a href="#">Serviços</a></li>
-            <li><a href="#">Contactos</a></li>
+            <li><a href="/">Início</a></li>
+            <li><a href="/sobre">Quem Somos</a></li>
+            <li><a href="/#servicos">Serviços</a></li>
+            <li><a href="/contactos">Contactos</a></li>
+            <li><a href="/creditos">Créditos</a></li>
             <li><a href="#">Política de Privacidade</a></li>
             <li><a href="#">Termos e Condições</a></li>
           </ul>
